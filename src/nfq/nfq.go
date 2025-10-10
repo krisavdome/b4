@@ -1,3 +1,4 @@
+// path: src/nfq/nfq.go
 package nfq
 
 import (
@@ -11,6 +12,7 @@ import (
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
+	"github.com/daniellavrushin/b4/mangle"
 	"github.com/daniellavrushin/b4/sni"
 	"github.com/florianl/go-nfqueue"
 	"golang.org/x/sys/unix"
@@ -47,7 +49,7 @@ func (w *Worker) Start() error {
 	}
 
 	c := nfqueue.Config{
-		NfQueue:      w.qnum, // <— use worker’s queue id
+		NfQueue:      w.qnum,
 		MaxPacketLen: 0xffff,
 		MaxQueueLen:  4096,
 		Copymode:     nfqueue.NfQnlCopyPacket,
@@ -76,32 +78,65 @@ func (w *Worker) Start() error {
 				return 0
 			}
 			raw := *a.Payload
+
+			result, err := mangle.ProcessPacket(w.cfg, raw)
+			if err != nil {
+				log.Debugf("mangle error: %v", err)
+			}
+
+			switch result.Verdict {
+			case mangle.VerdictDrop:
+				_ = q.SetVerdict(id, nfqueue.NfDrop)
+				return 0
+			case mangle.VerdictModify:
+				if len(result.Modified) > 0 {
+					_ = q.SetVerdictWithMark(id, nfqueue.NfRepeat, int(w.cfg.Mark))
+					raw = result.Modified
+				} else {
+					_ = q.SetVerdict(id, nfqueue.NfAccept)
+				}
+			default:
+				_ = q.SetVerdict(id, nfqueue.NfAccept)
+			}
+
 			v := raw[0] >> 4
-			if v != 4 {
-				_ = q.SetVerdict(id, nfqueue.NfAccept)
+			if v != 4 && v != 6 {
 				return 0
 			}
-			if len(raw) < 20 {
-				_ = q.SetVerdict(id, nfqueue.NfAccept)
+
+			if v == 4 && len(raw) < 20 {
 				return 0
 			}
-			ihl := int(raw[0]&0x0f) * 4
-			if len(raw) < ihl {
-				_ = q.SetVerdict(id, nfqueue.NfAccept)
+			if v == 6 && len(raw) < 40 {
 				return 0
 			}
-			proto := raw[9]
-			src := net.IP(raw[12:16])
-			dst := net.IP(raw[16:20])
+
+			var proto uint8
+			var src, dst net.IP
+			var ihl int
+
+			if v == 4 {
+				ihl = int(raw[0]&0x0f) * 4
+				if len(raw) < ihl {
+					return 0
+				}
+				proto = raw[9]
+				src = net.IP(raw[12:16])
+				dst = net.IP(raw[16:20])
+			} else {
+				ihl = 40
+				proto = raw[6]
+				src = net.IP(raw[8:24])
+				dst = net.IP(raw[24:40])
+			}
+
 			if proto == 6 && len(raw) >= ihl+20 {
 				tcp := raw[ihl:]
 				if len(tcp) < 20 {
-					_ = q.SetVerdict(id, nfqueue.NfAccept)
 					return 0
 				}
 				datOff := int((tcp[12]>>4)&0x0f) * 4
 				if len(tcp) < datOff {
-					_ = q.SetVerdict(id, nfqueue.NfAccept)
 					return 0
 				}
 				payload := tcp[datOff:]
@@ -127,7 +162,7 @@ func (w *Worker) Start() error {
 					}
 				}
 			}
-			_ = q.SetVerdict(id, nfqueue.NfAccept)
+
 			return 0
 		}, func(err error) int {
 			log.Errorf("NFQ error: %v", err)

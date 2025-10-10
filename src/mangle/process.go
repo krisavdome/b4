@@ -1,255 +1,264 @@
+// path: src/mangle/mangle.go
 package mangle
 
 import (
 	"encoding/binary"
-	"time"
+	"net"
+
+	"github.com/daniellavrushin/b4/config"
 )
 
-type SectionConfig struct {
-	TLSEnabled     bool
-	FakeSNI        bool
-	FakeSNISeqLen  uint
-	FakeSNIType    int
-	FakeCustomPkt  []byte
-	FakingStrategy uint32
-	FakingTTL      uint8
-	FakeseqOffset  uint32
-	FragStrategy   int
-	FragSNIReverse bool
-	FragSNIFaked   bool
-	FragMiddleSNI  bool
-	FragSNIPos     int
-	Seg2Delay      uint
-	FKWinsize      uint16
-	MatchDomain    func(string) bool
-}
+func ProcessPacket(cfg *config.Config, raw []byte) (Result, error) {
+	if len(raw) < 20 {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
 
-func ProcessTCPPacket(packet []byte, config *SectionConfig, sender func([]byte) error) (int, error) {
-	if len(packet) < 20 {
-		return PktAccept, nil
+	version := raw[0] >> 4
+	if version != 4 && version != 6 {
+		return Result{Verdict: VerdictAccept}, ErrUnsupported
 	}
-	ipVersion := packet[0] >> 4
-	isIPv6 := ipVersion == 6
-	var tcpStart int
-	if isIPv6 {
-		tcpStart = 40
-		if len(packet) < 60 {
-			return PktAccept, nil
-		}
-	} else {
-		ihl := int(packet[0]&0x0F) * 4
-		tcpStart = ihl
-		if len(packet) < ihl+20 {
-			return PktAccept, nil
-		}
-	}
-	dstPort := binary.BigEndian.Uint16(packet[tcpStart+2 : tcpStart+4])
-	if dstPort != 443 {
-		return PktAccept, nil
-	}
-	flags := packet[tcpStart+13]
-	isSYN := flags&0x02 != 0
-	if isSYN {
-		return PktContinue, nil
-	}
-	if !config.TLSEnabled {
-		return PktContinue, nil
-	}
-	dataOffset := int((packet[tcpStart+12] >> 4) * 4)
-	payloadStart := tcpStart + dataOffset
-	if len(packet) <= payloadStart {
-		return PktAccept, nil
-	}
-	payload := packet[payloadStart:]
-	sniOffset, sniLen := findSNIInTLS(payload)
-	if sniOffset < 0 {
-		return PktContinue, nil
-	}
-	sni := string(payload[sniOffset : sniOffset+sniLen])
-	if config.MatchDomain != nil && !config.MatchDomain(sni) {
-		return PktContinue, nil
-	}
-	return processTLSTarget(packet, config, sender, payloadStart, sniOffset, sniLen)
-}
 
-func processTLSTarget(packet []byte, config *SectionConfig, sender func([]byte) error, payloadStart, sniOffset, sniLen int) (int, error) {
-	pkt := make([]byte, len(packet))
-	copy(pkt, packet)
-	ipVersion := pkt[0] >> 4
-	isIPv6 := ipVersion == 6
-	var ipHeaderLen int
-	var tcpStart int
-	if isIPv6 {
-		ipHeaderLen = 40
-		tcpStart = 40
-	} else {
-		ipHeaderLen = int(pkt[0]&0x0F) * 4
-		tcpStart = ipHeaderLen
+	if cfg.Mangle == nil || !cfg.Mangle.Enabled {
+		return Result{Verdict: VerdictAccept}, nil
 	}
-	if config.FKWinsize > 0 {
-		binary.BigEndian.PutUint16(pkt[tcpStart+14:tcpStart+16], config.FKWinsize)
-		SetTCPChecksum(pkt, isIPv6)
-	}
-	if config.FakeSNI {
-		fakeType := FakeType{
-			Type:        config.FakeSNIType,
-			FakeData:    config.FakeCustomPkt,
-			SequenceLen: config.FakeSNISeqLen,
-			Seg2Delay:   config.Seg2Delay,
-			Strategy: FailingStrategy{
-				Strategy:      config.FakingStrategy,
-				FakingTTL:     config.FakingTTL,
-				RandseqOffset: config.FakeseqOffset,
-			},
-		}
-		if err := SendFakeSequence(pkt, fakeType, sender); err != nil {
-			return PktAccept, err
-		}
-	}
-	switch config.FragStrategy {
-	case FragStratTCP, FragStratIP:
-		return fragmentAndSendTLS(pkt, config, sender, payloadStart, sniOffset, sniLen)
+
+	switch version {
+	case 4:
+		return processIPv4(cfg, raw)
+	case 6:
+		return processIPv6(cfg, raw)
 	default:
-		if err := sender(pkt); err != nil {
-			return PktAccept, err
-		}
-		return PktDrop, nil
+		return Result{Verdict: VerdictAccept}, nil
 	}
 }
 
-func fragmentAndSendTLS(packet []byte, config *SectionConfig, sender func([]byte) error, payloadStart, sniOffset, sniLen int) (int, error) {
-	ipVersion := packet[0] >> 4
-	var ipHeaderLen int
-	if ipVersion == 6 {
-		ipHeaderLen = 40
+func processIPv4(cfg *config.Config, raw []byte) (Result, error) {
+	if len(raw) < 20 {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	ihl := int((raw[0] & 0x0f) << 2)
+	if ihl < 20 || len(raw) < ihl {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	totalLen := int(binary.BigEndian.Uint16(raw[2:4]))
+	if totalLen > len(raw) {
+		totalLen = len(raw)
+	}
+
+	protocol := raw[9]
+	srcIP := net.IPv4(raw[12], raw[13], raw[14], raw[15])
+	dstIP := net.IPv4(raw[16], raw[17], raw[18], raw[19])
+
+	transportData := raw[ihl:totalLen]
+
+	switch protocol {
+	case 6:
+		return processTCP(cfg, srcIP, dstIP, transportData, raw, 4)
+	case 17:
+		return processUDP(cfg, srcIP, dstIP, transportData, raw, 4)
+	default:
+		return Result{Verdict: VerdictAccept}, nil
+	}
+}
+
+func processIPv6(cfg *config.Config, raw []byte) (Result, error) {
+	if len(raw) < 40 {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	payloadLen := int(binary.BigEndian.Uint16(raw[4:6]))
+	nextHeader := raw[6]
+	srcIP := net.IP(raw[8:24])
+	dstIP := net.IP(raw[24:40])
+
+	if 40+payloadLen > len(raw) {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	transportData := raw[40 : 40+payloadLen]
+
+	switch nextHeader {
+	case 6:
+		return processTCP(cfg, srcIP, dstIP, transportData, raw, 6)
+	case 17:
+		return processUDP(cfg, srcIP, dstIP, transportData, raw, 6)
+	default:
+		return Result{Verdict: VerdictAccept}, nil
+	}
+}
+
+func processTCP(cfg *config.Config, srcIP, dstIP net.IP, tcpData []byte, fullPacket []byte, ipVersion int) (Result, error) {
+	if len(tcpData) < 20 {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	srcPort := binary.BigEndian.Uint16(tcpData[0:2])
+	dstPort := binary.BigEndian.Uint16(tcpData[2:4])
+	seqNum := binary.BigEndian.Uint32(tcpData[4:8])
+	ackNum := binary.BigEndian.Uint32(tcpData[8:12])
+	dataOffset := int((tcpData[12] >> 4) << 2)
+	flags := tcpData[13]
+	window := binary.BigEndian.Uint16(tcpData[14:16])
+
+	if dataOffset < 20 || len(tcpData) < dataOffset {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	payload := tcpData[dataOffset:]
+
+	tcpPkt := TCPPacket{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		SrcPort:  srcPort,
+		DstPort:  dstPort,
+		Seq:      seqNum,
+		Ack:      ackNum,
+		Flags:    flags,
+		Window:   window,
+		Payload:  payload,
+		Original: fullPacket,
+	}
+
+	if cfg.Mangle.TCPStrategies != nil {
+		for _, strategyIface := range cfg.Mangle.TCPStrategies {
+			if strategyIface == nil {
+				continue
+			}
+			strategy, ok := strategyIface.(TCPStrategy)
+			if !ok {
+				continue
+			}
+			modifiedPkt, verdict, err := strategy.ApplyTCP(srcIP, tcpPkt)
+			if err != nil {
+				continue
+			}
+			if verdict == VerdictDrop {
+				return Result{Verdict: VerdictDrop}, nil
+			}
+			if verdict == VerdictModify {
+				modified, err := serializeTCP(modifiedPkt, ipVersion)
+				if err != nil {
+					return Result{Verdict: VerdictAccept}, err
+				}
+				return Result{Verdict: VerdictModify, Modified: modified}, nil
+			}
+			tcpPkt = modifiedPkt
+		}
+	}
+
+	return Result{Verdict: VerdictAccept}, nil
+}
+
+func processUDP(cfg *config.Config, srcIP, dstIP net.IP, udpData []byte, fullPacket []byte, ipVersion int) (Result, error) {
+	if len(udpData) < 8 {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	srcPort := binary.BigEndian.Uint16(udpData[0:2])
+	dstPort := binary.BigEndian.Uint16(udpData[2:4])
+	length := binary.BigEndian.Uint16(udpData[4:6])
+
+	if int(length) > len(udpData) {
+		return Result{Verdict: VerdictAccept}, ErrInvalidPacket
+	}
+
+	payload := udpData[8:]
+
+	udpPkt := UDPPacket{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		SrcPort:  srcPort,
+		DstPort:  dstPort,
+		Payload:  payload,
+		Original: fullPacket,
+	}
+
+	if cfg.Mangle.UDPStrategies != nil {
+		for _, strategyIface := range cfg.Mangle.UDPStrategies {
+			if strategyIface == nil {
+				continue
+			}
+			strategy, ok := strategyIface.(UDPStrategy)
+			if !ok {
+				continue
+			}
+			modifiedPkt, verdict, err := strategy.ApplyUDP(srcIP, udpPkt)
+			if err != nil {
+				continue
+			}
+			if verdict == VerdictDrop {
+				return Result{Verdict: VerdictDrop}, nil
+			}
+			if verdict == VerdictModify {
+				modified, err := serializeUDP(modifiedPkt, ipVersion)
+				if err != nil {
+					return Result{Verdict: VerdictAccept}, err
+				}
+				return Result{Verdict: VerdictModify, Modified: modified}, nil
+			}
+			udpPkt = modifiedPkt
+		}
+	}
+
+	return Result{Verdict: VerdictAccept}, nil
+}
+
+func serializeTCP(pkt TCPPacket, ipVersion int) ([]byte, error) {
+	return rebuildPacket(pkt.Original, pkt.Payload, ipVersion, 6)
+}
+
+func serializeUDP(pkt UDPPacket, ipVersion int) ([]byte, error) {
+	return rebuildPacket(pkt.Original, pkt.Payload, ipVersion, 17)
+}
+
+func rebuildPacket(original []byte, newPayload []byte, ipVersion int, protocol uint8) ([]byte, error) {
+	result := make([]byte, len(original)-getPayloadOffset(original, ipVersion, protocol)+len(newPayload))
+	payloadOffset := getPayloadOffset(original, ipVersion, protocol)
+	copy(result, original[:payloadOffset])
+	copy(result[payloadOffset:], newPayload)
+
+	if ipVersion == 4 {
+		updateIPv4Length(result, len(result))
+		recalcIPv4Checksum(result)
 	} else {
-		ipHeaderLen = int(packet[0]&0x0F) * 4
+		updateIPv6Length(result, len(result)-40)
 	}
-	var positions []int
-	if config.FragSNIPos > 0 {
-		positions = append(positions, config.FragSNIPos)
+
+	if protocol == 6 {
+		recalcTCPChecksum(result, ipVersion)
+	} else if protocol == 17 {
+		recalcUDPChecksum(result, ipVersion)
 	}
-	if config.FragMiddleSNI {
-		midOffset := sniOffset + sniLen/2
-		positions = append(positions, midOffset)
-	}
-	if len(positions) > 1 {
-		for i := 0; i < len(positions)-1; i++ {
-			for j := i + 1; j < len(positions); j++ {
-				if positions[i] > positions[j] {
-					positions[i], positions[j] = positions[j], positions[i]
-				}
-			}
-		}
-	}
-	if config.FragStrategy == FragStratIP {
-		tcpHeaderLen := payloadStart - ipHeaderLen
-		for i := range positions {
-			positions[i] = tcpHeaderLen + positions[i]
-			positions[i] = (positions[i] + 7) &^ 7
-		}
-	}
-	sendWithDelay := func(pkt []byte) error {
-		return sender(pkt)
-	}
-	if config.FragSNIFaked {
-	}
-	err := FragmentAndSend(packet, positions, config.FragStrategy, config.FragSNIReverse, sendWithDelay)
-	if err != nil {
-		return PktAccept, err
-	}
-	return PktDrop, nil
+
+	return result, nil
 }
 
-func findSNIInTLS(data []byte) (offset int, length int) {
-	if len(data) < 5 {
-		return -1, 0
-	}
-	if data[0] != 0x16 {
-		return -1, 0
-	}
-	if data[1] != 0x03 {
-		return -1, 0
-	}
-	recordLen := int(binary.BigEndian.Uint16(data[3:5]))
-	if len(data) < 5+recordLen {
-		recordLen = len(data) - 5
-	}
-	handshake := data[5 : 5+recordLen]
-	if len(handshake) < 1 {
-		return -1, 0
-	}
-	if handshake[0] != 0x01 {
-		return -1, 0
-	}
-	if len(handshake) < 38 {
-		return -1, 0
-	}
-	pos := 38
-	if pos >= len(handshake) {
-		return -1, 0
-	}
-	sessionIDLen := int(handshake[pos])
-	pos++
-	pos += sessionIDLen
-	if pos+2 > len(handshake) {
-		return -1, 0
-	}
-	cipherSuitesLen := int(binary.BigEndian.Uint16(handshake[pos : pos+2]))
-	pos += 2 + cipherSuitesLen
-	if pos >= len(handshake) {
-		return -1, 0
-	}
-	compMethodsLen := int(handshake[pos])
-	pos++
-	pos += compMethodsLen
-	if pos+2 > len(handshake) {
-		return -1, 0
-	}
-	extensionsLen := int(binary.BigEndian.Uint16(handshake[pos : pos+2]))
-	pos += 2
-	extensionsEnd := pos + extensionsLen
-	if extensionsEnd > len(handshake) {
-		extensionsEnd = len(handshake)
-	}
-	for pos+4 <= extensionsEnd {
-		extType := binary.BigEndian.Uint16(handshake[pos : pos+2])
-		extLen := int(binary.BigEndian.Uint16(handshake[pos+2 : pos+4]))
-		pos += 4
-		if pos+extLen > extensionsEnd {
-			break
+func getPayloadOffset(pkt []byte, ipVersion int, protocol uint8) int {
+	if ipVersion == 4 {
+		ihl := int((pkt[0] & 0x0f) << 2)
+		if protocol == 6 && len(pkt) > ihl+12 {
+			tcpOffset := int((pkt[ihl+12] >> 4) << 2)
+			return ihl + tcpOffset
+		} else if protocol == 17 {
+			return ihl + 8
 		}
-		if extType == 0 {
-			extData := handshake[pos : pos+extLen]
-			if len(extData) < 2 {
-				break
-			}
-			listLen := int(binary.BigEndian.Uint16(extData[0:2]))
-			if len(extData) < 2+listLen {
-				break
-			}
-			serverNameList := extData[2 : 2+listLen]
-			if len(serverNameList) < 3 {
-				break
-			}
-			if serverNameList[0] == 0 {
-				nameLen := int(binary.BigEndian.Uint16(serverNameList[1:3]))
-				if len(serverNameList) >= 3+nameLen {
-					sniStart := 5 + pos + 3
-					return sniStart, nameLen
-				}
-			}
+	} else if ipVersion == 6 {
+		if protocol == 6 && len(pkt) > 40+12 {
+			tcpOffset := int((pkt[40+12] >> 4) << 2)
+			return 40 + tcpOffset
+		} else if protocol == 17 {
+			return 40 + 8
 		}
-		pos += extLen
 	}
-	return -1, 0
+	return len(pkt)
 }
 
-func DelayedSender(baseSender func([]byte) error, delay time.Duration) func([]byte) error {
-	return func(pkt []byte) error {
-		if delay > 0 {
-			time.Sleep(delay)
-		}
-		return baseSender(pkt)
-	}
+func updateIPv4Length(pkt []byte, length int) {
+	binary.BigEndian.PutUint16(pkt[2:4], uint16(length))
+}
+
+func updateIPv6Length(pkt []byte, payloadLen int) {
+	binary.BigEndian.PutUint16(pkt[4:6], uint16(payloadLen))
 }
