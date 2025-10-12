@@ -19,6 +19,10 @@ import (
 var (
 	cfg         = config.DefaultConfig
 	verboseFlag string
+	showVersion bool
+	Version     = "dev"
+	Commit      = "none"
+	Date        = "unknown"
 )
 
 var rootCmd = &cobra.Command{
@@ -33,7 +37,8 @@ func init() {
 	cfg.BindFlags(rootCmd)
 
 	// Add verbosity flags separately since they need special handling
-	rootCmd.Flags().StringVarP(&verboseFlag, "verbose", "v", "info", "Set verbosity level (debug, trace, info, silent), default: info")
+	rootCmd.Flags().StringVarP(&verboseFlag, "verbose", "", "info", "Set verbosity level (debug, trace, info, silent), default: info")
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Show version and exit")
 }
 
 func main() {
@@ -44,6 +49,12 @@ func main() {
 }
 
 func runB4(cmd *cobra.Command, args []string) error {
+
+	if showVersion {
+		fmt.Printf("B4 version: %s (%s) %s\n", Version, Commit, Date)
+		return nil
+	}
+
 	// Debug output to stderr to see if we're even getting here
 	fmt.Fprintf(os.Stderr, "[DEBUG] runB4 started\n")
 

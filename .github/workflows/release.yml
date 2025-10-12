@@ -36,10 +36,27 @@ jobs:
         with:
           go-version-file: src/go.mod
 
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: |
+            ./src/http/ui/pnpm-lock.yaml
+
+      - name: build web ui artifacts
+        working-directory: src/http/ui
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
       - name: build b4
         run: |
-          chmod +x ./src/embed.sh
-          ./src/embed.sh
           make all
 
       - name: list built files
