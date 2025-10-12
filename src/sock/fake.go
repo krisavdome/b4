@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	"github.com/daniellavrushin/b4/config"
-	"github.com/daniellavrushin/b4/log"
 )
 
 // Default fake SNI payload from youtubeUnblock
@@ -31,82 +30,57 @@ func BuildFakeSNIPacket(original []byte, cfg *config.Config) []byte {
 	ipHdrLen := int((original[0] & 0x0F) * 4)
 	tcpHdrLen := int((original[ipHdrLen+12] >> 4) * 4)
 
-	// Select fake payload based on config
+	// Select fake payload
 	var fakePayload []byte
 	switch cfg.FakeSNIType {
 	case config.FakePayloadRandom:
 		fakePayload = make([]byte, 1200)
 		rand.Read(fakePayload)
 	case config.FakePayloadCustom:
-		// Would come from config.FakeCustomPayload
-		fakePayload = FakeSNI
+		fakePayload = []byte(cfg.FakeCustomPayload)
 	default:
-		fakePayload = FakeSNIOld
+		fakePayload = FakeSNI // Use the default fake SNI
 	}
 
-	// Calculate space needed for MD5 option if using that strategy
-	extraSpace := 0
-	if cfg.FakeStrategy == "md5sum" {
-		currentOptLen := tcpHdrLen - 20
-		extraSpace = TCP_MD5SIG_OPT_LEN - currentOptLen
-		if extraSpace < 0 {
-			extraSpace = 0
-		}
-	}
+	// Create fake packet
+	fakeLen := ipHdrLen + tcpHdrLen + len(fakePayload)
+	fake := make([]byte, fakeLen)
 
-	fake := make([]byte, ipHdrLen+tcpHdrLen+extraSpace+len(fakePayload))
-	log.Tracef("Building fake SNI packet, original len=%d, ipHdrLen=%d, tcpHdrLen=%d, extraSpace=%d, fakePayloadLen=%d, totalLen=%d", len(original), ipHdrLen, tcpHdrLen, extraSpace, len(fakePayload), len(fake))
-	// Copy headers
-	copy(fake, original[:ipHdrLen+tcpHdrLen])
-
-	// Apply MD5 option if needed
-	if extraSpace > 0 {
-		// Shift TCP payload area
-		tcpHdrLen += extraSpace
-		fake[ipHdrLen+12] = byte((tcpHdrLen/4)<<4) | (fake[ipHdrLen+12] & 0x0F)
-
-		// Add MD5 option
-		optStart := ipHdrLen + 20
-		fake[optStart] = 19   // MD5 Kind
-		fake[optStart+1] = 18 // Length
-		// Zero signature
-		for i := 0; i < 16; i++ {
-			fake[optStart+2+i] = 0
-		}
-		// Fill with NOPs
-		for i := optStart + 18; i < ipHdrLen+tcpHdrLen; i++ {
-			fake[i] = 1
-		}
-	}
-
-	// Copy fake payload
+	// Copy IP and TCP headers
+	copy(fake[:ipHdrLen+tcpHdrLen], original[:ipHdrLen+tcpHdrLen])
 	copy(fake[ipHdrLen+tcpHdrLen:], fakePayload)
 
 	// Update IP header
-	binary.BigEndian.PutUint16(fake[2:4], uint16(len(fake)))
+	binary.BigEndian.PutUint16(fake[2:4], uint16(fakeLen)) // Total length
 
 	// Apply faking strategy
 	switch cfg.FakeStrategy {
 	case "ttl":
-		fake[8] = cfg.FakeTTL
+		fake[8] = cfg.FakeTTL // Set low TTL
 	case "pastseq":
+		// Adjust TCP sequence to be in the past
 		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
 		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq-uint32(len(fakePayload)))
-		log.Tracef("Applied pastseq strategy: new seq=%d", seq-uint32(len(fakePayload)))
 	case "randseq":
+		// Set random sequence
 		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
-		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq-uint32(cfg.FakeSeqOffset)+uint32(len(fakePayload)))
+		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq+uint32(cfg.FakeSeqOffset))
+	case "tcp_check":
+		// Will corrupt checksum later
+	case "md5sum":
+		// Add MD5 TCP option
+		// This requires expanding TCP header
 	}
 
 	// Fix checksums
 	FixIPv4Checksum(fake[:ipHdrLen])
 	FixTCPChecksum(fake)
 
-	// Break checksum if using tcp_check strategy
+	// Corrupt checksum if using tcp_check strategy
 	if cfg.FakeStrategy == "tcp_check" {
-		fake[ipHdrLen+16] += 1
+		fake[ipHdrLen+16] ^= 0xFF
 	}
-	log.Tracef("Built fake SNI packet, len=%d, strategy=%s", len(fake), cfg.FakeStrategy)
+
 	return fake
 }
 
@@ -134,13 +108,16 @@ func FixTCPChecksum(packet []byte) {
 	totalLen := binary.BigEndian.Uint16(packet[2:4])
 	tcpLen := int(totalLen) - ipHdrLen
 
+	// Build pseudo-header
 	pseudo := make([]byte, 12)
 	copy(pseudo[0:4], packet[12:16]) // Src IP
 	copy(pseudo[4:8], packet[16:20]) // Dst IP
 	pseudo[9] = 6                    // TCP protocol
 	binary.BigEndian.PutUint16(pseudo[10:12], uint16(tcpLen))
 
+	// Calculate checksum
 	var sum uint32
+
 	// Pseudo-header
 	for i := 0; i < len(pseudo); i += 2 {
 		sum += uint32(binary.BigEndian.Uint16(pseudo[i : i+2]))
@@ -155,7 +132,7 @@ func FixTCPChecksum(packet []byte) {
 		sum += uint32(tcp[len(tcp)-1]) << 8
 	}
 
-	// Fold
+	// Fold to 16 bits
 	for sum > 0xffff {
 		sum = (sum >> 16) + (sum & 0xffff)
 	}

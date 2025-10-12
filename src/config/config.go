@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/daniellavrushin/b4/geodat"
+	"github.com/daniellavrushin/b4/log"
 	"github.com/spf13/cobra"
 )
 
@@ -28,16 +29,25 @@ type Config struct {
 	FragMiddleSNI    bool
 	FragSNIPosition  int
 
-	FakeSNI          bool
-	FakeTTL          uint8
-	FakeStrategy     string
-	FakeSeqOffset    int32
-	FakeSNISeqLength int
-	FakeSNIType      int
+	FakeSNI           bool
+	FakeTTL           uint8
+	FakeStrategy      string
+	FakeSeqOffset     int32
+	FakeSNISeqLength  int
+	FakeSNIType       int
+	FakeCustomPayload string
+
+	UDPMode           string
+	UDPFakeSeqLength  int
+	UDPFakeLen        int
+	UDPFakingStrategy string
+	UDPDPortMin       int
+	UDPDPortMax       int
+	UDPFilterQUIC     string
 }
 
 type Logging struct {
-	Level      int
+	Level      log.Level
 	Instaflush bool
 	Syslog     bool
 }
@@ -46,12 +56,6 @@ const (
 	FakePayloadRandom = iota
 	FakePayloadCustom
 	FakePayloadDefault
-)
-
-const (
-	InfoLevel = iota
-	DebugLevel
-	TraceLevel
 )
 
 var DefaultConfig = Config{
@@ -72,15 +76,24 @@ var DefaultConfig = Config{
 	FragMiddleSNI:    true,
 	FragSNIPosition:  1,
 
-	FakeSNI:          true,
-	FakeTTL:          8,
-	FakeSNISeqLength: 1,
-	FakeSNIType:      FakePayloadDefault,
-	FakeStrategy:     "pastseq",
-	FakeSeqOffset:    10000,
+	FakeSNI:           true,
+	FakeTTL:           8,
+	FakeSNISeqLength:  1,
+	FakeSNIType:       FakePayloadDefault,
+	FakeCustomPayload: "",
+	FakeStrategy:      "pastseq",
+	FakeSeqOffset:     10000,
+
+	UDPMode:           "drop",
+	UDPFakeSeqLength:  6,
+	UDPFakeLen:        64,
+	UDPFakingStrategy: "none",
+	UDPDPortMin:       0,
+	UDPDPortMax:       0,
+	UDPFilterQUIC:     "parse",
 
 	Logging: Logging{
-		Level:      InfoLevel,
+		Level:      log.LevelInfo,
 		Instaflush: true,
 		Syslog:     false,
 	},
@@ -88,17 +101,11 @@ var DefaultConfig = Config{
 
 func (c *Config) BindFlags(cmd *cobra.Command) {
 	// Network configuration
-	cmd.Flags().IntVar(&c.QueueStartNum, "queue-num", c.QueueStartNum,
-		"Netfilter queue number")
-	cmd.Flags().IntVar(&c.Threads, "threads", c.Threads,
-		"Number of worker threads")
-	cmd.Flags().UintVar(&c.Mark, "mark", c.Mark,
-		"Packet mark value")
-	cmd.Flags().IntVar(&c.ConnBytesLimit, "connbytes-limit", c.ConnBytesLimit,
-		"Connection bytes limit")
-	cmd.Flags().StringSliceVar(&c.SNIDomains, "sni-domains", c.SNIDomains,
-		"List of SNI domains to match")
-
+	cmd.Flags().IntVar(&c.QueueStartNum, "queue-num", c.QueueStartNum, "Netfilter queue number")
+	cmd.Flags().IntVar(&c.Threads, "threads", c.Threads, "Number of worker threads")
+	cmd.Flags().UintVar(&c.Mark, "mark", c.Mark, "Packet mark value")
+	cmd.Flags().IntVar(&c.ConnBytesLimit, "connbytes-limit", c.ConnBytesLimit, "Connection bytes limit")
+	cmd.Flags().StringSliceVar(&c.SNIDomains, "sni-domains", c.SNIDomains, "List of SNI domains to match")
 	cmd.Flags().IntVar(&c.Seg2Delay, "seg2delay", 0, "Delay between segments in ms")
 
 	// Geodata and site filtering
@@ -119,26 +126,38 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&c.FakeSNISeqLength, "fake-sni-len", c.FakeSNISeqLength, "Length of fake SNI sequence")
 	cmd.Flags().IntVar(&c.FakeSNIType, "fake-sni-type", c.FakeSNIType, "Type of fake SNI payload (0=random, 1=custom, 2=default)")
 
+	cmd.Flags().StringVar(&c.UDPMode, "udp-mode", c.UDPMode, "UDP handling strategy (drop|fake)")
+	cmd.Flags().IntVar(&c.UDPFakeSeqLength, "udp-fake-seq-len", c.UDPFakeSeqLength, "UDP fake packet sequence length")
+	cmd.Flags().IntVar(&c.UDPFakeLen, "udp-fake-len", c.UDPFakeLen, "UDP fake packet size in bytes")
+	cmd.Flags().StringVar(&c.UDPFakingStrategy, "udp-faking-strategy", c.UDPFakingStrategy, "UDP faking strategy (none|ttl|checksum)")
+	cmd.Flags().IntVar(&c.UDPDPortMin, "udp-dport-min", c.UDPDPortMin, "Minimum UDP destination port to handle")
+	cmd.Flags().IntVar(&c.UDPDPortMax, "udp-dport-max", c.UDPDPortMax, "Maximum UDP destination port to handle")
+	cmd.Flags().StringVar(&c.UDPFilterQUIC, "udp-filter-quic", c.UDPFilterQUIC, "QUIC filtering mode (disabled|all|parse)")
+
 	// Feature flags
-	cmd.Flags().BoolVar(&c.UseGSO, "gso", c.UseGSO,
-		"Enable Generic Segmentation Offload")
-	cmd.Flags().BoolVar(&c.UseConntrack, "conntrack", c.UseConntrack,
-		"Enable connection tracking")
-	cmd.Flags().BoolVar(&c.SkipIpTables, "skip-iptables", c.SkipIpTables,
-		"Skip iptables rules setup")
+	cmd.Flags().BoolVar(&c.UseGSO, "gso", c.UseGSO, "Enable Generic Segmentation Offload")
+	cmd.Flags().BoolVar(&c.UseConntrack, "conntrack", c.UseConntrack, "Enable connection tracking")
+	cmd.Flags().BoolVar(&c.SkipIpTables, "skip-iptables", c.SkipIpTables, "Skip iptables rules setup")
 
 	// Logging configuration
-	cmd.Flags().BoolVarP(&c.Logging.Instaflush, "instaflush", "i", c.Logging.Instaflush,
-		"Flush logs immediately")
-	cmd.Flags().BoolVar(&c.Logging.Syslog, "syslog", c.Logging.Syslog,
-		"Enable syslog output")
+	cmd.Flags().BoolVarP(&c.Logging.Instaflush, "instaflush", "i", c.Logging.Instaflush, "Flush logs immediately")
+	cmd.Flags().BoolVar(&c.Logging.Syslog, "syslog", c.Logging.Syslog, "Enable syslog output")
 }
 
-func (c *Config) ApplyVerbosityFlags(verbose, trace bool) {
-	if trace {
-		c.Logging.Level = TraceLevel
-	} else if verbose {
-		c.Logging.Level = DebugLevel
+func (cfg *Config) ApplyLogLevel(level string) {
+	switch level {
+	case "debug":
+		cfg.Logging.Level = log.LevelDebug
+	case "trace":
+		cfg.Logging.Level = log.LevelTrace
+	case "info":
+		cfg.Logging.Level = log.LevelInfo
+	case "error":
+		cfg.Logging.Level = log.LevelError
+	case "silent":
+		cfg.Logging.Level = -1
+	default:
+		cfg.Logging.Level = log.LevelInfo
 	}
 }
 

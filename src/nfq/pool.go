@@ -34,7 +34,7 @@ func NewWorkerWithQueue(cfg *config.Config, qnum uint16) *Worker {
 	case "tcp_check":
 		strategy = sock.FakeStrategyTCPChecksum
 	default:
-		strategy = sock.FakeStrategyTTL
+		strategy = sock.FakeStrategyPastSeq
 	}
 
 	fragmenter := &sock.Fragmenter{

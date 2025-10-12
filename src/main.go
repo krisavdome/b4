@@ -16,8 +16,7 @@ import (
 
 var (
 	cfg         = config.DefaultConfig
-	verboseFlag bool
-	traceFlag   bool
+	verboseFlag string
 )
 
 var rootCmd = &cobra.Command{
@@ -32,8 +31,7 @@ func init() {
 	cfg.BindFlags(rootCmd)
 
 	// Add verbosity flags separately since they need special handling
-	rootCmd.Flags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose (debug) logging")
-	rootCmd.Flags().BoolVar(&traceFlag, "trace", false, "Enable trace logging")
+	rootCmd.Flags().StringVarP(&verboseFlag, "verbose", "v", "info", "Set verbosity level (debug, trace, info, silent), default: info")
 }
 
 func main() {
@@ -48,7 +46,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "[DEBUG] runB4 started\n")
 
 	// Apply verbosity settings
-	cfg.ApplyVerbosityFlags(verboseFlag, traceFlag)
+	cfg.ApplyLogLevel(verboseFlag)
 	fmt.Fprintf(os.Stderr, "[DEBUG] Verbosity applied, log level: %d\n", cfg.Logging.Level)
 
 	// Initialize logging first thing
@@ -63,7 +61,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Infof("Starting B4 packet processor")
-	logConfiguration(&cfg)
+	printConfigDefaults(&cfg)
 
 	// Load domains from geodata if specified
 	if cfg.GeoSitePath != "" && len(cfg.GeoCategories) > 0 {
@@ -138,7 +136,7 @@ func initLogging(cfg *config.Config) error {
 	return nil
 }
 
-func logConfiguration(cfg *config.Config) {
+func printConfigDefaults(cfg *config.Config) {
 	log.Debugf("Configuration:")
 	log.Debugf("  Queue number: %d", cfg.QueueStartNum)
 	log.Debugf("  Threads: %d", cfg.Threads)
@@ -160,4 +158,26 @@ func logConfiguration(cfg *config.Config) {
 		log.Debugf("  SNI Domains: %v", cfg.SNIDomains)
 	}
 	log.Debugf("  Logging level: %d", cfg.Logging.Level)
+	log.Debugf("  Logging instaflush: %v", cfg.Logging.Instaflush)
+	log.Debugf("  Logging syslog: %v", cfg.Logging.Syslog)
+
+	log.Debugf("  Fragment Strategy: %s", cfg.FragmentStrategy)
+	log.Debugf("  Fragment SNI Reverse: %v", cfg.FragSNIReverse)
+	log.Debugf("  Fragment Middle SNI: %v", cfg.FragMiddleSNI)
+	log.Debugf("  Fragment SNI Position: %d", cfg.FragSNIPosition)
+
+	log.Debugf("  Fake SNI: %v", cfg.FakeSNI)
+	log.Debugf("    Fake TTL: %d", cfg.FakeTTL)
+	log.Debugf("    Fake Strategy: %s", cfg.FakeStrategy)
+	log.Debugf("    Fake Seq Offset: %d", cfg.FakeSeqOffset)
+	log.Debugf("    Fake SNI Type: %d", cfg.FakeSNIType)
+	log.Debugf("    Fake Custom Payload: %s", cfg.FakeCustomPayload)
+
+	log.Debugf("  UDP Mode: %s", cfg.UDPMode)
+	log.Debugf("    UDP Fake Len: %d", cfg.UDPFakeLen)
+	log.Debugf("    UDP Fake Seq Length: %d", cfg.UDPFakeSeqLength)
+	log.Debugf("    UDP Faking Strategy: %s", cfg.UDPFakingStrategy)
+	log.Debugf("    UDP DPort Min: %d", cfg.UDPDPortMin)
+	log.Debugf("    UDP DPort Max: %d", cfg.UDPDPortMax)
+	log.Debugf("    UDP Filter QUIC: %s", cfg.UDPFilterQUIC)
 }

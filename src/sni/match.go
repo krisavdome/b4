@@ -24,6 +24,10 @@ func NewSuffixSet(domains []string) *SuffixSet {
 }
 
 func (s *SuffixSet) Match(host string) bool {
+	if s == nil || len(s.m) == 0 {
+		return true
+	}
+
 	host = strings.ToLower(host)
 	if host == "" {
 		return false
