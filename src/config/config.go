@@ -18,16 +18,13 @@ type Config struct {
 	UseGSO         bool
 	UseConntrack   bool
 	SkipIpTables   bool
-	Mangle         *MangleConfig
 	GeoSitePath    string
 	GeoIpPath      string
 	GeoCategories  []string
-}
 
-type MangleConfig struct {
-	Enabled       bool
-	TCPStrategies []interface{}
-	UDPStrategies []interface{}
+	FakeSNI          bool
+	FakeSNISeqLength int
+	FakeSNIType      int
 }
 
 type Logging struct {
@@ -35,6 +32,12 @@ type Logging struct {
 	Instaflush bool
 	Syslog     bool
 }
+
+const (
+	FakePayloadRandom = iota
+	FakePayloadCustom
+	FakePayloadDefault
+)
 
 const (
 	InfoLevel = iota
@@ -53,15 +56,15 @@ var DefaultConfig = Config{
 	GeoSitePath:    "",
 	GeoIpPath:      "",
 	GeoCategories:  []string{},
+
+	FakeSNI:          true,
+	FakeSNISeqLength: 1,
+	FakeSNIType:      FakePayloadDefault,
+
 	Logging: Logging{
 		Level:      InfoLevel,
 		Instaflush: true,
 		Syslog:     false,
-	},
-	Mangle: &MangleConfig{
-		Enabled:       false,
-		TCPStrategies: nil,
-		UDPStrategies: nil,
 	},
 }
 
