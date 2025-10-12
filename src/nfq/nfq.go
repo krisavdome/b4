@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/daniellavrushin/b4/log"
-	"github.com/daniellavrushin/b4/mangle"
 	"github.com/daniellavrushin/b4/sni"
 	"github.com/daniellavrushin/b4/sock"
 	"github.com/florianl/go-nfqueue"
@@ -100,18 +99,6 @@ func (w *Worker) Start() error {
 					host, ok := w.feed(k, payload)
 					if ok && w.matcher.Match(host) {
 						log.Infof("TCP: %s %s:%d -> %s:%d", host, src.String(), sport, dst.String(), dport)
-						if w.cfg.Mangle != nil && w.cfg.Mangle.Enabled {
-							res, _ := mangle.ProcessPacket(w.cfg, raw)
-							if res.Verdict == mangle.VerdictDrop {
-								_ = q.SetVerdict(id, nfqueue.NfDrop)
-								return 0
-							}
-							if res.Verdict == mangle.VerdictModify && len(res.Modified) > 0 {
-								_ = w.sock.SendIPv4(res.Modified, dst)
-								_ = q.SetVerdict(id, nfqueue.NfDrop)
-								return 0
-							}
-						}
 						go w.dropAndInjectTCP(raw, dst)
 						_ = q.SetVerdict(id, nfqueue.NfDrop)
 						return 0
@@ -128,18 +115,6 @@ func (w *Worker) Start() error {
 					if dport == 443 {
 						if host, ok := sni.ParseQUICClientHelloSNI(payload); ok && w.matcher.Match(host) {
 							log.Infof("QUIC: %s %s:%d -> %s:%d", host, src.String(), sport, dst.String(), dport)
-							if w.cfg.Mangle != nil && w.cfg.Mangle.Enabled {
-								res, _ := mangle.ProcessPacket(w.cfg, raw)
-								if res.Verdict == mangle.VerdictDrop {
-									_ = q.SetVerdict(id, nfqueue.NfDrop)
-									return 0
-								}
-								if res.Verdict == mangle.VerdictModify && len(res.Modified) > 0 {
-									_ = w.sock.SendIPv4(res.Modified, dst)
-									_ = q.SetVerdict(id, nfqueue.NfDrop)
-									return 0
-								}
-							}
 							go w.dropAndInjectQUIC(raw, dst)
 							_ = q.SetVerdict(id, nfqueue.NfDrop)
 							return 0
