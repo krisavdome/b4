@@ -3,12 +3,10 @@ package nfq
 import (
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
 	"time"
 
-	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/daniellavrushin/b4/sni"
 	"github.com/daniellavrushin/b4/sock"
@@ -135,20 +133,34 @@ func (w *Worker) Start() error {
 }
 
 func (w *Worker) dropAndInjectQUIC(raw []byte, dst net.IP) {
-	fake, ok := sock.BuildFakeUDPFromOriginal(raw, 1200, 8)
-	if ok {
-		_ = w.sock.SendIPv4(fake, dst)
-		time.Sleep(10 * time.Millisecond)
+	// Send fake UDP packets first
+	if w.cfg.FakeSNI { // Using same config for UDP faking
+		for i := 0; i < 6; i++ { //  default is 6 for UDP
+			fake, ok := sock.BuildFakeUDPFromOriginal(raw, 64, w.cfg.FakeTTL)
+			if ok {
+				_ = w.sock.SendIPv4(fake, dst)
+				time.Sleep(1 * time.Millisecond)
+			}
+		}
 	}
-	frags, ok := sock.IPv4FragmentUDP(raw, 24)
+
+	splitPos := 24
+
+	frags, ok := sock.IPv4FragmentUDP(raw, splitPos)
 	if !ok {
+		_ = w.sock.SendIPv4(raw, dst)
 		return
 	}
-	for i, f := range frags {
-		_ = w.sock.SendIPv4(f, dst)
-		if i == 0 {
-			time.Sleep(5 * time.Millisecond)
-		}
+
+	// Send fragments with proper ordering and delay
+	if w.cfg.FragSNIReverse {
+		_ = w.sock.SendIPv4(frags[0], dst) // Second fragment first
+		time.Sleep(time.Duration(w.cfg.Seg2Delay) * time.Millisecond)
+		_ = w.sock.SendIPv4(frags[1], dst) // First fragment second
+	} else {
+		_ = w.sock.SendIPv4(frags[1], dst) // First fragment
+		time.Sleep(time.Duration(w.cfg.Seg2Delay) * time.Millisecond)
+		_ = w.sock.SendIPv4(frags[0], dst) // Second fragment
 	}
 }
 
@@ -161,27 +173,52 @@ func (w *Worker) dropAndInjectTCP(raw []byte, dst net.IP) {
 	ipHdrLen := int((raw[0] & 0x0F) * 4)
 	tcpHdrLen := int((raw[ipHdrLen+12] >> 4) * 4)
 	payloadStart := ipHdrLen + tcpHdrLen
+	payloadLen := len(raw) - payloadStart
 
-	if len(raw) <= payloadStart {
+	if payloadLen <= 0 {
 		_ = w.sock.SendIPv4(raw, dst)
 		return
 	}
 
-	// Send fake SNI packets BEFORE the real fragments
+	// Send fake SNI packets first
 	if w.cfg.FakeSNI {
 		for i := 0; i < w.cfg.FakeSNISeqLength; i++ {
-			fake := w.buildFakeSNI(raw)
+			fake := sock.BuildFakeSNIPacket(raw, w.cfg)
 			if fake != nil {
 				_ = w.sock.SendIPv4(fake, dst)
+				// Small delay between fakes
+				if i < w.cfg.FakeSNISeqLength-1 {
+					time.Sleep(1 * time.Millisecond)
+				}
 			}
 		}
 	}
 
-	// Find split position - default to position 1 in payload
-	splitPos := 1
-	if w.cfg.FragSNIPosition > 0 {
-		splitPos = w.cfg.FragSNIPosition
+	// Find SNI position for smart splitting
+	splitPos := w.cfg.FragSNIPosition
+	if splitPos <= 0 {
+		splitPos = 1
 	}
+
+	// If FragMiddleSNI is set, try to find and split in middle of SNI
+	if w.cfg.FragMiddleSNI {
+		// Simple heuristic: look for "www." or common TLD patterns
+		payload := raw[payloadStart:]
+		for i := 0; i < min(len(payload)-20, 100); i++ {
+			if i+4 < len(payload) &&
+				payload[i] == '.' &&
+				((payload[i+1] == 'c' && payload[i+2] == 'o' && payload[i+3] == 'm') ||
+					(payload[i+1] == 'o' && payload[i+2] == 'r' && payload[i+3] == 'g') ||
+					(payload[i+1] == 'n' && payload[i+2] == 'e' && payload[i+3] == 't')) {
+				splitPos = i + 2 // Split in middle of domain
+				break
+			}
+		}
+	}
+
+	// Ensure split position is valid
+	splitPos = min(splitPos, payloadLen-1)
+	splitPos = max(splitPos, 1)
 
 	// Fragment based on strategy
 	switch w.cfg.FragmentStrategy {
@@ -189,9 +226,25 @@ func (w *Worker) dropAndInjectTCP(raw []byte, dst net.IP) {
 		w.sendTCPFragments(raw, payloadStart+splitPos, dst)
 	case "ip":
 		w.sendIPFragments(raw, payloadStart+splitPos, dst)
-	default:
+	case "none":
 		_ = w.sock.SendIPv4(raw, dst)
+	default:
+		w.sendTCPFragments(raw, payloadStart+splitPos, dst)
 	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func (w *Worker) feed(key string, chunk []byte) (string, bool) {
@@ -220,113 +273,6 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 		return host, true
 	}
 	return "", false
-}
-
-func (w *Worker) buildFakeSNI(original []byte) []byte {
-	ipHdrLen := int((original[0] & 0x0F) * 4)
-	tcpHdrLen := int((original[ipHdrLen+12] >> 4) * 4)
-
-	// Use the default fake SNI payload from youtubeUnblock
-	fakePayload := sock.DefaultFakeSNI
-	if w.cfg.FakeSNIType == config.FakePayloadRandom {
-		// Generate random payload
-		fakePayload = make([]byte, 1200)
-		for i := range fakePayload {
-			fakePayload[i] = byte(rand.Intn(256))
-		}
-	}
-
-	fake := make([]byte, ipHdrLen+tcpHdrLen+len(fakePayload))
-
-	// Copy headers
-	copy(fake, original[:ipHdrLen+tcpHdrLen])
-	copy(fake[ipHdrLen+tcpHdrLen:], fakePayload)
-
-	// Update IP header
-	binary.BigEndian.PutUint16(fake[2:4], uint16(len(fake))) // Total length
-
-	// Apply faking strategy
-	switch w.cfg.FakeStrategy {
-	case "ttl":
-		fake[8] = w.cfg.FakeTTL
-	case "pastseq":
-		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
-		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8],
-			seq-uint32(len(fakePayload)))
-	case "randseq":
-		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
-		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8],
-			seq-uint32(w.cfg.FakeSeqOffset)+uint32(len(fakePayload)))
-	case "tcp_check":
-		// Will break checksum later
-	case "md5sum":
-		// Add TCP MD5 option (requires extending TCP header)
-		w.addTCPMD5Option(fake, ipHdrLen)
-	}
-
-	// Fix checksums
-	sock.FixIPv4Checksum(fake[:ipHdrLen])
-	sock.FixTCPChecksum(fake)
-
-	// Break checksum if needed
-	if w.cfg.FakeStrategy == "tcp_check" {
-		fake[ipHdrLen+16] += 1
-	}
-
-	return fake
-}
-
-func (w *Worker) addTCPMD5Option(packet []byte, ipHdrLen int) []byte {
-	tcpOffset := ipHdrLen
-	tcpHdrLen := int((packet[tcpOffset+12] >> 4) * 4)
-
-	// TCP MD5 option requires 20 bytes (kind=19, len=18, sig=16)
-	const MD5_OPT_LEN = 20
-
-	// Check if we need to extend the TCP header
-	optLen := tcpHdrLen - 20 // Current options length
-	needed := MD5_OPT_LEN - optLen
-
-	if needed > 0 {
-		// Need to extend the packet
-		newPacket := make([]byte, len(packet)+needed)
-
-		// Copy IP header and TCP header
-		copy(newPacket, packet[:ipHdrLen+tcpHdrLen])
-
-		// Copy payload after making room
-		copy(newPacket[ipHdrLen+tcpHdrLen+needed:], packet[ipHdrLen+tcpHdrLen:])
-
-		// Update to new packet
-		packet = newPacket
-		tcpHdrLen += needed
-
-		// Update TCP data offset
-		packet[tcpOffset+12] = byte((tcpHdrLen/4)<<4) | (packet[tcpOffset+12] & 0x0F)
-
-		// Update IP total length
-		totalLen := binary.BigEndian.Uint16(packet[2:4]) + uint16(needed)
-		binary.BigEndian.PutUint16(packet[2:4], totalLen)
-	}
-
-	// Add MD5 option at the end of TCP options
-	optStart := ipHdrLen + 20 // Start of TCP options
-
-	// MD5 signature option (RFC 2385)
-	packet[optStart] = 19   // Kind
-	packet[optStart+1] = 18 // Length
-
-	// Zero out signature bytes
-	for i := 0; i < 16; i++ {
-		packet[optStart+2+i] = 0
-	}
-
-	// Fill remaining with NOPs
-	for i := optStart + 18; i < ipHdrLen+tcpHdrLen; i++ {
-		packet[i] = 0x01 // NOP
-	}
-
-	return packet
 }
 
 func (w *Worker) sendTCPFragments(packet []byte, splitPos int, dst net.IP) {
@@ -369,7 +315,7 @@ func (w *Worker) sendTCPFragments(packet []byte, splitPos int, dst net.IP) {
 		seq+uint32(splitPos-hdrTotal))
 	sock.FixIPv4Checksum(seg2[:ipHdrLen])
 	sock.FixTCPChecksum(seg2)
-
+	log.Tracef("Segmented TCP packet into two fragments at pos=%d: seg1Len=%d, seg2Len=%d", splitPos, seg1Len, seg2Len)
 	// Send in order based on config
 	if w.cfg.FragSNIReverse {
 		_ = w.sock.SendIPv4(seg2, dst)
@@ -416,7 +362,7 @@ func (w *Worker) sendIPFragments(packet []byte, splitPos int, dst net.IP) {
 	binary.BigEndian.PutUint16(frag2[6:8], fragOff)
 	binary.BigEndian.PutUint16(frag2[2:4], uint16(frag2Len))
 	sock.FixIPv4Checksum(frag2[:ipHdrLen])
-
+	log.Tracef("Fragmented IP packet into two fragments at pos=%d: frag1Len=%d, frag2Len=%d", splitPos, len(frag1), len(frag2))
 	// Send fragments
 	if w.cfg.FragSNIReverse {
 		_ = w.sock.SendIPv4(frag2, dst)

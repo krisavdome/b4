@@ -1,13 +1,18 @@
 package sock
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 
+	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 )
 
 // Default fake SNI payload from youtubeUnblock
-var DefaultFakeSNI = []byte("\026\003\001\002\000\001\000\001\374\003\003\323[\345\201f\362\200:B\356Uq\355X\315i\235*\021\367\331\272\a>\233\254\355\307/\342\372\265 \275\2459l&r\222\313\361\3729\376\256\233\333O\001\373\33050\r\260f,\231\035 \324^\000>\023\002\023\003\023\001\300,\3000\000\237\314\251\314\250\314\252\300+\300/\000\236\300$\300(\000k\300#\300'\000g\300\n\300\024\0009\300\t\300\023\0003\000\235\000\234\000=\000<\0005\000/\000\377\001\000\001u\000\000\000\023\000\021\000\000\016www.google.com\000\v\000\004\003\000\001\002\000\n\000\026\000\024\000\035\000\027\000\036\000\031\000\030\001\000\001\001\001\002\001\003\001\004\000\020\000\016\000\f\002h2\bhttp/1.1\000\026\000\000\000\027\000\000\0001\000\000\000\r\0000\000.\004\003\005\003\006\003\b\a\b\b\b\032\b\033\b\034\b\t\b\n\b\v\b\004\b\005\b\006\004\001\005\001\006\001\003\003\003\001\003\002\004\002\005\002\006\002\000+\000\005\004\003\004\003\003\000-\000\002\001\001\0003\000&\000$\000\035\000 \004\224\206\021\256\f\222\266\3435\216\202\342\2573\341\3503\2107\341\023\016\240r|6\000^K\310s\000\025\000\255\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000")
+var FakeSNI = []byte("\026\003\001\002\000\001\000\001\374\003\003\323[\345\201f\362\200:B\356Uq\355X\315i\235*\021\367\331\272\a>\233\254\355\307/\342\372\265 \275\2459l&r\222\313\361\3729\376\256\233\333O\001\373\33050\r\260f,\231\035 \324^\000>\023\002\023\003\023\001\300,\3000\000\237\314\251\314\250\314\252\300+\300/\000\236\300$\300(\000k\300#\300'\000g\300\n\300\024\0009\300\t\300\023\0003\000\235\000\234\000=\000<\0005\000/\000\377\001\000\001u\000\000\000\023\000\021\000\000\016www.google.com\000\v\000\004\003\000\001\002\000\n\000\026\000\024\000\035\000\027\000\036\000\031\000\030\001\000\001\001\001\002\001\003\001\004\000\020\000\016\000\f\002h2\bhttp/1.1\000\026\000\000\000\027\000\000\0001\000\000\000\r\0000\000.\004\003\005\003\006\003\b\a\b\b\b\032\b\033\b\034\b\t\b\n\b\v\b\004\b\005\b\006\004\001\005\001\006\001\003\003\003\001\003\002\004\002\005\002\006\002\000+\000\005\004\003\004\003\003\000-\000\002\001\001\0003\000&\000$\000\035\000 \004\224\206\021\256\f\222\266\3435\216\202\342\2573\341\3503\2107\341\023\016\240r|6\000^K\310s\000\025\000\255\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000")
+var FakeSNIOld = []byte("\026\003\001\004\316\001\000\004\312\003\003K+\272\314\340\306\374>dw%\f\223\346\225\270\270~\335\027\f\264\341H\267\357\303\216T\322[\371 \245\320\212V6\374\3706\232\0216B\325\273P\b\300>\0332>\362\323\033\322\301\204\022f8\223\214\000\"\023\001\023\003\023\002\300+\300/\314\251\314\250\300,\3000\300\n\300\t\300\023\300\024\000\234\000\235\000/\0005\001\000\004_\000\000\000\023\000\021\000\000\016www.google.com\000\027\000\000\377\001\000\001\000\000\n\000\016\000\f\000\035\000\027\000\030\000\031\001\000\001\001\000\v\000\002\001\000\000\020\000\v\000\t\bhttp/1.1\000\005\000\005\001\000\000\000\000\000\"\000\n\000\b\004\003\005\003\006\003\002\003\0003\000k\000i\000\035\000 \333C\212\234-\t\237#\202\\\231\311\022]\333\341t(\t\276U\373u\234\316J~,^|*Z\000\027\000A\004k\n\255\254\376X\226t\001;n~\033\034.\245\027\024\3762_\352$\374\346^f\fF,\201\275\263\336O\231\001\032\200\357dI\266y\031\323\311vR\232\004\r\366FT\004\335\326\356\256\230B\t\313\000*\000\000\000+\000\005\004\003\004\003\003\000\r\000\030\000\026\004\003\005\003\006\003\b\004\b\005\b\006\004\001\005\001\006\001\002\003\002\001\000-\000\002\001\001\000\034\000\002@\001\376\r\0029\000\000\001\000\003\344\000 \337\306\243\332Y\033\a\252\352\025\365Z\035\223\226\304\255\363\215G\356g\344%}7\217\033n\211^\201\002\017g\267\334\326OD}\336\341ZC\230\226'\225\313\357\211\\\242\273\030k\216\377U\315\206\2410\200\203\332Z\223\005\370\b\304\370f\017\200\023\241\223~?\270{\037b\312\001\270\227\366\356\352\002\314\351\006\237\241q\226\300\314\321o\247{\201\317\230}B\005T\3660\335\320\332r?S\217\tq\036\031\326I|\237]\311 c\f\024r\031\310W\373\257\314q)q\030\237\261\227\217Kd?\257'G\320\020\340\256ND\247\005\341\324\024OP>\370\350\270b\311wAj\t\311\213\365i\203\230x\207\354\245<\274\202\230c\v0Y\263\364\022\303a\200\022\031\314\271rl=\327\336\001\327\264\267\342\353\352=\354[u\224\260\257\034\004\232\023\226}\227\030e\221\"\350\207\027dId\324\305\362N:\035\307`\204\337\201;\221\320\266b\362hrH\345e\206\246%\006\020a4\3430\036\225\215\274\275\360Q&\271\237)\222uK\362\017o\220\226W\357\267#\357\v\023\354\213\2629\331\ad\005/~6k\000[\247\301\270\310qJ\004\303|m5\363\376Y\002\243}6\251x\024\331)GH\335\205rI\032\f\210\a\212\347]\271\030\347.\021\213\365\026\030\340/Ny\r\332\3577\3203\026iX}>\2507\327&XRXU!\017\270I\313\352\350^?\352Uss\017\266pF\222NI\245\307_\305#\361\352\243+-\266\317Q\036s\243\277\355{S&\023>\275\360\215\032V\237XOY\345u>\002\305\252T\354\035\327v{P\352M\233\366\221\270\377\251\261f+rF\201wL2W\266X\252\242X\2536I\337c\205uZ\254Fe\305h\t\371\376\216r\336Y\327h\347*\331\257-ZQ{(\336\226\206\017\037\036\021\341\027z\033\254\235\252\227\224\004?p\243\351\\\263\352\205\327#W\345\255\256\375\267bP\3047\363!*K\003t\212(\306\214P\215\3506j\025\375\213e\254s\000)\001\034\000\367\000\361\002\276W%\232?\326\223\277\211v\017\a\361\347\312N\226\024L\260v\210\271j\324[|\270\344\3773\321-\313b>~\310\253XIR\324)&;\033{g;)\344\255\226\370\347I\\y\020\324\360\211vC\310\226s\267|\273$\341\332\2045qh\245w\2255\214\316\030\255\301\326C\343\304=\245\231h`yd\000#s\002\370\374Z\0336\245\361\226\222\306\032k\2457\016h\314(R;\326T~EHH\352\307\023^\247\363\321`V\340\253Z\233\357\227I\373\337z\177\nv\261\252\371\017\226\223\345\005\315y4\b\236N0\2630\017\215c\305&L\260\346J\237\203Q(\335W\027|>\3553\275j\307?W5\3463kc\350\262C\361 \037w!\371}\214\"I\377|\331@a;\342\3566\312\272Z\327u7\204'\215YBLL\235\236\242\345\215\245T\211a\312\263\342\000! \221\202X$\302\317\203\246\207c{\231\330\264\324\\k\271\272\336\356\002|\261O\207\030+\367P\317\356")
+
+const TCP_MD5SIG_OPT_LEN = 20
 
 type FakeStrategy int
 
@@ -18,55 +23,91 @@ const (
 	FakeStrategyTCPChecksum
 )
 
-func BuildFakeTCP(original []byte, ttl uint8, strategy FakeStrategy, seqOffset int32) ([]byte, bool) {
+func BuildFakeSNIPacket(original []byte, cfg *config.Config) []byte {
 	if len(original) < 40 || original[0]>>4 != 4 {
-		return nil, false
+		return nil
 	}
 
 	ipHdrLen := int((original[0] & 0x0F) * 4)
-	if len(original) < ipHdrLen+20 {
-		return nil, false
+	tcpHdrLen := int((original[ipHdrLen+12] >> 4) * 4)
+
+	// Select fake payload based on config
+	var fakePayload []byte
+	switch cfg.FakeSNIType {
+	case config.FakePayloadRandom:
+		fakePayload = make([]byte, 1200)
+		rand.Read(fakePayload)
+	case config.FakePayloadCustom:
+		// Would come from config.FakeCustomPayload
+		fakePayload = FakeSNI
+	default:
+		fakePayload = FakeSNIOld
 	}
 
-	// Build fake packet
-	fake := make([]byte, ipHdrLen+20+len(DefaultFakeSNI))
-
-	// Copy IP header
-	copy(fake, original[:ipHdrLen])
-
-	// Modify IP header
-	fake[8] = ttl                                                                   // Set TTL
-	binary.BigEndian.PutUint16(fake[2:4], uint16(len(fake)))                        // Total length
-	binary.BigEndian.PutUint16(fake[4:6], binary.BigEndian.Uint16(original[4:6])+1) // ID++
-
-	// Copy TCP header
-	copy(fake[ipHdrLen:ipHdrLen+20], original[ipHdrLen:ipHdrLen+20])
-
-	// Apply strategy to TCP
-	tcpOffset := ipHdrLen
-	switch strategy {
-	case FakeStrategyRandSeq:
-		seq := binary.BigEndian.Uint32(fake[tcpOffset+4 : tcpOffset+8])
-		binary.BigEndian.PutUint32(fake[tcpOffset+4:tcpOffset+8], seq-uint32(seqOffset))
-	case FakeStrategyPastSeq:
-		seq := binary.BigEndian.Uint32(fake[tcpOffset+4 : tcpOffset+8])
-		binary.BigEndian.PutUint32(fake[tcpOffset+4:tcpOffset+8], seq-uint32(len(DefaultFakeSNI)))
+	// Calculate space needed for MD5 option if using that strategy
+	extraSpace := 0
+	if cfg.FakeStrategy == "md5sum" {
+		currentOptLen := tcpHdrLen - 20
+		extraSpace = TCP_MD5SIG_OPT_LEN - currentOptLen
+		if extraSpace < 0 {
+			extraSpace = 0
+		}
 	}
 
-	// Add fake SNI payload
-	copy(fake[ipHdrLen+20:], DefaultFakeSNI)
+	fake := make([]byte, ipHdrLen+tcpHdrLen+extraSpace+len(fakePayload))
+	log.Tracef("Building fake SNI packet, original len=%d, ipHdrLen=%d, tcpHdrLen=%d, extraSpace=%d, fakePayloadLen=%d, totalLen=%d", len(original), ipHdrLen, tcpHdrLen, extraSpace, len(fakePayload), len(fake))
+	// Copy headers
+	copy(fake, original[:ipHdrLen+tcpHdrLen])
+
+	// Apply MD5 option if needed
+	if extraSpace > 0 {
+		// Shift TCP payload area
+		tcpHdrLen += extraSpace
+		fake[ipHdrLen+12] = byte((tcpHdrLen/4)<<4) | (fake[ipHdrLen+12] & 0x0F)
+
+		// Add MD5 option
+		optStart := ipHdrLen + 20
+		fake[optStart] = 19   // MD5 Kind
+		fake[optStart+1] = 18 // Length
+		// Zero signature
+		for i := 0; i < 16; i++ {
+			fake[optStart+2+i] = 0
+		}
+		// Fill with NOPs
+		for i := optStart + 18; i < ipHdrLen+tcpHdrLen; i++ {
+			fake[i] = 1
+		}
+	}
+
+	// Copy fake payload
+	copy(fake[ipHdrLen+tcpHdrLen:], fakePayload)
+
+	// Update IP header
+	binary.BigEndian.PutUint16(fake[2:4], uint16(len(fake)))
+
+	// Apply faking strategy
+	switch cfg.FakeStrategy {
+	case "ttl":
+		fake[8] = cfg.FakeTTL
+	case "pastseq":
+		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
+		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq-uint32(len(fakePayload)))
+		log.Tracef("Applied pastseq strategy: new seq=%d", seq-uint32(len(fakePayload)))
+	case "randseq":
+		seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
+		binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq-uint32(cfg.FakeSeqOffset)+uint32(len(fakePayload)))
+	}
 
 	// Fix checksums
 	FixIPv4Checksum(fake[:ipHdrLen])
 	FixTCPChecksum(fake)
 
-	// Break checksum if needed
-	if strategy == FakeStrategyTCPChecksum {
-		fake[tcpOffset+16] ^= 0xFF
-		fake[tcpOffset+17] ^= 0xFF
+	// Break checksum if using tcp_check strategy
+	if cfg.FakeStrategy == "tcp_check" {
+		fake[ipHdrLen+16] += 1
 	}
-	log.Tracef("Built fake TCP packet, len=%d, ttl=%d, strategy=%d", len(fake), ttl, strategy)
-	return fake, true
+	log.Tracef("Built fake SNI packet, len=%d, strategy=%s", len(fake), cfg.FakeStrategy)
+	return fake
 }
 
 func FixIPv4Checksum(ip []byte) {
