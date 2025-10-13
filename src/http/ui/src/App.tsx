@@ -2,146 +2,185 @@ import React from "react";
 import {
   AppBar,
   Box,
-  Container,
   CssBaseline,
+  Drawer,
   IconButton,
-  Paper,
-  Stack,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Toolbar,
   Typography,
   ThemeProvider,
-  createTheme,
-  Switch,
-  FormControlLabel,
-  TextField,
+  Divider,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import MenuIcon from "@mui/icons-material/Menu";
+import SettingsIcon from "@mui/icons-material/Settings";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import LanguageIcon from "@mui/icons-material/Language";
+import Logs from "./components/Logs";
+import Domains from "./components/Domains";
+import Settings from "./components/Settings";
+import { theme, colors } from "./Theme";
 
-const theme = createTheme({
-  palette: {
-    mode: "dark",
-    primary: { main: "#9E1C60" },
-    secondary: { main: "#F5AD18" },
-    info: { main: "#811844" },
-    error: { main: "#561530" },
-    background: { default: "#1a0e15", paper: "#1f1218" },
-    text: { primary: "#ffe8f4", secondary: "#f8d7e9" },
-  },
-  components: {
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          background:
-            "linear-gradient(90deg, #561530 0%, #811844 35%, #9E1C60 70%, #F5AD18 100%)",
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "none",
-          borderColor: "rgba(245, 173, 24, 0.24)",
-        },
-      },
-    },
-  },
-  typography: {
-    fontFamily:
-      'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial',
-  },
-});
+const DRAWER_WIDTH = 240;
 
 export default function App() {
-  const [lines, setLines] = React.useState<string[]>([]);
-  const [paused, setPaused] = React.useState(false);
-  const [filter, setFilter] = React.useState("");
-  const logRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const ws = new WebSocket(
-      (location.protocol === "https:" ? "wss://" : "ws://") +
-        location.host +
-        "/api/ws/logs"
-    );
-    ws.onmessage = (ev) => {
-      if (!paused) setLines((prev) => [...prev.slice(-999), String(ev.data)]);
-    };
-    ws.onerror = () => setLines((prev) => [...prev, "[WS ERROR]"]);
-    return () => ws.close();
-  }, [paused]);
-
-  React.useEffect(() => {
-    const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [lines]);
-
-  const filtered = React.useMemo(() => {
-    const f = filter.trim().toLowerCase();
-    return f ? lines.filter((l) => l.toLowerCase().includes(f)) : lines;
-  }, [lines, filter]);
+  const [drawerOpen, setDrawerOpen] = React.useState(true);
+  const [currentView, setCurrentView] = React.useState<
+    "logs" | "domains" | "settings"
+  >("domains");
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="sticky" elevation={1}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            B4
-          </Typography>
-          <FormControlLabel
-            sx={{ mr: 2 }}
-            control={
-              <Switch
-                checked={paused}
-                onChange={(e) => setPaused(e.target.checked)}
-              />
-            }
-            label="Pause"
-          />
-          <IconButton color="inherit" onClick={() => setLines([])}>
-            <RefreshIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Stack spacing={2}>
-          <TextField
-            size="small"
-            label="Filter"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            fullWidth
-          />
-          <Paper variant="outlined" sx={{ p: 1.5 }}>
-            <Box
-              ref={logRef}
-              sx={{
-                height: 480,
-                overflowY: "auto",
-                fontFamily:
-                  'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-                fontSize: 13,
-                lineHeight: 1.4,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                backgroundColor: "#0f0a0e",
-                color: "text.primary",
-                borderRadius: 1,
-              }}
-            >
-              {filtered.map((l, i) => (
-                <Typography
-                  key={i}
-                  component="div"
-                  sx={{ fontFamily: "inherit", fontSize: "inherit" }}
-                >
-                  {l}
-                </Typography>
-              ))}
-            </Box>
-          </Paper>
-        </Stack>
-      </Container>
+      <Box sx={{ display: "flex", height: "100vh" }}>
+        {/* Left Drawer */}
+        <Drawer
+          variant="persistent"
+          open={drawerOpen}
+          sx={{
+            width: DRAWER_WIDTH,
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: DRAWER_WIDTH,
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          <Toolbar>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              <Typography component="span" sx={{ color: colors.primary }}>
+                B4
+              </Typography>
+              :
+              <Typography component="span" sx={{ color: colors.secondary }}>
+                B
+              </Typography>
+              ye
+              <Typography component="span" sx={{ color: colors.secondary }}>
+                B
+              </Typography>
+              ye
+              <Typography component="span" sx={{ color: colors.secondary }}>
+                B
+              </Typography>
+              ig
+              <Typography component="span" sx={{ color: colors.secondary }}>
+                B
+              </Typography>
+              ro
+            </Typography>
+          </Toolbar>
+          <Divider sx={{ borderColor: colors.border.default }} />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={currentView === "domains"}
+                onClick={() => setCurrentView("domains")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: colors.accent.primary,
+                    "&:hover": {
+                      backgroundColor: colors.accent.primaryHover,
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>
+                  <LanguageIcon />
+                </ListItemIcon>
+                <ListItemText primary="Domains" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={currentView === "logs"}
+                onClick={() => setCurrentView("logs")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: colors.accent.primary,
+                    "&:hover": {
+                      backgroundColor: colors.accent.primaryHover,
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>
+                  <DashboardIcon />
+                </ListItemIcon>
+                <ListItemText primary="Logs" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={currentView === "settings"}
+                onClick={() => setCurrentView("settings")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: colors.accent.primary,
+                    "&:hover": {
+                      backgroundColor: colors.accent.primaryHover,
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Settings" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Drawer>
+
+        {/* Main Content */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+            ml: drawerOpen ? 0 : `-${DRAWER_WIDTH}px`,
+            transition: theme.transitions.create("margin", {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+          }}
+        >
+          {/* AppBar */}
+          <AppBar position="static" elevation={0}>
+            <Toolbar>
+              <IconButton
+                color="inherit"
+                onClick={() => setDrawerOpen(!drawerOpen)}
+                edge="start"
+                sx={{ mr: 2 }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+                {currentView === "logs"
+                  ? "Log Viewer"
+                  : currentView === "domains"
+                  ? "Domain Connections"
+                  : "Settings"}
+              </Typography>
+            </Toolbar>
+          </AppBar>
+
+          {/* Content Area */}
+          {currentView === "logs" ? (
+            <Logs />
+          ) : currentView === "domains" ? (
+            <Domains />
+          ) : (
+            <Settings />
+          )}
+        </Box>
+      </Box>
     </ThemeProvider>
   );
 }
