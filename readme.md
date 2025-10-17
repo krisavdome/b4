@@ -8,7 +8,7 @@
 
 A high-performance network packet processor for DPI (Deep Packet Inspection) circumvention, built with Go and featuring a modern web UI interface.
 
-![b4](intro.png)
+![alt text](image.png)
 
 ## Overview
 
