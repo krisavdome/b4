@@ -402,24 +402,16 @@ export default function Domains() {
                       <Chip
                         label={log.protocol}
                         size="small"
-                        icon={
-                          log.protocol === "TCP" ? (
-                            <TcpIcon color="primary" />
-                          ) : (
-                            <UdpIcon color="error" />
-                          )
-                        }
                         sx={{
                           bgcolor:
                             log.protocol === "TCP"
                               ? colors.accent.primary
-                              : colors.accent.tertiary,
+                              : colors.accent.secondary,
                           color:
                             log.protocol === "TCP"
                               ? colors.primary
-                              : colors.tertiary,
+                              : colors.secondary,
                           fontWeight: 600,
-                          fontSize: 11,
                         }}
                       />
                     </TableCell>

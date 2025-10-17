@@ -14,7 +14,7 @@
       "args": [
         "--verbose=info",
         "--web-port=7000",
-        "-c=${workspaceFolder}/src/local.yaml"
+        "-c=${workspaceFolder}/../b4config.json"
       ],
       "console": "integratedTerminal"
     }
