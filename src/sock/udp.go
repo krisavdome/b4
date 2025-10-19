@@ -35,7 +35,33 @@ func udpChecksumIPv4(pkt []byte) {
 	binary.BigEndian.PutUint16(pkt[udpo+6:udpo+8], c)
 }
 
-func BuildFakeUDPFromOriginal(orig []byte, fakeLen int, ttl uint8) ([]byte, bool) {
+func ApplyUDPFailingStrategy(packet []byte, strategy string, ttl uint8) {
+	if len(packet) < 20 {
+		return
+	}
+
+	ihl := int((packet[0] & 0x0f) << 2)
+	if len(packet) < ihl+8 {
+		return
+	}
+
+	switch strategy {
+	case "ttl":
+		packet[8] = ttl // Set IP TTL
+		// Clear fragment flags for UDP
+		packet[6] = 0
+		packet[7] = 0
+		FixIPv4Checksum(packet[:ihl])
+	case "checksum":
+		// Corrupt UDP checksum
+		packet[ihl+6] += 1
+		packet[ihl+7] += 1
+	case "none":
+		// Do nothing
+	}
+}
+
+func BuildFakeUDPFromOriginal(orig []byte, fakeLen int, ttl uint8, strategy string) ([]byte, bool) {
 	if len(orig) < 20 || orig[0]>>4 != 4 {
 		return nil, false
 	}
@@ -43,20 +69,40 @@ func BuildFakeUDPFromOriginal(orig []byte, fakeLen int, ttl uint8) ([]byte, bool
 	if len(orig) < ihl+8 {
 		return nil, false
 	}
+
 	out := make([]byte, 20+8+fakeLen)
 	copy(out, orig[:20])
-	out[8] = ttl
+
+	// Apply strategy-specific changes
+	if strategy == "ttl" {
+		out[8] = ttl
+		out[6] = 0 // Clear fragment flags
+		out[7] = 0
+	} else {
+		out[8] = 64 // Default TTL
+	}
+
 	id := binary.BigEndian.Uint16(out[4:6])
 	binary.BigEndian.PutUint16(out[4:6], id+1)
-	out[6], out[7] = 0, 0
+
 	binary.BigEndian.PutUint16(out[2:4], uint16(20+8+fakeLen))
 	copy(out[20:], orig[ihl:ihl+8])
 	binary.BigEndian.PutUint16(out[20+4:20+6], uint16(8+fakeLen))
+
+	// Fill with random data instead of zeros for better DPI evasion
 	for i := 0; i < fakeLen; i++ {
-		out[28+i] = 0
+		out[28+i] = byte(i & 0xFF)
 	}
+
 	FixIPv4Checksum(out[:20])
 	udpChecksumIPv4(out)
+
+	if strategy == "checksum" {
+		// Corrupt checksum after calculation
+		out[20+6] ^= 0xFF
+		out[20+7] ^= 0xFF
+	}
+
 	return out, true
 }
 

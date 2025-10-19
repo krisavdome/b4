@@ -53,6 +53,7 @@ type Config struct {
 	UDPDPortMin       int
 	UDPDPortMax       int
 	UDPFilterQUIC     string
+	UDPStunFilter     bool
 
 	WebServer WebServer `json:"web_server" bson:"web_server"`
 }
@@ -214,6 +215,7 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&c.UDPDPortMin, "udp-dport-min", c.UDPDPortMin, "Minimum UDP destination port to handle")
 	cmd.Flags().IntVar(&c.UDPDPortMax, "udp-dport-max", c.UDPDPortMax, "Maximum UDP destination port to handle")
 	cmd.Flags().StringVar(&c.UDPFilterQUIC, "udp-filter-quic", c.UDPFilterQUIC, "QUIC filtering mode (disabled|all|parse)")
+	cmd.Flags().BoolVar(&c.UDPStunFilter, "udp-stun-filter", false, "Enable STUN protocol filtering for UDP packets (default: false)")
 
 	// Feature flags
 	cmd.Flags().BoolVar(&c.UseGSO, "gso", c.UseGSO, "Enable Generic Segmentation Offload")

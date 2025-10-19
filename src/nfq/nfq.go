@@ -15,8 +15,10 @@ import (
 
 	"github.com/daniellavrushin/b4/http/handler"
 	"github.com/daniellavrushin/b4/log"
+	"github.com/daniellavrushin/b4/quic"
 	"github.com/daniellavrushin/b4/sni"
 	"github.com/daniellavrushin/b4/sock"
+	"github.com/daniellavrushin/b4/stun"
 	"github.com/florianl/go-nfqueue"
 )
 
@@ -211,16 +213,21 @@ func (w *Worker) Start() error {
 					sport := binary.BigEndian.Uint16(udp[0:2])
 					dport := binary.BigEndian.Uint16(udp[2:4])
 
+					// Check port range filter
 					matchDport := false
 					if w.cfg.UDPDPortMin > 0 && w.cfg.UDPDPortMax >= w.cfg.UDPDPortMin {
 						if int(dport) >= w.cfg.UDPDPortMin && int(dport) <= w.cfg.UDPDPortMax {
 							matchDport = true
 						}
-					} else {
-						if dport == 443 {
-							matchDport = true
-						}
+					} else if dport == 443 {
+						matchDport = true
 					}
+
+					// Check STUN filter
+					if w.cfg.UDPStunFilter && stun.IsSTUNMessage(payload) {
+						matchDport = true
+					}
+
 					if !matchDport {
 						_ = q.SetVerdict(id, nfqueue.NfAccept)
 						return 0
@@ -297,28 +304,51 @@ func (w *Worker) dropAndInjectQUIC(raw []byte, dst net.IP) {
 	if w.cfg.UDPMode != "fake" {
 		return
 	}
-	if w.cfg.UDPFakeSeqLength > 0 {
-		for i := 0; i < w.cfg.UDPFakeSeqLength; i++ {
-			fake, ok := sock.BuildFakeUDPFromOriginal(raw, w.cfg.UDPFakeLen, w.cfg.FakeTTL)
-			if ok {
-				if w.cfg.UDPFakingStrategy == "checksum" {
-					ipHdrLen := int((fake[0] & 0x0F) * 4)
-					if len(fake) >= ipHdrLen+8 {
-						fake[ipHdrLen+6] ^= 0xFF
-						fake[ipHdrLen+7] ^= 0xFF
-					}
-				}
-				_ = w.sock.SendIPv4(fake, dst)
-				if w.cfg.Seg2Delay > 0 {
-					time.Sleep(time.Duration(w.cfg.Seg2Delay) * time.Millisecond)
-				} else {
-					time.Sleep(1 * time.Millisecond)
-				}
+
+	// Check for STUN if configured
+	if w.cfg.UDPStunFilter {
+		ipHdrLen := int((raw[0] & 0x0F) * 4)
+		if len(raw) >= ipHdrLen+8 {
+			udpPayload := raw[ipHdrLen+8:]
+			if stun.IsSTUNMessage(udpPayload) {
+				log.Tracef("STUN message detected, applying fake strategy")
 			}
 		}
 	}
 
-	splitPos := 24
+	if w.cfg.UDPFakeSeqLength > 0 {
+		for i := 0; i < w.cfg.UDPFakeSeqLength; i++ {
+			fake, ok := sock.BuildFakeUDPFromOriginal(
+				raw,
+				w.cfg.UDPFakeLen,
+				w.cfg.FakeTTL,
+				w.cfg.UDPFakingStrategy,
+			)
+			if ok {
+				_ = w.sock.SendIPv4(fake, dst)
+				// Use smaller delay for UDP
+				time.Sleep(1 * time.Millisecond)
+			}
+		}
+	}
+
+	// Dynamic split position based on payload
+	ipHdrLen := int((raw[0] & 0x0F) * 4)
+	udpPayloadStart := ipHdrLen + 8
+	splitPos := 8 // Default minimum split
+
+	if len(raw) > udpPayloadStart+32 {
+		// For QUIC Initial packets, split after DCID
+		if quic.IsInitial(raw[udpPayloadStart:]) {
+			dcid := quic.ParseDCID(raw[udpPayloadStart:])
+			if dcid != nil {
+				splitPos = 13 + len(dcid) // After DCID
+			}
+		} else {
+			splitPos = 24 // Default for non-Initial QUIC
+		}
+	}
+
 	frags, ok := sock.IPv4FragmentUDP(raw, splitPos)
 	if !ok {
 		_ = w.sock.SendIPv4(raw, dst)
