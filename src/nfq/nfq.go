@@ -133,35 +133,35 @@ func (w *Worker) Start() error {
 				payload := tcp[datOff:]
 				sport := binary.BigEndian.Uint16(tcp[0:2])
 				dport := binary.BigEndian.Uint16(tcp[2:4])
+
 				if dport == 443 && len(payload) > 0 {
 					k := fmt.Sprintf("%s:%d>%s:%d", src.String(), sport, dst.String(), dport)
 
-					// Check if we already processed SNI for this flow
+					// Check flow state first
 					w.mu.Lock()
-					if st, exists := w.flows[k]; exists && st.sniFound {
-						// We already have the SNI for this flow, use it
-						host := st.sni
+					st := w.flows[k]
+					if st == nil {
+						st = &flowState{buf: nil, last: time.Now(), packetCount: 0}
+						w.flows[k] = st
+					}
+
+					// Increment packet count
+					st.packetCount++
+					st.last = time.Now()
+
+					// Stop processing after ConnBytesLimit packets (default 19)
+					if st.packetCount > w.cfg.ConnBytesLimit && w.cfg.ConnBytesLimit > 0 {
+						w.mu.Unlock()
+						_ = q.SetVerdict(id, nfqueue.NfAccept)
+						return 0
+					}
+
+					// If we already processed SNI for this flow, fast accept
+					if st.sniProcessed {
 						w.mu.Unlock()
 
-						matched := w.matcher.Match(host)
-						onlyOnce := markFakeOnce(k, 20*time.Second)
-						target := ""
-
-						metrics := handler.GetMetricsCollector()
-						metrics.RecordConnection("TCP", host, fmt.Sprintf("%s:%d", src, sport), fmt.Sprintf("%s:%d", dst, dport), matched)
-						metrics.RecordPacket(uint64(len(raw)))
-
-						if matched {
-							target = labelTarget
-							// Only log if this is the first time we're processing after SNI extraction
-							if onlyOnce {
-								log.Infof("SNI TCP%v: %s %s:%d -> %s:%d", target, host, src.String(), sport, dst.String(), dport)
-							}
-							w.dropAndInjectTCP(raw, dst, onlyOnce)
-							_ = q.SetVerdict(id, nfqueue.NfDrop)
-						} else {
-							_ = q.SetVerdict(id, nfqueue.NfAccept)
-						}
+						// For already processed flows, just accept without re-processing
+						_ = q.SetVerdict(id, nfqueue.NfAccept)
 						return 0
 					}
 					w.mu.Unlock()
@@ -169,15 +169,26 @@ func (w *Worker) Start() error {
 					// Try to extract SNI from this packet
 					host, ok := w.feed(k, payload)
 					if ok {
-						// SNI found!
+						// SNI found! Process it once
 						matched := w.matcher.Match(host)
 						onlyOnce := markFakeOnce(k, 20*time.Second)
 						target := ""
+
+						// Mark this flow as processed
+						w.mu.Lock()
+						if st, exists := w.flows[k]; exists {
+							st.sniProcessed = true
+							st.sniFound = matched // Store match result
+						}
+						w.mu.Unlock()
+
+						metrics := handler.GetMetricsCollector()
+						metrics.RecordConnection("TCP", host, fmt.Sprintf("%s:%d", src, sport), fmt.Sprintf("%s:%d", dst, dport), matched)
+						metrics.RecordPacket(uint64(len(raw)))
+
 						if matched {
 							target = labelTarget
-						}
-						log.Infof("SNI TCP%v: %s %s:%d -> %s:%d", target, host, src.String(), sport, dst.String(), dport)
-						if matched {
+							log.Infof("SNI TCP%v: %s %s:%d -> %s:%d", target, host, src.String(), sport, dst.String(), dport)
 							w.dropAndInjectTCP(raw, dst, onlyOnce)
 							_ = q.SetVerdict(id, nfqueue.NfDrop)
 						} else {
@@ -186,7 +197,7 @@ func (w *Worker) Start() error {
 						return 0
 					}
 
-					// Accept the packet to let the connection continue
+					// Still accumulating data for SNI detection
 					_ = q.SetVerdict(id, nfqueue.NfAccept)
 					return 0
 				}
@@ -351,12 +362,12 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 	w.mu.Lock()
 	st := w.flows[key]
 	if st == nil {
-		st = &flowState{buf: nil, last: time.Now()}
+		st = &flowState{buf: nil, last: time.Now(), packetCount: 0}
 		w.flows[key] = st
 	}
 
 	// If we already found SNI for this flow, return it
-	if st.sniFound {
+	if st.sniFound && st.sni != "" {
 		sni := st.sni
 		w.mu.Unlock()
 		return sni, false // Return false because we didn't just find it
@@ -367,7 +378,7 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 		if host, ok := sni.ParseTLSClientHelloSNI(chunk); ok && host != "" {
 			st.sniFound = true
 			st.sni = host
-			st.buf = nil
+			st.buf = nil // Clear buffer to free memory
 			w.mu.Unlock()
 			return host, true
 		}
@@ -382,6 +393,7 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 			st.buf = append(st.buf, chunk[:need]...)
 		}
 	}
+
 	st.last = time.Now()
 	buf := append([]byte(nil), st.buf...)
 	w.mu.Unlock()
@@ -390,11 +402,9 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 	host, ok := sni.ParseTLSClientHelloSNI(buf)
 	if ok && host != "" {
 		w.mu.Lock()
-		// Store the SNI but keep the flow entry for future packets
-		st.sniFound = true
+		st.sniFound = true // Store the SNI but keep the flow entry for future packets
 		st.sni = host
-		// Clear the buffer to free memory
-		st.buf = nil
+		st.buf = nil // Clear the buffer to free memory
 		w.mu.Unlock()
 		return host, true
 	}
@@ -675,7 +685,7 @@ func (w *Worker) Stop() {
 
 func (w *Worker) gc() {
 	defer w.wg.Done()
-	t := time.NewTicker(2 * time.Second)
+	t := time.NewTicker(1 * time.Second) // More frequent GC
 	defer t.Stop()
 	for {
 		select {
@@ -684,17 +694,12 @@ func (w *Worker) gc() {
 		case now := <-t.C:
 			w.mu.Lock()
 			for k, st := range w.flows {
-				// Keep flows with found SNI for longer
-				// to handle subsequent packets in the same connection
-				if st.sniFound {
-					if now.Sub(st.last) > 30*time.Second {
-						delete(w.flows, k)
-					}
-				} else {
-					// For flows still accumulating, use the normal TTL
-					if now.Sub(st.last) > w.ttl {
-						delete(w.flows, k)
-					}
+				// Remove flows that have been processed and idle
+				if st.sniProcessed && now.Sub(st.last) > 5*time.Second {
+					delete(w.flows, k)
+				} else if !st.sniProcessed && now.Sub(st.last) > 2*time.Second {
+					// Remove incomplete flows faster
+					delete(w.flows, k)
 				}
 			}
 			w.mu.Unlock()
