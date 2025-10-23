@@ -12,12 +12,13 @@ import (
 	"github.com/daniellavrushin/b4/http/handler"
 	"github.com/daniellavrushin/b4/http/ws"
 	"github.com/daniellavrushin/b4/log"
+	"github.com/daniellavrushin/b4/nfq"
 )
 
 //go:embed ui/dist/*
 var uiDist embed.FS
 
-func StartServer(cfg *config.Config) (*stdhttp.Server, error) {
+func StartServer(cfg *config.Config, pool *nfq.Pool) (*stdhttp.Server, error) {
 	if cfg.WebServer.Port == 0 {
 		log.Infof("Web server disabled (port 0)")
 		return nil, nil
@@ -26,6 +27,7 @@ func StartServer(cfg *config.Config) (*stdhttp.Server, error) {
 	mux := stdhttp.NewServeMux()
 
 	// Register WebSocket endpoints
+	handler.ConfigSetNFQPool(pool)
 	registerWebSocketEndpoints(mux)
 
 	// Register REST API endpoints

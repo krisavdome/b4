@@ -7,6 +7,7 @@ import (
 
 	"github.com/daniellavrushin/b4/http/handler"
 	"github.com/daniellavrushin/b4/log"
+	"github.com/daniellavrushin/b4/metrics"
 	"github.com/gorilla/websocket"
 )
 
@@ -26,7 +27,7 @@ func HandleMetricsWebSocket(w http.ResponseWriter, r *http.Request) {
 	defer ticker.Stop()
 
 	// Send initial metrics immediately
-	metrics := handler.GetMetricsCollector().GetSnapshot()
+	metrics := metrics.GetMetricsCollector().GetSnapshot()
 	if err := conn.WriteJSON(metrics); err != nil {
 		log.Errorf("Failed to send initial metrics: %v", err)
 		return

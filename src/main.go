@@ -86,13 +86,6 @@ func runB4(cmd *cobra.Command, args []string) error {
 	metrics := handler.GetMetricsCollector()
 	metrics.RecordEvent("info", "B4 starting up")
 
-	// Start internal web server if configured
-	httpServer, err := b4http.StartServer(&cfg)
-	if err != nil {
-		metrics.RecordEvent("error", fmt.Sprintf("Failed to start web server: %v", err))
-		return log.Errorf("failed to start web server: %w", err)
-	}
-
 	if cfg.WebServer.Port > 0 {
 		metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.WebServer.Port))
 	}
@@ -144,6 +137,13 @@ func runB4(cmd *cobra.Command, args []string) error {
 
 	metrics.RecordEvent("info", fmt.Sprintf("NFQueue started with %d threads", cfg.Threads))
 	metrics.NFQueueStatus = "active"
+
+	// Start internal web server if configured
+	httpServer, err := b4http.StartServer(&cfg, pool)
+	if err != nil {
+		metrics.RecordEvent("error", fmt.Sprintf("Failed to start web server: %v", err))
+		return log.Errorf("failed to start web server: %w", err)
+	}
 
 	// Initialize worker status
 	workers := make([]handler.WorkerHealth, cfg.Threads)

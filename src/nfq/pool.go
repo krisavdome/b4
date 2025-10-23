@@ -12,24 +12,20 @@ import (
 
 func NewWorkerWithQueue(cfg *config.Config, qnum uint16) *Worker {
 	ctx, cancel := context.WithCancel(context.Background())
-	var m *sni.SuffixSet
-	if len(cfg.Domains.SNIDomains) > 0 {
-		m = sni.NewSuffixSet(cfg.Domains.SNIDomains)
-	} else {
-		m = sni.NewSuffixSet([]string{})
+
+	w := &Worker{
+		qnum:   qnum,
+		ctx:    ctx,
+		cancel: cancel,
+		flows:  make(map[string]*flowState),
+		ttl:    5 * time.Second,
+		limit:  2048,
 	}
 
-	return &Worker{
-		cfg:     cfg,
-		qnum:    qnum,
-		ctx:     ctx,
-		cancel:  cancel,
-		flows:   make(map[string]*flowState),
-		ttl:     5 * time.Second,
-		limit:   2048,
-		matcher: m,
-		frag:    &cfg.Fragmentation,
-	}
+	w.cfg.Store(cfg)
+	w.rebuildMatcher()
+
+	return w
 }
 
 func NewPool(cfg *config.Config) *Pool {
@@ -58,7 +54,6 @@ func (p *Pool) Start() error {
 }
 
 func (p *Pool) Stop() {
-	// Use goroutines to stop workers in parallel for faster shutdown
 	var wg sync.WaitGroup
 	for _, w := range p.workers {
 		wg.Add(1)
@@ -69,7 +64,6 @@ func (p *Pool) Stop() {
 		}()
 	}
 
-	// Wait for all workers to stop with a timeout
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -78,10 +72,38 @@ func (p *Pool) Stop() {
 
 	select {
 	case <-done:
-		// All workers stopped successfully
 		log.Infof("All NFQueue workers stopped")
 	case <-time.After(3 * time.Second):
-		// Timeout - some workers didn't stop cleanly
 		log.Errorf("Timeout waiting for NFQueue workers to stop")
+	}
+}
+
+func (w *Worker) getConfig() *config.Config {
+	return w.cfg.Load().(*config.Config)
+}
+
+func (w *Worker) getMatcher() *sni.SuffixSet {
+	return w.matcher.Load().(*sni.SuffixSet)
+}
+
+func (w *Worker) UpdateConfig(newCfg *config.Config) {
+	w.cfg.Store(newCfg)
+	w.rebuildMatcher()
+}
+
+func (w *Worker) rebuildMatcher() {
+	cfg := w.getConfig()
+	var m *sni.SuffixSet
+	if len(cfg.Domains.SNIDomains) > 0 {
+		m = sni.NewSuffixSet(cfg.Domains.SNIDomains)
+	} else {
+		m = sni.NewSuffixSet([]string{})
+	}
+	w.matcher.Store(m)
+}
+
+func (p *Pool) UpdateConfig(newCfg *config.Config) {
+	for _, w := range p.workers {
+		w.UpdateConfig(newCfg)
 	}
 }

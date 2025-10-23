@@ -3,10 +3,9 @@ package nfq
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/daniellavrushin/b4/config"
-	"github.com/daniellavrushin/b4/sni"
 	"github.com/daniellavrushin/b4/sock"
 	"github.com/florianl/go-nfqueue"
 )
@@ -25,7 +24,7 @@ type flowState struct {
 }
 
 type Worker struct {
-	cfg              *config.Config
+	cfg              atomic.Value
 	qnum             uint16
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -35,8 +34,7 @@ type Worker struct {
 	flows            map[string]*flowState
 	ttl              time.Duration
 	limit            int
-	matcher          *sni.SuffixSet
+	matcher          atomic.Value
 	sock             *sock.Sender
-	frag             *config.Fragmentation
 	packetsProcessed uint64
 }

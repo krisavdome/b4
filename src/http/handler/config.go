@@ -6,6 +6,7 @@ import (
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
+	"github.com/daniellavrushin/b4/metrics"
 )
 
 func RegisterConfigApi(mux *http.ServeMux, cfg *config.Config) {
@@ -40,26 +41,28 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the new configuration
 	if err := newConfig.Validate(); err != nil {
 		log.Errorf("Invalid configuration: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Update the configuration
 	*a.cfg = newConfig
 
-	// Log the update
+	if globalPool != nil {
+		globalPool.UpdateConfig(&newConfig)
+		log.Infof("Config pushed to all workers")
+	}
+
 	log.Infof("Configuration updated via API")
-	metrics := GetMetricsCollector()
-	metrics.RecordEvent("info", "Configuration updated")
+	m := metrics.GetMetricsCollector()
+	m.RecordEvent("info", "Configuration updated")
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(map[string]interface{}{
 		"success": true,
-		"message": "Configuration updated successfully. Restart required for some changes to take effect.",
+		"message": "Configuration updated successfully",
 	})
 }
