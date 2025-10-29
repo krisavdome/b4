@@ -1000,7 +1000,7 @@ print_web_interface_info() {
     if [ -n "$lan_ip" ]; then
         print_info "Local network access (LAN):"
         printf "        ${GREEN}http://%s:%s${NC}\n" "$lan_ip" "$web_port"
-        echo "        (remember to start the service first)"
+        printf "        (remember to start the service first)\n"
         echo ""
     fi
 
