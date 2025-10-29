@@ -24,8 +24,6 @@ type Config struct {
 	ConnBytesLimit int     `json:"conn_bytes_limit" bson:"conn_bytes_limit"`
 	Logging        Logging `json:"logging" bson:"logging"`
 	Threads        int     `json:"threads" bson:"threads"`
-	UseGSO         bool    `json:"use_gso" bson:"use_gso"`
-	UseConntrack   bool    `json:"use_conntrack" bson:"use_conntrack"`
 	SkipIpTables   bool    `json:"skip_iptables" bson:"skip_iptables"`
 	Seg2Delay      int     `json:"seg2delay" bson:"seg2delay"`
 	IPv4Enabled    bool    `json:"ipv4" bson:"ipv4"`
@@ -98,8 +96,6 @@ var DefaultConfig = Config{
 	Mark:           1 << 15,
 	Threads:        4,
 	ConnBytesLimit: 19,
-	UseConntrack:   false,
-	UseGSO:         true,
 	SkipIpTables:   false,
 	Seg2Delay:      0,
 	IPv4Enabled:    true,
@@ -261,8 +257,6 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.UDP.FilterSTUN, "udp-filter-stun", c.UDP.FilterSTUN, "STUN filtering mode (disabled|all|parse)")
 
 	// Feature flags
-	cmd.Flags().BoolVar(&c.UseGSO, "gso", c.UseGSO, "Enable Generic Segmentation Offload")
-	cmd.Flags().BoolVar(&c.UseConntrack, "conntrack", c.UseConntrack, "Enable connection tracking")
 	cmd.Flags().BoolVar(&c.SkipIpTables, "skip-iptables", c.SkipIpTables, "Skip iptables rules setup")
 	cmd.Flags().BoolVar(&c.IPv4Enabled, "ipv4", c.IPv4Enabled, "Enable IPv4 processing")
 	cmd.Flags().BoolVar(&c.IPv6Enabled, "ipv6", c.IPv6Enabled, "Enable IPv6 processing")
@@ -295,7 +289,7 @@ func (cfg *Config) ApplyLogLevel(level string) {
 
 func (c *Config) Validate() error {
 
-	c.WebServer.IsEnabled = c.WebServer.Port < 0 || c.WebServer.Port > 65535
+	c.WebServer.IsEnabled = c.WebServer.Port > 0 && c.WebServer.Port <= 65535
 
 	// If sites are specified, geodata path must be provided
 	if len(c.Domains.GeoSiteCategories) > 0 && c.Domains.GeoSitePath == "" {

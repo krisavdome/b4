@@ -23,20 +23,6 @@ export const FeatureSettings: React.FC<FeatureSettingsProps> = ({
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSwitch
-            label="Generic Segmentation Offload (GSO)"
-            checked={config.use_gso}
-            onChange={(checked) => onChange("use_gso", checked)}
-            description="Enable GSO for better performance"
-          />
-          <SettingSwitch
-            label="Connection Tracking"
-            checked={config.use_conntrack}
-            onChange={(checked) => onChange("use_conntrack", checked)}
-            description="Enable connection tracking (conntrack)"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <SettingSwitch
             label="Enable IPv4 Support"
             checked={config.ipv4}
             onChange={(checked) => onChange("ipv4", checked)}

@@ -686,9 +686,18 @@ start() {
         echo "b4 is already running"
         return 1
     fi
-    $PROG --config $CONFIG_FILE > /var/log/b4.log 2>&1 &
+
+    nohup $PROG --config $CONFIG_FILE > /var/log/b4.log 2>&1 &
     echo $! > "$PIDFILE"
-    echo "b4 started"
+    sleep 1
+    # Verify it's actually running
+    if kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+        echo "b4 started (PID: $(cat "$PIDFILE"))"
+    else
+        echo "Warning: b4 may have failed to start, check /var/log/b4.log"
+        rm -f "$PIDFILE"
+        return 1
+    fi
 }
 
 stop() {
@@ -794,8 +803,8 @@ main_install() {
 
     echo ""
     print_info "To start B4 now:"
-    print_info "  ${INIT_DIR}/S99b4 restart # For OpenWRT/Entware systems"
-    print_info "  systemctl start b4                  # For systemd systems"
+    print_info "  ${INIT_DIR}/S99b4 restart        # For OpenWRT/Entware systems"
+    print_info "  systemctl start b4               # For systemd systems"
     echo ""
 
     # Check PATH
@@ -806,7 +815,7 @@ main_install() {
     fi
 
     echo "======================================="
-    echo "     Installation Complete!"
+    echo "       Installation Complete!"
     echo "======================================="
 }
 

@@ -79,12 +79,13 @@ func (w *Worker) Start() error {
 			cfg := w.getConfig()
 			matcher := w.getMatcher()
 
-			atomic.AddUint64(&w.packetsProcessed, 1)
 			select {
 			case <-w.ctx.Done():
 				return 0
 			default:
 			}
+
+			atomic.AddUint64(&w.packetsProcessed, 1)
 
 			if a.PacketID == nil || a.Payload == nil || len(*a.Payload) == 0 {
 				return 0
@@ -119,7 +120,27 @@ func (w *Worker) Start() error {
 					return 0
 				}
 				ihl = 40
-				proto = raw[6]
+				nextHeader := raw[6]
+				offset := 40
+
+				// Skip extension headers
+				for {
+					switch nextHeader {
+					case 0, 43, 44, 60: // Hop-by-Hop, Routing, Fragment, Destination Options
+						if len(raw) < offset+2 {
+							_ = q.SetVerdict(id, nfqueue.NfAccept)
+							return 0
+						}
+						nextHeader = raw[offset]
+						hdrLen := int(raw[offset+1])*8 + 8
+						offset += hdrLen
+					default:
+						goto done
+					}
+				}
+			done:
+				proto = nextHeader
+				ihl = offset
 				src = net.IP(raw[8:24])
 				dst = net.IP(raw[24:40])
 			}

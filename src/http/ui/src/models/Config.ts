@@ -81,8 +81,6 @@ export interface IB4Config {
   mark: number;
   conn_bytes_limit: number;
   seg2delay: number;
-  use_gso: boolean;
-  use_conntrack: boolean;
   skip_iptables: boolean;
 
   faking: IFaking;
@@ -98,8 +96,6 @@ export default class B4Config implements IB4Config {
   mark = 32768;
   conn_bytes_limit = 19;
   seg2delay = 0;
-  use_gso = true;
-  use_conntrack = false;
   skip_iptables = false;
   ipv4 = true;
   ipv6 = false;

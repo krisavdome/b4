@@ -172,8 +172,6 @@ export default function Settings() {
         config.mark !== originalConfig.mark ||
         config.conn_bytes_limit !== originalConfig.conn_bytes_limit ||
         config.seg2delay !== originalConfig.seg2delay ||
-        config.use_gso !== originalConfig.use_gso ||
-        config.use_conntrack !== originalConfig.use_conntrack ||
         config.skip_iptables !== originalConfig.skip_iptables ||
         config.ipv4 !== originalConfig.ipv4 ||
         config.ipv6 !== originalConfig.ipv6,

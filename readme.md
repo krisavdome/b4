@@ -1,10 +1,10 @@
+# B4 - Bye Bye Big Bro
+
 ![GitHub Release](https://img.shields.io/github/v/release/daniellavrushin/b4?logoColor=violet)
 ![GitHub Release Date](https://img.shields.io/github/release-date/daniellavrushin/b4)
 ![GitHub commits since latest release](https://img.shields.io/github/commits-since/daniellavrushin/b4/latest)
 ![GitHub Downloads (specific asset, latest release)](https://img.shields.io/github/downloads/daniellavrushin/b4/latest/total)
 ![image](https://img.shields.io/github/downloads/DanielLavrushin/b4/total?label=total%20downloads)
-
-# B4 - Bye Bye Big Bro
 
 A high-performance network packet processor for DPI (Deep Packet Inspection) circumvention, built with Go and featuring a modern web UI interface.
 
@@ -40,13 +40,13 @@ B4 is a `netfilter` queue-based packet processor designed to bypass DPI systems 
 - To install B4
 
 ```bash
-wget -O /tmp/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x /tmp/b4install.sh && /tmp/b4install.sh
+wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x ~/b4install.sh && ~/b4install.sh
 ```
 
 To remove B4
 
 ```bash
-/tmp/b4install.sh --remove
+~/b4install.sh --remove
 ```
 
 ## Quick Start
@@ -113,8 +113,6 @@ sudo b4 --queue-num 537 --threads 8 --verbose debug
 
 #### System Configuration
 
-- `--gso` - Enable Generic Segmentation Offload
-- `--conntrack` - Enable connection tracking
 - `--skip-iptables` - Skip iptables rules setup
 - `--seg2delay` - Delay between segments in ms (default: 0)
 

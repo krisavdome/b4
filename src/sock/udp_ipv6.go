@@ -133,7 +133,7 @@ func IPv6FragmentUDP(orig []byte, split int) ([][]byte, bool) {
 	fragHdrLen := 8
 
 	// Generate a unique identification for this fragmented packet
-	var identification uint32 = 0x12345678 // In production, this should be random or sequential
+	var identification uint32 = generateFragmentID()
 
 	// First fragment: IPv6 header + Fragment header + first part of UDP
 	frag1Len := ipv6HdrLen + fragHdrLen + firstDataAligned
@@ -170,10 +170,10 @@ func IPv6FragmentUDP(orig []byte, split int) ([][]byte, bool) {
 
 	// Build fragment header
 	fragHdr2 := frag2[ipv6HdrLen : ipv6HdrLen+fragHdrLen]
-	fragHdr2[0] = 17                                                   // Next header = UDP
-	fragHdr2[1] = 0                                                    // Reserved
-	offsetUnits := uint16(firstDataAligned / 8)                        // Fragment offset in 8-byte units
-	binary.BigEndian.PutUint16(fragHdr2[2:4], (offsetUnits<<3)|0x0000) // Offset, M flag not set (last fragment)
+	fragHdr2[0] = 17                                              // Next header = UDP
+	fragHdr2[1] = 0                                               // Reserved
+	offsetUnits := uint16(firstDataAligned / 8)                   // Fragment offset in 8-byte units
+	binary.BigEndian.PutUint16(fragHdr2[2:4], (offsetUnits << 3)) // Offset, M flag not set (last fragment)
 	binary.BigEndian.PutUint32(fragHdr2[4:8], identification)
 
 	// Copy remaining UDP data

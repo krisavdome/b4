@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	tlsContentTypeHandshake uint8 = 22
 	tlsHandshakeClientHello uint8 = 1
 )
 

@@ -1,8 +1,15 @@
 package sock
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 )
+
+func generateFragmentID() uint32 {
+	var buf [4]byte
+	rand.Read(buf[:])
+	return binary.BigEndian.Uint32(buf[:])
+}
 
 // IPv6SendTCPSegments sends a TCP packet as two segments (TCP-level segmentation)
 // This is for DPI bypass - we split the TCP payload into two separate TCP packets
@@ -99,7 +106,7 @@ func IPv6FragmentPacket(packet []byte, splitPos int) ([][]byte, bool) {
 	}
 
 	fragHdrLen := 8
-	var identification uint32 = 0x87654321 // Should be random or sequential in production
+	var identification uint32 = generateFragmentID()
 
 	// First fragment
 	frag1Len := ipv6HdrLen + fragHdrLen + splitPos
@@ -136,10 +143,10 @@ func IPv6FragmentPacket(packet []byte, splitPos int) ([][]byte, bool) {
 
 	// Build fragment header for second fragment
 	fragHdr2 := frag2[ipv6HdrLen : ipv6HdrLen+fragHdrLen]
-	fragHdr2[0] = nextHeader                                           // Next header (original protocol)
-	fragHdr2[1] = 0                                                    // Reserved
-	offsetUnits := uint16(splitPos / 8)                                // Offset in 8-byte units
-	binary.BigEndian.PutUint16(fragHdr2[2:4], (offsetUnits<<3)|0x0000) // Offset, M flag not set
+	fragHdr2[0] = nextHeader                                  // Next header (original protocol)
+	fragHdr2[1] = 0                                           // Reserved
+	offsetUnits := uint16(splitPos / 8)                       // Offset in 8-byte units
+	binary.BigEndian.PutUint16(fragHdr2[2:4], offsetUnits<<3) // Offset, M flag not set
 	binary.BigEndian.PutUint32(fragHdr2[4:8], identification)
 
 	// Copy remaining payload
