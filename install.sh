@@ -15,6 +15,9 @@ BINARY_NAME="b4"
 CONFIG_DIR="/opt/etc/b4"
 CONFIG_FILE="${CONFIG_DIR}/b4.json"
 TEMP_DIR="/tmp/b4_install_$$"
+QUIET_MODE="0"
+GEOSITE_SRC=""
+GEOSITE_DST=""
 
 # Geosite sources (pipe-delimited: number|name|url)
 GEOSITE_SOURCES="1|Loyalsoldier source|https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
@@ -41,11 +44,15 @@ fi
 
 # Helper functions
 print_info() {
-    printf "${BLUE}[INFO   ]${NC} %s\n" "$1" >&2
+    if [ "$QUIET_MODE" -eq 0 ]; then
+        printf "${BLUE}[INFO   ]${NC} %s\n" "$1" >&2
+    fi
 }
 
 print_success() {
-    printf "${GREEN}[SUCCESS]${NC} %s\n" "$1" >&2
+    if [ "$QUIET_MODE" -eq 0 ]; then
+        printf "${GREEN}[SUCCESS]${NC} %s\n" "$1" >&2
+    fi
 }
 
 print_error() {
@@ -53,7 +60,9 @@ print_error() {
 }
 
 print_warning() {
-    printf "${YELLOW}[WARNING]${NC} %s\n" "$1" >&2
+    if [ "$QUIET_MODE" -eq 0 ]; then
+        printf "${YELLOW}[WARNING]${NC} %s\n" "$1" >&2
+    fi
 }
 
 # Check if command exists (works on routers without 'command' builtin)
@@ -415,7 +424,12 @@ download_file() {
 
     # Download the file
     if command_exists wget; then
-        wget -q --show-progress -O "$output" "$url" || {
+        if [ "$QUIET_MODE" = "0" ]; then
+            wget_opts="-q --show-progress"
+        else
+            wget_opts="-q"
+        fi
+        wget $wget_opts -O "$output" "$url" || {
             print_error "Download failed"
             return 1
         }
@@ -698,6 +712,8 @@ start() {
         return 1
     fi
 
+    kernel_mod_load
+
     nohup $PROG --config $CONFIG_FILE > /var/log/b4.log 2>&1 &
     echo $! > "$PIDFILE"
     sleep 1
@@ -722,6 +738,39 @@ stop() {
     fi
 }
 
+update() {
+    echo "Updating b4 service..."
+    stop
+    sleep 2
+    wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh
+    
+    geosite_src=$(jq -r '.domains.geosite_url // empty' "$CONFIG_FILE" 2>/dev/null)
+    geosite_dst=$(jq -r '.domains.geosite_path // empty' "$CONFIG_FILE" 2>/dev/null)
+
+    chmod +x ~/b4install.sh --geosite-src="$geosite_src" --geosite-dst="$geosite_dst"
+    sh ~/b4install.sh -q
+ 
+}
+
+
+kernel_mod_load() {
+	KERNEL=$(uname -r)
+
+	connbytes_mod_path=$(find /lib/modules/$(uname -r) -name "xt_connbytes.ko*")
+	if [ ! -z "$connbytes_mod_path" ]; then
+		insmod "$connbytes_mod_path" >/dev/null 2>&1 && echo "xt_connbytes.ko loaded"
+	fi
+
+	nfqueue_mod_path=$(find /lib/modules/$(uname -r) -name "xt_NFQUEUE.ko*")
+	if [ ! -z "$nfqueue_mod_path" ]; then
+		insmod "$nfqueue_mod_path" >/dev/null 2>&1 && echo "xt_NFQUEUE.ko loaded"
+	fi
+
+	(modprobe xt_connbytes --first-time >/dev/null 2>&1 && echo "xt_connbytes loaded") || true
+	(modprobe xt_NFQUEUE --first-time >/dev/null 2>&1 && echo "xt_NFQUEUE loaded") || true
+}
+
+
 case "$1" in
     start)
         start
@@ -733,6 +782,9 @@ case "$1" in
         stop
         sleep 1
         start
+        ;;
+    update)
+        update
         ;;
     *)
         echo "Usage: $0 {start|stop|restart}"
@@ -829,7 +881,12 @@ download_geosite() {
 
     # Download the file
     if command_exists wget; then
-        wget -q --show-progress -O "$geosite_file" "$geosite_url" || {
+        if [ "$QUIET_MODE" = "0" ]; then
+            wget_opts="-q --show-progress"
+        else
+            wget_opts="-q"
+        fi
+        wget $wget_opts -O "$geosite_file" "$geosite_url" || {
             print_error "Download failed"
             return 1
         }
@@ -873,13 +930,14 @@ update_config_geosite_path() {
         temp_file="${CONFIG_FILE}.tmp"
 
         # Update or add geosite_path
-        if jq ".domains.geosite_path = \"$geosite_file\"" "$CONFIG_FILE" >"$temp_file" 2>/dev/null; then
+        if jq ".domains.geosite_path = \"$geosite_file\" | .domains.geosite_url = \"$geosite_url\"" "$CONFIG_FILE" >"$temp_file" 2>/dev/null; then
             mv "$temp_file" "$CONFIG_FILE" || {
                 print_error "Failed to update config file"
                 rm -f "$temp_file"
                 return 1
             }
             print_success "Config updated with geosite path: $geosite_file"
+            print_success "Config updated with geosite URL: $geosite_url"
             return 0
         else
             print_error "Failed to parse config with jq"
@@ -906,41 +964,56 @@ setup_geosite() {
     echo "======================================="
     echo ""
 
-    # Ask if user wants to download geosite
-    printf "${CYAN}Do you want to download geosite.dat file? (y/N): ${NC}"
-    read answer
+    if [ -z "$GEOSITE_SRC" ] && [ -z "$GEOSITE_DST" ]; then
+        # Ask if user wants to download geosite
+        printf "${CYAN}Do you want to download geosite.dat file? (y/N): ${NC}"
+        read answer
+    else
+        answer="y"
+    fi
 
     case "$answer" in
     [yY] | [yY][eE][sS])
         # Select source
-        geosite_url=$(select_geosite_source)
-        if [ $? -ne 0 ] || [ -z "$geosite_url" ]; then
-            print_info "Geosite setup skipped"
-            return 0
+        if [ -z "$GEOSITE_SRC" ]; then
+            geosite_url=$(select_geosite_source)
+            if [ $? -ne 0 ] || [ -z "$geosite_url" ]; then
+                print_info "Geosite setup skipped"
+                return 0
+            fi
+        else
+            geosite_url="$GEOSITE_SRC"
+            print_info "Using geosite source: $geosite_url"
         fi
 
-        # Get save directory
-        default_dir="$CONFIG_DIR"
+        if [ -z "$GEOSITE_DST" ]; then
 
-        # Try to get existing path from config
-        existing_dir=$(get_geosite_path_from_config || true)
-        if [ -n "$existing_dir" ]; then
-            default_dir="$existing_dir"
-            print_info "Found existing geosite path in config: $default_dir"
-        fi
+            # Get save directory
+            default_dir="$CONFIG_DIR"
 
-        echo ""
-        printf "${CYAN}Save directory [${default_dir}]: ${NC}"
-        read save_dir
+            # Try to get existing path from config
+            existing_dir=$(get_geosite_path_from_config || true)
+            if [ -n "$existing_dir" ]; then
+                default_dir="$existing_dir"
+                print_info "Found existing geosite path in config: $default_dir"
+            fi
 
-        # Use default if empty
-        if [ -z "$save_dir" ]; then
-            save_dir="$default_dir"
+            echo ""
+            printf "${CYAN}Save directory [${default_dir}]: ${NC}"
+            read geosite_dst_dir
+
+            # Use default if empty
+            if [ -z "$geosite_dst_dir" ]; then
+                geosite_dst_dir="$default_dir"
+            fi
+        else
+            geosite_dst_dir="$GEOSITE_DST"
+            print_info "Using geosite destination: $geosite_dst_dir"
         fi
 
         # Download geosite file
-        if download_geosite "$geosite_url" "$save_dir"; then
-            geosite_file="${save_dir}/geosite.dat"
+        if download_geosite "$geosite_url" "$geosite_dst_dir"; then
+            geosite_file="${geosite_dst_dir}/geosite.dat"
 
             # Update config
             update_config_geosite_path "$geosite_file"
@@ -1026,11 +1099,34 @@ print_web_interface_info() {
 
 # Main installation process
 main_install() {
-    echo ""
-    echo "======================================="
-    echo "     B4 Universal Installer"
-    echo "======================================="
-    echo ""
+
+    #  get args
+    VERSION=""
+    for arg in "$@"; do
+        case "$arg" in
+        v* | V*)
+            VERSION="$arg"
+            print_info "Using specified version: $VERSION"
+            ;;
+        --quiet | -q)
+            QUIET_MODE=1
+            ;;
+        --geosite-src=*)
+            GEOSITE_SRC="${arg#*=}"
+            ;;
+        --geosite-dst=*)
+            GEOSITE_DST="${arg#*=}"
+            ;;
+        esac
+    done
+
+    if [ "$QUIET_MODE" = "0" ]; then
+        echo ""
+        echo "======================================="
+        echo "     B4 Universal Installer"
+        echo "======================================="
+        echo ""
+    fi
 
     # Check if running as root
     check_root
@@ -1043,17 +1139,6 @@ main_install() {
     ARCH=$(detect_architecture)
     print_info "Raw architecture: $(uname -m)"
     print_success "Architecture detected: $ARCH"
-
-    # Get latest version or use provided version
-    VERSION=""
-    for arg in "$@"; do
-        case "$arg" in
-        v* | V*)
-            VERSION="$arg"
-            print_info "Using specified version: $VERSION"
-            ;;
-        esac
-    done
 
     if [ -z "$VERSION" ]; then
         print_info "Fetching latest release information..."
@@ -1071,39 +1156,41 @@ main_install() {
     create_systemd_service
     create_openwrt_init
 
-    # Setup geosite (new feature)
-    setup_geosite
+    if [ "$QUIET_MODE" = "0" ]; then
+        setup_geosite
 
-    # Print installation summary
-    echo ""
-    print_info "Binary installed to: ${INSTALL_DIR}/${BINARY_NAME}"
-    print_info "Configuration at: ${CONFIG_FILE}"
-    echo ""
-    print_info "To see all B4 options:"
-    print_info "  ${INSTALL_DIR}/${BINARY_NAME} --help"
+        # Print installation summary
+        echo ""
+        print_info "Binary installed to: ${INSTALL_DIR}/${BINARY_NAME}"
+        print_info "Configuration at: ${CONFIG_FILE}"
+        echo ""
+        print_info "To see all B4 options:"
+        print_info "  ${INSTALL_DIR}/${BINARY_NAME} --help"
 
-    echo ""
-    print_info "To start B4 now:"
-    if [ -n "$INIT_DIR" ]; then
-        print_info "  ${INIT_DIR}/S99b4 start         # For OpenWRT/Entware systems"
+        echo ""
+        print_info "To start B4 now:"
+        if [ -n "$INIT_DIR" ]; then
+            print_info "  ${INIT_DIR}/S99b4 start         # For OpenWRT/Entware systems"
+        fi
+        if [ -d "/etc/systemd/system" ]; then
+            print_info "  systemctl start b4              # For systemd systems"
+        fi
+        echo ""
+
+        # Check PATH
+        if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+            print_warning "Note: $INSTALL_DIR is not in your PATH"
+            print_info "You may want to add it to your PATH or create a symlink:"
+            print_info "  ln -s ${INSTALL_DIR}/${BINARY_NAME} /usr/bin/${BINARY_NAME}"
+        fi
+
+        print_web_interface_info
+
+        echo "======================================="
+        echo "       Installation Complete!"
+        echo "======================================="
     fi
-    if [ -d "/etc/systemd/system" ]; then
-        print_info "  systemctl start b4              # For systemd systems"
-    fi
-    echo ""
 
-    # Check PATH
-    if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
-        print_warning "Note: $INSTALL_DIR is not in your PATH"
-        print_info "You may want to add it to your PATH or create a symlink:"
-        print_info "  ln -s ${INSTALL_DIR}/${BINARY_NAME} /usr/bin/${BINARY_NAME}"
-    fi
-
-    print_web_interface_info
-
-    echo "======================================="
-    echo "       Installation Complete!"
-    echo "======================================="
 }
 
 # Main function - parse arguments
@@ -1122,6 +1209,9 @@ main() {
             echo "Options:"
             echo "  --remove, -r     Uninstall b4 from the system"
             echo "  --help, -h       Show this help message"
+            echo "  --quiet, -q      Suppress output except for errors"
+            echo "  --geosite-src URL  Specify geosite.dat source URL"
+            echo "  --geosite-dst DIR    Specify directory to save geosite.dat"
             echo "  VERSION          Install specific version (e.g., v1.4.0)"
             echo ""
             echo "Examples:"
