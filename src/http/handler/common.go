@@ -13,6 +13,10 @@ var (
 	globalPool *nfq.Pool
 )
 
+func setJsonHeader(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+}
+
 func SetNFQPool(pool *nfq.Pool) {
 	globalPool = pool
 }
@@ -46,4 +50,5 @@ func (api *API) RegisterEndpoints(mux *http.ServeMux, cfg *config.Config) {
 	api.RegisterMetricsApi()
 	api.RegisterGeositeApi()
 	api.RegisterVersionApi()
+	api.RegisterSystemApi()
 }

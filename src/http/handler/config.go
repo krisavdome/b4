@@ -33,7 +33,7 @@ func (a *API) handleConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) getConfig(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 
 	// Get category breakdown from geodata manager (uses cached counts)
 	categoryBreakdown := a.geodataManager.GetCachedCategoryBreakdown()
@@ -156,7 +156,7 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	w.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(response)

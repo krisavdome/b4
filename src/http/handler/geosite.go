@@ -53,7 +53,7 @@ func (a *API) addGeositeDomain(w http.ResponseWriter, r *http.Request) {
 				Domain:       req.Domain,
 				TotalDomains: len(a.manualDomains),
 			}
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			setJsonHeader(w)
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(response)
 			return
@@ -108,13 +108,13 @@ func (a *API) addGeositeDomain(w http.ResponseWriter, r *http.Request) {
 		ManualDomains: a.manualDomains,
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (a *API) getGeositeTags(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 
 	if !a.geodataManager.IsConfigured() {
@@ -173,7 +173,7 @@ func (a *API) previewGeoCategory(w http.ResponseWriter, r *http.Request) {
 		"preview":       preview,
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(response)
 }

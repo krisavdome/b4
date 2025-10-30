@@ -43,6 +43,9 @@ import { UDPSettings } from "../organisms/settings/Udp";
 import B4Config from "../../models/Config";
 import { colors } from "../../Theme";
 
+import { RestartAlt as RestartIcon } from "@mui/icons-material";
+import { RestartDialog } from "../molecules/RestartDialog";
+
 // Tab panel component
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -116,6 +119,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showRestartDialog, setShowRestartDialog] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -377,6 +381,23 @@ export default function Settings() {
               </Button>
               <Button
                 size="small"
+                variant="outlined"
+                startIcon={<RestartIcon />}
+                onClick={() => setShowRestartDialog(true)}
+                disabled={saving}
+                sx={{
+                  borderColor: colors.secondary,
+                  color: colors.secondary,
+                  "&:hover": {
+                    borderColor: colors.primary,
+                    bgcolor: colors.accent.primaryHover,
+                  },
+                }}
+              >
+                Restart Service
+              </Button>
+              <Button
+                size="small"
                 variant="contained"
                 startIcon={
                   saving ? <CircularProgress size={16} /> : <SaveIcon />
@@ -517,6 +538,12 @@ export default function Settings() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Restart Dialog */}
+      <RestartDialog
+        open={showRestartDialog}
+        onClose={() => setShowRestartDialog(false)}
+      />
     </Container>
   );
 }

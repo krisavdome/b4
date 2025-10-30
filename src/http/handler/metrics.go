@@ -30,7 +30,7 @@ func (a *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 
 	metricsData := metrics.GetMetricsCollector().GetSnapshot()
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(metricsData)
 }
@@ -52,7 +52,7 @@ func (a *API) getMetricsSummary(w http.ResponseWriter, r *http.Request) {
 		"memory_percent":    m.MemoryUsage.Percent,
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(summary)
 }

@@ -27,8 +27,7 @@ func (api *API) handleVersion(w http.ResponseWriter, r *http.Request) {
 		Commit:    Commit,
 		BuildDate: Date,
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(versionInfo)
 }
