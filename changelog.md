@@ -1,5 +1,10 @@
 # B4 - Bye Bye Big Bro
 
+## [1.8.0] - 2025-11-x
+
+- ADDED: `nftables` support.
+- CHANGED: `--skip-iptables` and `--clear-iptables` renamed to `--skip-tables` and `--clear-tables`.
+
 ## [1.7.0] - 2025-10-31
 
 - ADDED: 'RESTART SERVICE` Button in the Settings to perform the B4 restart from the Web UI.
