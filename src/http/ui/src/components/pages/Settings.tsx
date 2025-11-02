@@ -321,7 +321,6 @@ export default function Settings() {
           bgcolor: colors.background.paper,
           borderRadius: 2,
           border: `1px solid ${colors.border.default}`,
-          mb: 3,
         }}
       >
         <Box sx={{ p: 2, pb: 0 }}>

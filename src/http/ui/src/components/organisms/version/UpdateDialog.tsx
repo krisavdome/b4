@@ -89,7 +89,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       // Reload the page after successful update to get new version
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, 5000);
     } else {
       setUpdateStatus("error");
       setUpdateMessage(

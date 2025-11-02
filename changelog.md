@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.9.1] - 2025-11-02
+
+- FIXED: Return back missing `geosite path` field to the settings.
+
 ## [1.9.0] - 2025-11-02
 
 - ADDED: Hotkeys to the `/domains` and `/logs` page. Press `ctrl+x` or `Delete` keys to clear the entries. Press `p` or `Pause` to pause the stram.
