@@ -1,19 +1,19 @@
-name: release
+name: Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: release version
+        description: "Release version (e.g., 1.0.0)"
         required: true
-        default: 1.0.0
+        default: "1.0.0"
       draft:
-        description: save the release as a draft first?
+        description: "Create as draft release?"
         required: false
         default: false
         type: boolean
       prerelease:
-        description: mark this build as a pre-release?
+        description: "Mark as pre-release?"
         required: false
         default: false
         type: boolean
@@ -23,89 +23,120 @@ permissions:
 
 env:
   VERSION: ${{ inputs.version }}
+  BINARY_NAME: b4
 
 jobs:
-  build-and-release:
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
+      - name: Run tests
+        run: |
+          cd src
+          go test -v ./...
+
+      - name: Run vet
+        run: |
+          cd src
+          go vet ./...
+
+  build-linux:
+    name: Build Linux ${{ matrix.arch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Primary architectures
+          - { arch: amd64 }
+          - { arch: arm64 }
+          - { arch: 386 }
+
+          # ARM variants
+          - { arch: armv7 }
+          - { arch: armv6 }
+          - { arch: armv5 }
+
+          # Other architectures
+          - { arch: riscv64 }
+          - { arch: ppc64le }
+          - { arch: s390x }
+          - { arch: mips }
+          - { arch: mipsle }
+          - { arch: mips64 }
+          - { arch: mips64le }
+          - { arch: ppc64 }
+          - { arch: loong64 }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          version: 10.18.2
-          run_install: false
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-          cache-dependency-path: |
-            ./src/http/ui/pnpm-lock.yaml
-
-      - name: build web ui artifacts
-        working-directory: src/http/ui
+      - name: Build using Makefile
         run: |
-          pnpm install --frozen-lockfile
-          VITE_APP_VERSION=${{ env.VERSION }} pnpm build
+          make linux-${{ matrix.arch }} VERSION=${{ env.VERSION }}
 
-      - name: build b4
+      - name: Prepare artifacts
         run: |
-          make all VERSION=${{ env.VERSION }}
+          mkdir -p artifacts
+          cp out/assets/* artifacts/
 
-      - name: list built files
-        run: ls -al out out/assets
-
-      - name: generate checksums
-        working-directory: out/assets
-        run: |
-          echo "Generating SHA256 checksums..."
-          for file in *.tar.gz; do
-            sha256sum "$file" > "$file.sha256"
-            echo "SHA256 for $file:"
-            cat "$file.sha256"
-          done
-
-          echo ""
-          echo "Generating MD5 checksums..."
-          for file in *.tar.gz; do
-            md5sum "$file" > "$file.md5"
-            echo "MD5 for $file:"
-            cat "$file.md5"
-          done
-
-          echo ""
-          echo "Creating combined checksums files..."
-          sha256sum *.tar.gz > SHA256SUMS
-          md5sum *.tar.gz > MD5SUMS
-
-          echo ""
-          echo "All checksums generated:"
-          ls -la *.sha256 *.md5 SHA256SUMS MD5SUMS
-
-      - name: export asset list
-        id: assets
-        run: |
-          echo "ASSET_FILES<<EOF" >> $GITHUB_ENV
-          ls out/assets/*.tar.gz out/assets/*.sha256 out/assets/*.md5 out/assets/SHA256SUMS out/assets/MD5SUMS >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          ls out/assets/*.tar.gz out/assets/*.sha256 out/assets/*.md5 out/assets/SHA256SUMS out/assets/MD5SUMS >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: upload files to artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: b4-${{ env.VERSION }}
-          path: ${{ steps.assets.outputs.files }}
+          name: ${{ env.BINARY_NAME }}-linux-${{ matrix.arch }}
+          path: artifacts/*
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: [build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ env.BINARY_NAME }}-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate release files
+        working-directory: release-assets
+        run: |
+          # Combine all individual checksums
+          echo "=== SHA256 Checksums ===" > checksums.txt
+          cat *.sha256 >> checksums.txt
+          echo "" >> checksums.txt
+
+          # Generate combined checksum files
+          sha256sum *.tar.gz > SHA256SUMS
+
+          # Create file list
+          echo "Release contents:" > file-list.txt
+          ls -lh *.tar.gz >> file-list.txt
+
+          # Display what we're releasing
+          echo "📦 Release artifacts:"
+          ls -la
 
       - name: Read Changelog (Latest Version Only)
         id: read_changelog
@@ -116,12 +147,28 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: create or update release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
+          name: B4 v${{ env.VERSION }}
           draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}
-          files: ${{ steps.assets.outputs.files }}
           body: ${{ steps.read_changelog.outputs.changelog }}
+          files: |
+            release-assets/*.tar.gz
+            release-assets/SHA256SUMS
+            release-assets/checksums.txt
+          generate_release_notes: true
+
+  cleanup:
+    name: Cleanup old artifacts
+    needs: release
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: ${{ env.BINARY_NAME }}-*
+          failOnError: false

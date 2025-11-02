@@ -214,7 +214,6 @@ remove_b4() {
     exit 0
 }
 
-# Detect system architecture - ONLY returns arch string
 detect_architecture() {
     arch=$(uname -m)
     arch_variant=""
@@ -229,12 +228,24 @@ detect_architecture() {
     aarch64 | arm64)
         arch_variant="arm64"
         ;;
-    armv7* | armv7l)
-        # Check for hardware floating point support
-        if grep -q "vfpv" /proc/cpuinfo 2>/dev/null; then
-            arch_variant="armv7"
-        else
-            arch_variant="armv6"
+    armv7* | armv7l | armv7-*)
+        # For armv7, default to using armv7 binary
+        # The CPU should handle armv7 instructions if kernel reports armv7l
+        arch_variant="armv7"
+
+        # However, check if we should fallback for compatibility
+        # Some routers report armv7l but have limited instruction sets
+        if [ -f /proc/cpuinfo ]; then
+            # Check CPU features - look for VFP (Vector Floating Point)
+            # Most armv7 CPUs should have at least vfp
+            if ! grep -qiE "(vfp|neon)" /proc/cpuinfo 2>/dev/null; then
+                # No VFP/NEON found, check if CPU architecture field confirms armv7
+                if ! grep -qE "CPU architecture:\s*7" /proc/cpuinfo 2>/dev/null; then
+                    # No clear armv7 features, use armv5 for safety
+                    print_warning "armv7l detected but no VFP support found, using armv5 for compatibility"
+                    arch_variant="armv5"
+                fi
+            fi
         fi
         ;;
     armv6*)
@@ -246,17 +257,26 @@ detect_architecture() {
     arm*)
         # Generic ARM - try to detect version from CPU info
         if [ -f /proc/cpuinfo ]; then
-            if grep -q "ARMv7" /proc/cpuinfo; then
+            # Look for CPU architecture line first (most reliable)
+            if grep -qE "CPU architecture:\s*7" /proc/cpuinfo; then
                 arch_variant="armv7"
-            elif grep -q "ARMv6" /proc/cpuinfo; then
+            elif grep -qE "CPU architecture:\s*6" /proc/cpuinfo; then
                 arch_variant="armv6"
-            elif grep -q "ARMv5" /proc/cpuinfo; then
+            elif grep -qE "CPU architecture:\s*5" /proc/cpuinfo; then
+                arch_variant="armv5"
+            # Fallback to searching for ARM version strings
+            elif grep -qi "ARMv7" /proc/cpuinfo; then
+                arch_variant="armv7"
+            elif grep -qi "ARMv6" /proc/cpuinfo; then
+                arch_variant="armv6"
+            elif grep -qi "ARMv5" /proc/cpuinfo; then
                 arch_variant="armv5"
             else
                 # Default to armv5 for maximum compatibility
                 arch_variant="armv5"
             fi
         else
+            # No cpuinfo available, default to safest option
             arch_variant="armv5"
         fi
         ;;
