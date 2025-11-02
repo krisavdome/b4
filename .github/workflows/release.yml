@@ -155,7 +155,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          name: B4 v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
           draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}
           body: ${{ steps.read_changelog.outputs.changelog }}
