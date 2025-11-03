@@ -10,10 +10,14 @@ set -e
 # Configuration
 REPO_OWNER="DanielLavrushin"
 REPO_NAME="b4"
-INSTALL_DIR="/opt/sbin"
+# These will be set dynamically by set_system_paths()
+INSTALL_DIR=""
+CONFIG_DIR=""
+SERVICE_DIR=""
+SERVICE_NAME=""
+SYSTEM_TYPE=""
 BINARY_NAME="b4"
-CONFIG_DIR="/opt/etc/b4"
-CONFIG_FILE="${CONFIG_DIR}/b4.json"
+CONFIG_FILE="" # Will be set after CONFIG_DIR is determined
 TEMP_DIR="/tmp/b4_install_$$"
 QUIET_MODE="0"
 GEOSITE_SRC=""
@@ -122,7 +126,6 @@ check_root() {
     exit 1
 }
 
-# Remove/Uninstall b4
 remove_b4() {
     echo ""
     echo "======================================="
@@ -130,16 +133,17 @@ remove_b4() {
     echo "======================================="
     echo ""
 
+    # Detect system to get proper paths
+    set_system_paths
+
     # Stop the service first
     print_info "Stopping b4 service if running..."
 
-    # Check systemd service
-    if [ -f "/etc/systemd/system/b4.service" ]; then
-        if which systemctl >/dev/null 2>&1; then
-            systemctl stop b4 2>/dev/null || true
-            systemctl disable b4 2>/dev/null || true
-            print_info "Stopped systemd service"
-        fi
+    # Check systemd service FIRST
+    if [ -f "/etc/systemd/system/b4.service" ] && command_exists systemctl; then
+        systemctl stop b4 2>/dev/null || true
+        systemctl disable b4 2>/dev/null || true
+        print_info "Stopped systemd service"
     fi
 
     # Check Entware init script
@@ -165,24 +169,27 @@ remove_b4() {
         sleep 1
     fi
 
-    # Remove binary
-    if [ -f "${INSTALL_DIR}/${BINARY_NAME}" ]; then
-        print_info "Removing binary: ${INSTALL_DIR}/${BINARY_NAME}"
-        rm -f "${INSTALL_DIR}/${BINARY_NAME}"
-        print_success "Binary removed"
-    else
-        print_warning "Binary not found: ${INSTALL_DIR}/${BINARY_NAME}"
-    fi
+    # Remove binary from all possible locations
+    POSSIBLE_DIRS="/opt/sbin /usr/local/bin /usr/bin /usr/sbin"
+    for dir in $POSSIBLE_DIRS; do
+        if [ -f "$dir/$BINARY_NAME" ]; then
+            print_info "Removing binary: $dir/$BINARY_NAME"
+            rm -f "$dir/$BINARY_NAME"
+            print_success "Binary removed from $dir"
+        fi
+    done
 
     # Remove backup binaries
     print_info "Removing backup binaries..."
-    rm -f "${INSTALL_DIR}/${BINARY_NAME}.backup."* 2>/dev/null || true
+    for dir in $POSSIBLE_DIRS; do
+        rm -f "$dir/${BINARY_NAME}.backup."* 2>/dev/null || true
+    done
 
     # Remove service files
     if [ -f "/etc/systemd/system/b4.service" ]; then
         print_info "Removing systemd service..."
         rm -f "/etc/systemd/system/b4.service"
-        if which systemctl >/dev/null 2>&1; then
+        if command_exists systemctl; then
             systemctl daemon-reload 2>/dev/null || true
         fi
         print_success "Systemd service removed"
@@ -206,7 +213,7 @@ remove_b4() {
         rm -f "/usr/bin/${BINARY_NAME}"
     fi
 
-    # Ask about configuration
+    # Ask about configuration ONCE
     printf "${CYAN}Remove configuration files as well? (y/N): ${NC}"
     read answer
     case "$answer" in
@@ -230,7 +237,89 @@ remove_b4() {
 
     exit 0
 }
+# Detect system type and set appropriate paths
+detect_system_type() {
+    # Check for Entware
+    if [ -d "/opt/etc/init.d" ] && [ -f "/opt/etc/entware_release" ]; then
+        echo "entware"
+        return
+    fi
 
+    # Check for OpenWRT
+    if [ -f "/etc/openwrt_release" ]; then
+        echo "openwrt"
+        return
+    fi
+
+    # Check for MerlinWRT
+    if [ -f "/etc/merlinwrt_release" ] || [ -d "/jffs" ]; then
+        echo "merlin"
+        return
+    fi
+
+    # Check for standard systemd-based Linux
+    if [ -d "/etc/systemd/system" ] && command_exists systemctl; then
+        echo "systemd-linux"
+        return
+    fi
+
+    # Check for standard init.d Linux
+    if [ -d "/etc/init.d" ] && [ ! -f "/etc/openwrt_release" ]; then
+        echo "sysv-linux"
+        return
+    fi
+
+    # Default to generic Linux
+    echo "generic-linux"
+}
+
+# Set paths based on system type
+set_system_paths() {
+    SYSTEM_TYPE=$(detect_system_type)
+
+    case "$SYSTEM_TYPE" in
+    entware | merlin)
+        INSTALL_DIR="/opt/sbin"
+        CONFIG_DIR="/opt/etc/b4"
+        SERVICE_DIR="/opt/etc/init.d"
+        SERVICE_NAME="S99b4"
+        ;;
+    openwrt)
+        # OpenWRT typically uses /usr/sbin or /usr/bin
+        if [ -d "/usr/sbin" ]; then
+            INSTALL_DIR="/usr/sbin"
+        else
+            INSTALL_DIR="/usr/bin"
+        fi
+        CONFIG_DIR="/etc/b4"
+        SERVICE_DIR="/etc/init.d"
+        SERVICE_NAME="b4"
+        ;;
+    systemd-linux)
+        INSTALL_DIR="/usr/local/bin"
+        CONFIG_DIR="/etc/b4"
+        SERVICE_DIR="/etc/systemd/system"
+        SERVICE_NAME="b4.service"
+        ;;
+    sysv-linux | generic-linux)
+        INSTALL_DIR="/usr/local/bin"
+        CONFIG_DIR="/etc/b4"
+        SERVICE_DIR="/etc/init.d"
+        SERVICE_NAME="b4"
+        ;;
+    *)
+        # Fallback
+        INSTALL_DIR="/usr/local/bin"
+        CONFIG_DIR="/etc/b4"
+        ;;
+    esac
+
+    print_info "Detected system: $SYSTEM_TYPE"
+    print_info "Using install directory: $INSTALL_DIR"
+    print_info "Using config directory: $CONFIG_DIR"
+}
+
+# Detect system architecture and return appropriate binary variant
 detect_architecture() {
     arch=$(uname -m)
     arch_variant=""
@@ -598,6 +687,8 @@ install_b4() {
         exit 1
     fi
 
+    rm -f "/opt/etc/init.d/S99b4" 2>/dev/null || true # remove legacy script
+    rm -f "/etc/init.d/b4" 2>/dev/null || true        # remove legacy script
     # Extract the binary
     print_info "Extracting archive..."
     cd "$TEMP_DIR"
@@ -648,11 +739,19 @@ install_b4() {
 
 # Create systemd service file (for systems with systemd)
 create_systemd_service() {
-    # Check if systemd directory exists and systemctl is available
-    if [ -d "/etc/systemd/system" ] && which systemctl >/dev/null 2>&1; then
-        print_info "Creating systemd service..."
+    # Only create if systemd is actually available and functioning
+    if ! [ -d "/etc/systemd/system" ] || ! command_exists systemctl; then
+        print_warning "Systemd not available, skipping service creation"
+        return
+    fi
 
-        cat >"/etc/systemd/system/b4.service" <<EOF
+    # Check if systemd is actually running (not just installed)
+    if ! systemctl list-units >/dev/null 2>&1; then
+        print_warning "Systemd not running, skipping service creation"
+        return
+    fi
+
+    cat >"/etc/systemd/system/b4.service" <<EOF
 [Unit]
 Description=B4 DPI Bypass Service
 After=network.target
@@ -668,16 +767,17 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-        systemctl daemon-reload
-        print_success "Systemd service created. You can manage it with:"
-        print_info "  systemctl start b4"
-        print_info "  systemctl stop b4"
-        print_info "  systemctl enable b4  # To start on boot"
-    fi
+    systemctl daemon-reload
+    print_success "Systemd service created. You can manage it with:"
+    print_info "  systemctl start b4"
+    print_info "  systemctl stop b4"
+    print_info "  systemctl enable b4  # To start on boot"
+
+    SYSTEMCTL_CREATED="1"
 }
 
 # Create OpenWRT/Entware init script
-create_openwrt_init() {
+create_sysv_service() {
     # Determine the correct init.d directory
     INIT_DIR=""
 
@@ -711,8 +811,8 @@ create_openwrt_init() {
 #!/bin/sh
 
 # B4 DPI Bypass Service Init Script
-PROG=/opt/sbin/b4
-CONFIG_FILE=/opt/etc/b4/b4.json
+PROG=PROG_PLACEHOLDER
+CONFIG_FILE=CONFIG_PLACEHOLDER
 PIDFILE=/var/run/b4.pid
 
 start() {
@@ -786,6 +886,9 @@ esac
 EOF
 
         chmod +x "${INIT_FULL_PATH}"
+        sed -i "s|PROG_PLACEHOLDER|${INSTALL_DIR}/${BINARY_NAME}|g" "${INIT_FULL_PATH}"
+        sed -i "s|CONFIG_PLACEHOLDER|${CONFIG_FILE}|g" "${INIT_FULL_PATH}"
+
         print_success "Init script created at ${INIT_FULL_PATH}"
         print_info "You can manage it with:"
         print_info "  ${INIT_FULL_PATH} start"
@@ -906,12 +1009,6 @@ update_config_geosite_path() {
     # Try to update with jq if available
     if command_exists jq; then
         print_info "Updating config file..."
-
-        touch "$CONFIG_FILE" 2>/dev/null || {
-            print_error "Failed to create config file: $CONFIG_FILE"
-            return 0
-        }
-        chmod 644 "$CONFIG_FILE" 2>/dev/null || true
 
         if [ ! -f "$CONFIG_FILE" ]; then
             jq -n --arg path "$geosite_file" --arg url "$geosite_url" '{
@@ -1036,9 +1133,7 @@ print_web_interface_info() {
 
     local web_port
     if [ -f "$CONFIG_FILE" ] && command_exists jq; then
-        web_port=$(jq -r '.web_server.port // empty' "$CONFIG_FILE" 2>/dev/null)
-    else
-        web_port="7000"
+        web_port=$(jq -r '.web_server.port // 7000' "$CONFIG_FILE" 2>/dev/null)
     fi
 
     echo ""
@@ -1120,6 +1215,10 @@ main_install() {
         esac
     done
 
+    # Detect system and set paths
+    set_system_paths
+    CONFIG_FILE="${CONFIG_DIR}/b4.json"
+
     if [ "$QUIET_MODE" = "0" ]; then
         echo ""
         echo "======================================="
@@ -1154,7 +1253,9 @@ main_install() {
 
     # Create service files
     create_systemd_service
-    create_openwrt_init
+    if [ "$SYSTEMCTL_CREATED" != "1" ]; then
+        create_sysv_service
+    fi
 
     if [ "$QUIET_MODE" = "0" ]; then
         setup_geosite
@@ -1181,17 +1282,22 @@ main_install() {
         echo ""
         printf "${CYAN}Start B4 service now? (Y/n): ${NC}"
         read answer
+
+        if [ -z "$answer" ]; then
+            answer="y"
+        fi
+
         case "$answer" in
         [nN] | [nN][oO])
             print_info "Service not started. Start manually when ready."
             ;;
         *)
-            if [ -f "/opt/etc/init.d/S99b4" ]; then
-                /opt/etc/init.d/S99b4 restart
+            if [ -f "/etc/systemd/system/b4.service" ] && command_exists systemctl; then
+                systemctl restart b4 2>/dev/null && print_success "Service started"
+            elif [ -f "/opt/etc/init.d/S99b4" ]; then
+                /opt/etc/init.d/S99b4 restart 2>/dev/null && print_success "Service started"
             elif [ -f "/etc/init.d/b4" ]; then
-                /etc/init.d/b4 restart
-            elif [ -f "/etc/systemd/system/b4.service" ]; then
-                systemctl restart b4
+                /etc/init.d/b4 restart 2>/dev/null && print_success "Service started"
             fi
             ;;
         esac
@@ -1213,6 +1319,33 @@ perform_update() {
     echo "     B4 Update Process"
     echo "======================================="
     echo ""
+
+    # Find existing installation
+    FOUND_BINARY=""
+    for dir in /opt/sbin /usr/local/bin /usr/bin /usr/sbin; do
+        if [ -f "$dir/$BINARY_NAME" ]; then
+            FOUND_BINARY="$dir/$BINARY_NAME"
+            INSTALL_DIR="$dir"
+            break
+        fi
+    done
+
+    if [ -z "$FOUND_BINARY" ]; then
+        print_error "B4 binary not found. Please install first."
+        exit 1
+    fi
+
+    # Find existing config
+    for dir in /opt/etc/b4 /etc/b4; do
+        if [ -f "$dir/b4.json" ]; then
+            CONFIG_DIR="$dir"
+            CONFIG_FILE="$dir/b4.json"
+            break
+        fi
+    done
+
+    print_info "Found existing installation at: $INSTALL_DIR"
+    print_info "Using config at: $CONFIG_DIR"
 
     # Detect service manager
     SERVICE_MANAGER=""
