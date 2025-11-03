@@ -222,8 +222,6 @@ sudo b4 --config /home/username/b4custom.json
 | `--sni-domains`        | []      | Comma-separated list of domains |
 | `--geosite`            | ""      | Path to geosite.dat file        |
 | `--geosite-categories` | []      | Categories to process           |
-| `--geoip`              | ""      | Path to geoip.dat file          |
-| `--geoip-categories`   | []      | IP categories to process        |
 
 #### TCP Fragmentation
 

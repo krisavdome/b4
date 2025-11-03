@@ -218,8 +218,6 @@ sudo b4 --config /home/username/b4custom.json
 | `--sni-domains`        | []           | Список доменов через запятую |
 | `--geosite`            | ""           | Путь к файлу geosite.dat     |
 | `--geosite-categories` | []           | Категории для обработки      |
-| `--geoip`              | ""           | Путь к файлу geoip.dat       |
-| `--geoip-categories`   | []           | IP-категории для обработки   |
 
 #### Фрагментация TCP
 
