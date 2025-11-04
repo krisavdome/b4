@@ -28,13 +28,13 @@ That's it. The installer handles everything else.
 > In some systems you need to run `sudo b4install.sh`.
 
 ```bash
-wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x ~/b4install.sh && ./b4install.sh
+wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x ~/b4install.sh && ~/b4install.sh
 ```
 
 If something went wrong try to run - this will diagnose the system
 
 ```bash
-wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x ~/b4install.sh && ./b4install.sh --sysinfo
+wget -O ~/b4install.sh https://raw.githubusercontent.com/DanielLavrushin/b4/main/install.sh && chmod +x ~/b4install.sh && ~/b4install.sh --sysinfo
 ```
 
 ### Installer Options
