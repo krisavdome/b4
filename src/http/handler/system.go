@@ -229,18 +229,26 @@ func (api *API) handleUpdate(w http.ResponseWriter, r *http.Request) {
 			Setsid: true,
 		}
 
-		logFile, err := os.OpenFile("/tmp/b4_update.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err == nil {
-			cmd.Stdout = logFile
-			cmd.Stderr = logFile
-			defer logFile.Close()
-		}
+		// Redirect all I/O - don't defer close, let the script own the files
+		devNull, _ := os.Open("/dev/null")
+		logFile, _ := os.OpenFile("/tmp/b4_update.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+
+		cmd.Stdin = devNull
+		cmd.Stdout = logFile
+		cmd.Stderr = logFile
 
 		if err := cmd.Start(); err != nil {
 			log.Errorf("Update command failed to start: %v", err)
+			if devNull != nil {
+				devNull.Close()
+			}
+			if logFile != nil {
+				logFile.Close()
+			}
 		} else {
 			log.Infof("Update process started (PID: %d)", cmd.Process.Pid)
-			cmd.Process.Release()
+			// Don't close files - script owns them now
+			// Don't wait - fully detach
 		}
 	}()
 }
