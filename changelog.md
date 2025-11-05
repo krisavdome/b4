@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.1x.x] - 2025-11-xx
+
+-IMPROVED: Enhance `flowState` struct to track `SNI` detection and processing status.
+
 ## [1.10.1] - 2025-11-03
 
 - IMPROVED: Intermittent connection failures where blocked sites would randomly fail to load in certain browsers (`Safari`, `Firefox`, `Chrome`). Connections _should_ now be more stable and reliable across all browsers by optimizing packet fragmentation strategy.

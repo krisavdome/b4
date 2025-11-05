@@ -17,8 +17,9 @@ type Pool struct {
 type flowState struct {
 	buf          []byte
 	last         time.Time
-	sniFound     bool
 	sniProcessed bool
+	sniDetected  bool
+	sniMatched   bool
 	sni          string
 	packetCount  int
 }

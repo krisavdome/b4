@@ -19,7 +19,6 @@ import {
   Tooltip,
   Tabs,
   Tab,
-  Badge,
   Stack,
 } from "@mui/material";
 import {
@@ -103,9 +102,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
     data?: CategoryPreview;
     loading: boolean;
   }>({ open: false, category: "", loading: false });
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Fetch available geosite categories when geosite path is set
   useEffect(() => {
     if (config.domains.geosite_path) {
       loadAvailableCategories();
@@ -333,13 +330,6 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
                     <span>Bypass Domains</span>
-                    {bypassTotal > 0 && (
-                      <Badge
-                        badgeContent={bypassTotal}
-                        color="primary"
-                        max={999}
-                      />
-                    )}
                   </Box>
                 }
               />
@@ -349,13 +339,6 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
                     <span>Block Domains</span>
-                    {blockTotal > 0 && (
-                      <Badge
-                        badgeContent={blockTotal}
-                        color="error"
-                        max={999}
-                      />
-                    )}
                   </Box>
                 }
               />

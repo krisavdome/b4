@@ -161,7 +161,13 @@ func (w *Worker) Start() error {
 					w.mu.Lock()
 					st := w.flows[k]
 					if st == nil {
-						st = &flowState{buf: nil, last: time.Now(), packetCount: 0}
+						st = &flowState{
+							buf:          nil,
+							last:         time.Now(),
+							packetCount:  0,
+							sniDetected:  false,
+							sniProcessed: false,
+						}
 						w.flows[k] = st
 					}
 
@@ -169,8 +175,15 @@ func (w *Worker) Start() error {
 					st.packetCount++
 					st.last = time.Now()
 
+					// If SNI already processed (detected and handled), accept all subsequent packets
 					if st.sniProcessed {
-						// Just accept all subsequent packets
+						w.mu.Unlock()
+						_ = q.SetVerdict(id, nfqueue.NfAccept)
+						return 0
+					}
+
+					// If we already detected SNI but didn't match filter, skip further processing
+					if st.sniDetected && !st.sniMatched {
 						w.mu.Unlock()
 						_ = q.SetVerdict(id, nfqueue.NfAccept)
 						return 0
@@ -199,8 +212,10 @@ func (w *Worker) Start() error {
 						// Mark this flow as processed
 						w.mu.Lock()
 						if st, exists := w.flows[k]; exists {
-							st.sniProcessed = true
-							st.sniFound = matched
+							st.sniDetected = true   // SNI was detected (regardless of match)
+							st.sniMatched = matched // Whether it matched filter
+							st.sni = host
+							// Don't set sniProcessed yet - will be set after handling
 						}
 						w.mu.Unlock()
 
@@ -209,8 +224,14 @@ func (w *Worker) Start() error {
 						metrics.RecordPacket(uint64(len(raw)))
 
 						log.Infof("SNI TCP%v: %s %s:%d -> %s:%d", target, host, src.String(), sport, dst.String(), dport)
-
 						if matched {
+							// Mark as fully processed BEFORE dropping packet
+							w.mu.Lock()
+							if st, exists := w.flows[k]; exists {
+								st.sniProcessed = true
+							}
+							w.mu.Unlock()
+
 							// This is the SNI packet itself - fragment with fake
 							if v == 4 {
 								w.dropAndInjectTCP(cfg, raw, dst, onlyOnce)
@@ -219,6 +240,12 @@ func (w *Worker) Start() error {
 							}
 							_ = q.SetVerdict(id, nfqueue.NfDrop)
 						} else {
+							// Mark as processed (non-matching domain)
+							w.mu.Lock()
+							if st, exists := w.flows[k]; exists {
+								st.sniProcessed = true
+							}
+							w.mu.Unlock()
 							_ = q.SetVerdict(id, nfqueue.NfAccept)
 						}
 						return 0
@@ -405,13 +432,12 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 	}
 
 	// If we already found SNI for this flow, return it
-	if st.sniFound && st.sni != "" {
-		sni := st.sni
+	if st.sniDetected {
 		w.mu.Unlock()
-		return sni, false
+		return st.sni, false
 	}
 
-	// ALWAYS accumulate data first
+	// ALWAYS accumulate data first (up to limit)
 	if len(st.buf) < w.limit {
 		need := w.limit - len(st.buf)
 		if len(chunk) < need {
@@ -428,11 +454,6 @@ func (w *Worker) feed(key string, chunk []byte) (string, bool) {
 	// Try to parse SNI from accumulated buffer
 	host, ok := sni.ParseTLSClientHelloSNI(buf)
 	if ok && host != "" {
-		w.mu.Lock()
-		st.sniFound = true
-		st.sni = host
-		st.buf = nil // Clear the buffer to free memory
-		w.mu.Unlock()
 		return host, true
 	}
 
