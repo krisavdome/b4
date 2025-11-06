@@ -182,9 +182,9 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 
 	// Preserve domains and checker from current config
 	defaultCfg.Domains = a.cfg.Domains
-	defaultCfg.Checker = a.cfg.Checker
+	defaultCfg.System.Checker = a.cfg.System.Checker
 	defaultCfg.ConfigPath = a.cfg.ConfigPath
-	defaultCfg.WebServer.IsEnabled = a.cfg.WebServer.IsEnabled
+	defaultCfg.System.WebServer.IsEnabled = a.cfg.System.WebServer.IsEnabled
 
 	// Update main config
 	a.updateMainConfig(&defaultCfg)
@@ -229,6 +229,6 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) updateMainConfig(newCfg *config.Config) {
 	newCfg.ConfigPath = a.cfg.ConfigPath
-	newCfg.WebServer.IsEnabled = a.cfg.WebServer.IsEnabled
+	newCfg.System.WebServer.IsEnabled = a.cfg.System.WebServer.IsEnabled
 	a.cfg = newCfg
 }

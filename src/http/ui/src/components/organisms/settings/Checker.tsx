@@ -26,8 +26,8 @@ export const CheckerSettings: React.FC<CheckerSettingsProps> = ({
 
   const handleAddDomain = () => {
     if (newDomain.trim()) {
-      onChange("checker.domains", [
-        ...config.checker.domains,
+      onChange("system.checker.domains", [
+        ...config.system.checker.domains,
         newDomain.trim(),
       ]);
       setNewDomain("");
@@ -36,8 +36,8 @@ export const CheckerSettings: React.FC<CheckerSettingsProps> = ({
 
   const handleRemoveDomain = (domain: string) => {
     onChange(
-      "checker.domains",
-      config.checker.domains.filter((d: string) => d !== domain)
+      "system.checker.domains",
+      config.system.checker.domains.filter((d: string) => d !== domain)
     );
   };
 
@@ -52,9 +52,9 @@ export const CheckerSettings: React.FC<CheckerSettingsProps> = ({
           <SettingTextField
             label="Max Concurrent Tests"
             type="number"
-            value={config.checker.max_concurrent}
+            value={config.system.checker.max_concurrent}
             onChange={(e) =>
-              onChange("checker.max_concurrent", Number(e.target.value))
+              onChange("system.checker.max_concurrent", Number(e.target.value))
             }
             helperText="Maximum number of concurrent tests"
           />
@@ -63,9 +63,9 @@ export const CheckerSettings: React.FC<CheckerSettingsProps> = ({
           <SettingTextField
             label="Test Timeout (seconds)"
             type="number"
-            value={config.checker.timeout}
+            value={config.system.checker.timeout}
             onChange={(e) =>
-              onChange("checker.timeout", Number(e.target.value))
+              onChange("system.checker.timeout", Number(e.target.value))
             }
             helperText="Domain request timeout in seconds"
           />
@@ -124,18 +124,18 @@ export const CheckerSettings: React.FC<CheckerSettingsProps> = ({
                 overflowY: "auto",
                 p: 1,
                 border:
-                  config.checker.domains.length > 0
+                  config.system.checker.domains.length > 0
                     ? `1px solid ${colors.border.default}`
                     : "none",
                 borderRadius: 1,
               }}
             >
-              {config.checker.domains.length === 0 ? (
+              {config.system.checker.domains.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No domains added
                 </Typography>
               ) : (
-                config.checker.domains.map((domain: string) => (
+                config.system.checker.domains.map((domain: string) => (
                   <Chip
                     key={domain}
                     label={domain}

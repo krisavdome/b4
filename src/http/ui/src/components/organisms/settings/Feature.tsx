@@ -24,20 +24,22 @@ export const FeatureSettings: React.FC<FeatureSettingsProps> = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSwitch
             label="Enable IPv4 Support"
-            checked={config.ipv4}
-            onChange={(checked) => onChange("ipv4", checked)}
+            checked={config.queue.ipv4}
+            onChange={(checked) => onChange("queue.ipv4", checked)}
             description="Enable IPv4 support"
           />
           <SettingSwitch
             label="Enable IPv6 Support"
-            checked={config.ipv6}
-            onChange={(checked) => onChange("ipv6", checked)}
+            checked={config.queue.ipv6}
+            onChange={(checked) => onChange("queue.ipv6", checked)}
             description="Enable IPv6 support"
           />
           <SettingSwitch
             label="Skip IPTables/NFTables Setup"
-            checked={config.skip_tables}
-            onChange={(checked) => onChange("skip_tables", checked)}
+            checked={config.system.tables.skip_setup}
+            onChange={(checked) =>
+              onChange("system.tables.skip_setup", checked)
+            }
             description="Skip automatic IPTables/NFTables rules configuration"
           />
         </Grid>

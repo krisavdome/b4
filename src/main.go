@@ -85,7 +85,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 
 	log.Infof("Starting B4 packet processor")
 
-	cfg.LoadFromFile(cfg.ConfigPath)
+	cfg.LoadWithMigration(cfg.ConfigPath)
 	cfg.SaveToFile(cfg.ConfigPath)
 
 	// Validate configuration
@@ -99,8 +99,8 @@ func runB4(cmd *cobra.Command, args []string) error {
 	metrics := handler.GetMetricsCollector()
 	metrics.RecordEvent("info", "B4 starting up")
 
-	if cfg.WebServer.Port > 0 {
-		metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.WebServer.Port))
+	if cfg.System.WebServer.Port > 0 {
+		metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.System.WebServer.Port))
 	}
 
 	// Load domains from geodata if specified
@@ -143,7 +143,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 	}
 
 	// Setup iptables/nftables rules
-	if !cfg.Tables.SkipSetup {
+	if !cfg.System.Tables.SkipSetup {
 		log.Tracef("Clearing existing iptables/nftables rules")
 		tables.ClearRules(&cfg)
 
@@ -159,7 +159,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 	}
 
 	// Start netfilter queue pool
-	log.Infof("Starting netfilter queue pool (queue: %d, threads: %d)", cfg.QueueStartNum, cfg.Threads)
+	log.Infof("Starting netfilter queue pool (queue: %d, threads: %d)", cfg.Queue.StartNum, cfg.Queue.Threads)
 	pool := nfq.NewPool(&cfg, &allDomains)
 	if err := pool.Start(); err != nil {
 		metrics.RecordEvent("error", fmt.Sprintf("NFQueue start failed: %v", err))
@@ -167,12 +167,12 @@ func runB4(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("netfilter queue start failed: %w", err)
 	}
 
-	metrics.RecordEvent("info", fmt.Sprintf("NFQueue started with %d threads", cfg.Threads))
+	metrics.RecordEvent("info", fmt.Sprintf("NFQueue started with %d threads", cfg.Queue.Threads))
 	metrics.NFQueueStatus = "active"
 
 	// Start tables monitor to handle rule restoration if system wipes them
 	var tablesMonitor *tables.Monitor
-	if !cfg.Tables.SkipSetup && cfg.Tables.MonitorInterval > 0 {
+	if !cfg.System.Tables.SkipSetup && cfg.System.Tables.MonitorInterval > 0 {
 		tablesMonitor = tables.NewMonitor(&cfg)
 		tablesMonitor.Start()
 	}
@@ -251,7 +251,7 @@ func gracefulShutdown(cfg *config.Config, pool *nfq.Pool, httpServer *http.Serve
 	}()
 
 	// Clean up iptables/nftables rules
-	if !cfg.Tables.SkipSetup {
+	if !cfg.System.Tables.SkipSetup {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -312,11 +312,11 @@ func gracefulShutdown(cfg *config.Config, pool *nfq.Pool, httpServer *http.Serve
 
 func initLogging(cfg *config.Config) error {
 	w := io.MultiWriter(os.Stderr, b4http.LogWriter())
-	log.Init(w, log.Level(cfg.Logging.Level), cfg.Logging.Instaflush)
+	log.Init(w, log.Level(cfg.System.Logging.Level), cfg.System.Logging.Instaflush)
 
-	fmt.Fprintf(os.Stderr, "[INIT] Logging initialized at level %d\n", cfg.Logging.Level)
+	fmt.Fprintf(os.Stderr, "[INIT] Logging initialized at level %d\n", cfg.System.Logging.Level)
 
-	if cfg.Logging.Syslog {
+	if cfg.System.Logging.Syslog {
 		if err := log.EnableSyslog("b4"); err != nil {
 			log.Errorf("Failed to enable syslog: %v", err)
 			return err

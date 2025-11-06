@@ -12,7 +12,7 @@ import (
 
 // AddRulesAuto automatically detects and uses the appropriate firewall backend
 func AddRules(cfg *config.Config) error {
-	if cfg.Tables.SkipSetup {
+	if cfg.System.Tables.SkipSetup {
 		return nil
 	}
 
@@ -33,7 +33,7 @@ func AddRules(cfg *config.Config) error {
 
 // ClearRulesAuto automatically detects and clears the appropriate firewall rules
 func ClearRules(cfg *config.Config) error {
-	if cfg.Tables.SkipSetup {
+	if cfg.System.Tables.SkipSetup {
 		return nil
 	}
 

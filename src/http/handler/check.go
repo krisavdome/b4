@@ -20,6 +20,7 @@ func (api *API) handleStartCheck(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	chckCfg := &api.cfg.System.Checker
 
 	var req StartCheckRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -30,17 +31,17 @@ func (api *API) handleStartCheck(w http.ResponseWriter, r *http.Request) {
 
 	// Set defaults
 	if req.Timeout <= 0 {
-		req.Timeout = time.Duration(api.cfg.Checker.TimeoutSeconds) * time.Second
+		req.Timeout = time.Duration(chckCfg.TimeoutSeconds) * time.Second
 	}
 	if req.MaxConcurrent <= 0 {
-		req.MaxConcurrent = api.cfg.Checker.MaxConcurrent
+		req.MaxConcurrent = chckCfg.MaxConcurrent
 	}
 
 	// Select domains
 	seen := make(map[string]bool)
 	domains := []string{}
 
-	for _, d := range append(api.cfg.Checker.Domains, api.cfg.Domains.SNIDomains...) {
+	for _, d := range append(chckCfg.Domains, api.cfg.Domains.SNIDomains...) {
 		if !seen[d] {
 			seen[d] = true
 			domains = append(domains, d)

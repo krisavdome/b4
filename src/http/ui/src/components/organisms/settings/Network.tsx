@@ -25,9 +25,9 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="Queue Start Number"
             type="number"
-            value={config.queue_start_num}
+            value={config.queue.start_num}
             onChange={(e) =>
-              onChange("queue_start_num", Number(e.target.value))
+              onChange("queue.start_num", Number(e.target.value))
             }
             helperText="Netfilter queue number to use (0-65535)"
           />
@@ -36,8 +36,8 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="Worker Threads"
             type="number"
-            value={config.threads}
-            onChange={(e) => onChange("threads", Number(e.target.value))}
+            value={config.queue.threads}
+            onChange={(e) => onChange("queue.threads", Number(e.target.value))}
             helperText="Number of worker threads (minimum 1)"
           />
         </Grid>
@@ -45,8 +45,8 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="Packet Mark"
             type="number"
-            value={config.mark}
-            onChange={(e) => onChange("mark", Number(e.target.value))}
+            value={config.queue.mark}
+            onChange={(e) => onChange("queue.mark", Number(e.target.value))}
             helperText="Packet mark value for iptables/nftables rules"
           />
         </Grid>
@@ -54,8 +54,10 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="Segment 2 Delay (ms)"
             type="number"
-            value={config.seg2delay}
-            onChange={(e) => onChange("seg2delay", Number(e.target.value))}
+            value={config.bypass.tcp.seg2delay}
+            onChange={(e) =>
+              onChange("bypass.tcp.seg2delay", Number(e.target.value))
+            }
             helperText="Delay between segments in milliseconds"
           />
         </Grid>
@@ -63,9 +65,9 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="TCP Connection Bytes Limit"
             type="number"
-            value={config.conn_bytes_limit}
+            value={config.bypass.tcp.conn_bytes_limit}
             onChange={(e) =>
-              onChange("conn_bytes_limit", Number(e.target.value))
+              onChange("bypass.tcp.conn_bytes_limit", Number(e.target.value))
             }
             helperText="Connection bytes limit for TCP (default 19)"
           />
@@ -74,9 +76,9 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({
           <SettingTextField
             label="UDP Connection Bytes Limit"
             type="number"
-            value={config.udp.conn_bytes_limit}
+            value={config.bypass.udp.conn_bytes_limit}
             onChange={(e) =>
-              onChange("udp.conn_bytes_limit", Number(e.target.value))
+              onChange("bypass.udp.conn_bytes_limit", Number(e.target.value))
             }
             helperText="Connection bytes limit for UDP (default 8)"
           />

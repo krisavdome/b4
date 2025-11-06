@@ -19,7 +19,7 @@ type Monitor struct {
 
 // NewMonitor creates a new tables monitor
 func NewMonitor(cfg *config.Config) *Monitor {
-	interval := time.Duration(cfg.Tables.MonitorInterval) * time.Second
+	interval := time.Duration(cfg.System.Tables.MonitorInterval) * time.Second
 	if interval < time.Second {
 		interval = 10 * time.Second // Default fallback
 	}
@@ -33,7 +33,7 @@ func NewMonitor(cfg *config.Config) *Monitor {
 }
 
 func (m *Monitor) Start() {
-	if m.cfg.Tables.SkipSetup || m.cfg.Tables.MonitorInterval <= 0 {
+	if m.cfg.System.Tables.SkipSetup || m.cfg.System.Tables.MonitorInterval <= 0 {
 		log.Infof("Tables monitor disabled")
 		return
 	}
@@ -44,7 +44,7 @@ func (m *Monitor) Start() {
 }
 
 func (m *Monitor) Stop() {
-	if m.cfg.Tables.SkipSetup || m.cfg.Tables.MonitorInterval <= 0 {
+	if m.cfg.System.Tables.SkipSetup || m.cfg.System.Tables.MonitorInterval <= 0 {
 		return
 	}
 
@@ -87,10 +87,10 @@ func (m *Monitor) checkRules() bool {
 
 func (m *Monitor) checkIPTablesRules() bool {
 	ipts := []string{}
-	if m.cfg.IPv4Enabled && hasBinary("iptables") {
+	if m.cfg.Queue.IPv4Enabled && hasBinary("iptables") {
 		ipts = append(ipts, "iptables")
 	}
-	if m.cfg.IPv6Enabled && hasBinary("ip6tables") {
+	if m.cfg.Queue.IPv6Enabled && hasBinary("ip6tables") {
 		ipts = append(ipts, "ip6tables")
 	}
 	if len(ipts) == 0 {

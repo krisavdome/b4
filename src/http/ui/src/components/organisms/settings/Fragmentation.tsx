@@ -32,10 +32,13 @@ export const FragmentationSettings: React.FC<FragmentationSettingsProps> = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSelect
             label="Fragment Strategy"
-            value={config.fragmentation.strategy}
+            value={config.bypass.fragmentation.strategy}
             options={fragmentationOptions}
             onChange={(e) =>
-              onChange("fragmentation.strategy", e.target.value as string)
+              onChange(
+                "bypass.fragmentation.strategy",
+                e.target.value as string
+              )
             }
             helperText="Choose fragmentation method"
           />
@@ -44,7 +47,7 @@ export const FragmentationSettings: React.FC<FragmentationSettingsProps> = ({
           <SettingTextField
             label="SNI Fragment Position"
             type="number"
-            value={config.fragmentation.sni_position}
+            value={config.bypass.fragmentation.sni_position}
             onChange={(e) =>
               onChange("fragmentation.sni_position", Number(e.target.value))
             }
@@ -54,9 +57,9 @@ export const FragmentationSettings: React.FC<FragmentationSettingsProps> = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSwitch
             label="Reverse Fragment Order"
-            checked={config.fragmentation.sni_reverse}
+            checked={config.bypass.fragmentation.sni_reverse}
             onChange={(checked) =>
-              onChange("fragmentation.sni_reverse", checked)
+              onChange("bypass.fragmentation.sni_reverse", checked)
             }
             description="Send fragments in reverse order"
           />
@@ -64,9 +67,9 @@ export const FragmentationSettings: React.FC<FragmentationSettingsProps> = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSwitch
             label="Fragment in Middle of SNI"
-            checked={config.fragmentation.middle_sni}
+            checked={config.bypass.fragmentation.middle_sni}
             onChange={(checked) =>
-              onChange("fragmentation.middle_sni", checked)
+              onChange("bypass.fragmentation.middle_sni", checked)
             }
             description="Fragment in the middle of the SNI field"
           />

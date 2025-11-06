@@ -76,22 +76,20 @@ export interface IUdpConfig {
   dport_max: number;
   filter_quic: UdpFilterQuicMode;
   conn_bytes_limit: number;
+  filter_stun: boolean;
+}
+export interface IQueueConfig {
+  start_num: number;
+  threads: number;
+  mark: number;
+  ipv4: boolean;
+  ipv6: boolean;
 }
 
 export interface IB4Config {
-  queue_start_num: number;
-  threads: number;
-  mark: number;
-  conn_bytes_limit: number;
-  seg2delay: number;
-  skip_tables: boolean;
-
-  faking: IFaking;
-  logging: ILogging;
+  queue: IQueueConfig;
   domains: IDomainConfig;
-  fragmentation: IFragmentation;
-  udp: IUdpConfig;
-  checker: ICheckerConfig;
+  system: ISystemConfig;
 }
 
 export interface ICheckerConfig {
@@ -100,37 +98,91 @@ export interface ICheckerConfig {
   domains: string[];
 }
 
+export interface ITcpConfig {
+  conn_bytes_limit: number;
+  seg2delay: number;
+}
+
+export interface IBypassConfig {
+  tcp: ITcpConfig;
+  udp: IUdpConfig;
+  fragmentation: IFragmentation;
+  faking: IFaking;
+}
+export interface IWebServerConfig {
+  port: number;
+}
+export interface ITableConfig {
+  monitor_interval: number;
+  skip_setup: false;
+}
+export interface ISystemConfig {
+  logging: ILogging;
+  web_server: IWebServerConfig;
+  tables: ITableConfig;
+  checker: ICheckerConfig;
+}
+
 export default class B4Config implements IB4Config {
-  queue_start_num = 537;
-  threads = 4;
-  mark = 32768;
-  conn_bytes_limit = 19;
-  seg2delay = 0;
-  skip_tables = false;
-  ipv4 = true;
-  ipv6 = false;
-
-  logging: ILogging = {
-    level: LogLevel.INFO,
-    instaflush: false,
-    syslog: false,
+  queue: IQueueConfig = {
+    start_num: 0,
+    threads: 4,
+    mark: 32768,
+    ipv4: true,
+    ipv6: false,
   };
 
-  faking: IFaking = {
-    strategy: "pastseq",
-    sni: true,
-    ttl: 8,
-    seq_offset: 10000,
-    sni_seq_length: 1,
-    sni_type: FakingPayloadType.DEFAULT,
-    custom_payload: "",
+  system: ISystemConfig = {
+    logging: {
+      level: LogLevel.INFO,
+      instaflush: true,
+      syslog: false,
+    },
+    web_server: {
+      port: 7000,
+    },
+    tables: {
+      monitor_interval: 10,
+      skip_setup: false,
+    },
+    checker: {
+      timeout: 15,
+      max_concurrent: 4,
+      domains: [],
+    },
   };
 
-  fragmentation: IFragmentation = {
-    strategy: "tcp",
-    sni_position: 5,
-    sni_reverse: true,
-    middle_sni: true,
+  bypass: IBypassConfig = {
+    tcp: {
+      conn_bytes_limit: 19,
+      seg2delay: 0,
+    },
+    udp: {
+      mode: "fake",
+      fake_seq_length: 6,
+      fake_len: 64,
+      faking_strategy: "none",
+      dport_min: 0,
+      dport_max: 0,
+      filter_quic: "disabled",
+      conn_bytes_limit: 8,
+      filter_stun: true,
+    },
+    fragmentation: {
+      strategy: "tcp",
+      sni_position: 5,
+      sni_reverse: true,
+      middle_sni: true,
+    },
+    faking: {
+      strategy: "ttl",
+      sni: true,
+      ttl: 64,
+      seq_offset: 1000,
+      sni_seq_length: 6,
+      sni_type: FakingPayloadType.DEFAULT,
+      custom_payload: "",
+    },
   };
 
   domains: IDomainConfig = {
@@ -141,22 +193,5 @@ export default class B4Config implements IB4Config {
     geoip_categories: [],
     block_domains: [],
     block_geosite_categories: [],
-  };
-
-  udp: IUdpConfig = {
-    mode: "drop",
-    fake_seq_length: 6,
-    fake_len: 64,
-    faking_strategy: "none",
-    dport_min: 0,
-    dport_max: 0,
-    filter_quic: "parse",
-    conn_bytes_limit: 8,
-  };
-
-  checker: ICheckerConfig = {
-    timeout: 15,
-    max_concurrent: 4,
-    domains: [],
   };
 }

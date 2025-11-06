@@ -90,12 +90,12 @@ func (n *NFTablesManager) createChain(chain string, hook string, priority int, p
 
 // buildNFQueueAction builds the nfqueue action string
 func (n *NFTablesManager) buildNFQueueAction() string {
-	if n.cfg.Threads > 1 {
-		start := n.cfg.QueueStartNum
-		end := n.cfg.QueueStartNum + n.cfg.Threads - 1
+	if n.cfg.Queue.Threads > 1 {
+		start := n.cfg.Queue.StartNum
+		end := n.cfg.Queue.StartNum + n.cfg.Queue.Threads - 1
 		return fmt.Sprintf("queue num %d-%d bypass", start, end)
 	}
-	return fmt.Sprintf("queue num %d bypass", n.cfg.QueueStartNum)
+	return fmt.Sprintf("queue num %d bypass", n.cfg.Queue.StartNum)
 }
 
 func (n *NFTablesManager) Apply() error {
@@ -124,7 +124,7 @@ func (n *NFTablesManager) Apply() error {
 		return err
 	}
 
-	markAccept := n.cfg.Mark
+	markAccept := n.cfg.Queue.Mark
 
 	// Add rules
 	if err := n.addRuleArgs("postrouting", "jump", nftChainName); err != nil {
@@ -139,8 +139,8 @@ func (n *NFTablesManager) Apply() error {
 		return err
 	}
 
-	tcpLimit := fmt.Sprintf("%d", cfg.ConnBytesLimit+1)
-	udpLimit := fmt.Sprintf("%d", cfg.UDP.ConnBytesLimit+1)
+	tcpLimit := fmt.Sprintf("%d", cfg.Bypass.TCP.ConnBytesLimit+1)
+	udpLimit := fmt.Sprintf("%d", cfg.Bypass.UDP.ConnBytesLimit+1)
 
 	tcpRuleArgs := []string{"tcp", "dport", "443", "ct", "original", "packets", "<", tcpLimit, "counter"}
 	tcpRuleArgs = append(tcpRuleArgs, strings.Fields(n.buildNFQueueAction())...)

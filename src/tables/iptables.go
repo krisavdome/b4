@@ -185,17 +185,17 @@ func (m Manifest) RevertSysctls() {
 func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 	cfg := manager.cfg
 	var ipts []string
-	if cfg.IPv4Enabled && hasBinary("iptables") {
+	if cfg.Queue.IPv4Enabled && hasBinary("iptables") {
 		ipts = append(ipts, "iptables")
 	}
-	if cfg.IPv6Enabled && hasBinary("ip6tables") {
+	if cfg.Queue.IPv6Enabled && hasBinary("ip6tables") {
 		ipts = append(ipts, "ip6tables")
 	}
 	if len(ipts) == 0 {
 		return Manifest{}, errors.New("no valid iptables binaries found")
 	}
-	queueNum := cfg.QueueStartNum
-	threads := cfg.Threads
+	queueNum := cfg.Queue.StartNum
+	threads := cfg.Queue.Threads
 	chainName := "B4"
 	markAccept := "32768/32768"
 
@@ -210,8 +210,8 @@ func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: chainName, Action: "I", Spec: []string{"-m", "mark", "--mark", markAccept, "-j", "RETURN"}},
 		)
 
-		tcpConnbytesRange := fmt.Sprintf("0:%d", cfg.ConnBytesLimit)
-		udpConnbytesRange := fmt.Sprintf("0:%d", cfg.UDP.ConnBytesLimit)
+		tcpConnbytesRange := fmt.Sprintf("0:%d", cfg.Bypass.TCP.ConnBytesLimit)
+		udpConnbytesRange := fmt.Sprintf("0:%d", cfg.Bypass.UDP.ConnBytesLimit)
 
 		tcpSpec := append(
 			[]string{"-p", "tcp", "--dport", "443",

@@ -19,7 +19,7 @@ import (
 var uiDist embed.FS
 
 func StartServer(cfg *config.Config, pool *nfq.Pool) (*stdhttp.Server, error) {
-	if cfg.WebServer.Port == 0 {
+	if cfg.System.WebServer.Port == 0 {
 		log.Infof("Web server disabled (port 0)")
 		return nil, nil
 	}
@@ -40,12 +40,12 @@ func StartServer(cfg *config.Config, pool *nfq.Pool) (*stdhttp.Server, error) {
 	var httpHandler stdhttp.Handler = mux
 	httpHandler = cors(httpHandler)
 
-	addr := fmt.Sprintf(":%d", cfg.WebServer.Port)
+	addr := fmt.Sprintf(":%d", cfg.System.WebServer.Port)
 	log.Infof("Starting web server on %s", addr)
 
 	// Record startup event
 	metrics := handler.GetMetricsCollector()
-	metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.WebServer.Port))
+	metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.System.WebServer.Port))
 
 	srv := &stdhttp.Server{
 		Addr:              addr,

@@ -26,8 +26,8 @@ func NewWorkerWithQueue(cfg *config.Config, domains *[]string, qnum uint16) *Wor
 }
 
 func NewPool(cfg *config.Config, domains *[]string) *Pool {
-	threads := cfg.Threads
-	start := uint16(cfg.QueueStartNum)
+	threads := cfg.Queue.Threads
+	start := uint16(cfg.Queue.StartNum)
 	if threads < 1 {
 		threads = 1
 	}

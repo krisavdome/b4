@@ -52,6 +52,7 @@ export const useConfigReset = () => {
       setLoading(false);
       return data;
     } catch (err) {
+      console.error("Error resetting config:", err);
       const errorMessage = "Failed to reset configuration";
       setError(errorMessage);
       setLoading(false);

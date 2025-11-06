@@ -32,23 +32,27 @@ export const LoggingSettings: React.FC<LoggingSettingsProps> = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSelect
             label="Log Level"
-            value={config.logging.level}
+            value={config.system.logging.level}
             options={LOG_LEVELS}
-            onChange={(e) => onChange("logging.level", Number(e.target.value))}
+            onChange={(e) =>
+              onChange("system.logging.level", Number(e.target.value))
+            }
             helperText="Set the verbosity of logging output"
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
           <SettingSwitch
             label="Instant Flush"
-            checked={config.logging.instaflush}
-            onChange={(checked) => onChange("logging.instaflush", checked)}
+            checked={config.system.logging.instaflush}
+            onChange={(checked) =>
+              onChange("system.logging.instaflush", checked)
+            }
             description="Flush logs immediately (may impact performance)"
           />
           <SettingSwitch
             label="Syslog"
-            checked={config.logging.syslog}
-            onChange={(checked) => onChange("logging.syslog", checked)}
+            checked={config.system.logging.syslog}
+            onChange={(checked) => onChange("system.logging.syslog", checked)}
             description="Enable syslog output"
           />
         </Grid>

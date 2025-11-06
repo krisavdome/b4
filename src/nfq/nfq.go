@@ -26,7 +26,8 @@ var (
 
 func (w *Worker) Start() error {
 	cfg := w.getConfig()
-	s, err := sock.NewSenderWithMark(int(cfg.Mark))
+	mark := cfg.Queue.Mark
+	s, err := sock.NewSenderWithMark(int(mark))
 	if err != nil {
 		return err
 	}
@@ -55,10 +56,13 @@ func (w *Worker) Start() error {
 		defer w.wg.Done()
 		_ = q.RegisterWithErrorFunc(w.ctx, func(a nfqueue.Attribute) int {
 			cfg := w.getConfig()
+
+			udpCfg := &cfg.Bypass.UDP
+
 			matcher := w.getMatcher()
 			id := *a.PacketID
 
-			if a.Mark != nil && *a.Mark == uint32(cfg.Mark) {
+			if a.Mark != nil && *a.Mark == uint32(mark) {
 				_ = q.SetVerdict(id, nfqueue.NfAccept)
 				return 0
 			}
@@ -187,7 +191,7 @@ func (w *Worker) Start() error {
 					sport := binary.BigEndian.Uint16(udp[0:2])
 					dport := binary.BigEndian.Uint16(udp[2:4])
 
-					if cfg.UDP.FilterSTUN && stun.IsSTUNMessage(payload) {
+					if cfg.Bypass.UDP.FilterSTUN && stun.IsSTUNMessage(payload) {
 						// Log at TRACE level to avoid spam (STUN is very frequent)
 						log.Tracef("STUN %s:%d -> %s:%d", src.String(), sport, dst.String(), dport)
 						_ = q.SetVerdict(id, nfqueue.NfAccept)
@@ -210,14 +214,14 @@ func (w *Worker) Start() error {
 					}
 
 					// Now check if filtering is disabled
-					if cfg.UDP.FilterQUIC == "disabled" {
+					if udpCfg.FilterQUIC == "disabled" {
 						_ = q.SetVerdict(id, nfqueue.NfAccept)
 						return 0
 					}
 
 					// Handle based on configuration
 					handle := false
-					switch cfg.UDP.FilterQUIC {
+					switch udpCfg.FilterQUIC {
 					case "all":
 						handle = true
 					case "parse":
@@ -227,11 +231,11 @@ func (w *Worker) Start() error {
 					}
 
 					if handle {
-						if cfg.UDP.Mode == "drop" {
+						if udpCfg.Mode == "drop" {
 							_ = q.SetVerdict(id, nfqueue.NfDrop)
 							return 0
 						}
-						if cfg.UDP.Mode == "fake" {
+						if udpCfg.Mode == "fake" {
 							if v == IPv4 {
 								w.dropAndInjectQUIC(cfg, raw, dst)
 							} else {
@@ -268,14 +272,16 @@ func (w *Worker) Start() error {
 }
 
 func (w *Worker) dropAndInjectQUIC(cfg *config.Config, raw []byte, dst net.IP) {
-	if cfg.UDP.Mode != "fake" {
+	udpCfg := &cfg.Bypass.UDP
+	seg2d := cfg.Bypass.TCP.Seg2Delay
+	if udpCfg.Mode != "fake" {
 		return
 	}
-	if cfg.UDP.FakeSeqLength > 0 {
-		for i := 0; i < cfg.UDP.FakeSeqLength; i++ {
-			fake, ok := sock.BuildFakeUDPFromOriginalV4(raw, cfg.UDP.FakeLen, cfg.Faking.TTL)
+	if udpCfg.FakeSeqLength > 0 {
+		for i := 0; i < udpCfg.FakeSeqLength; i++ {
+			fake, ok := sock.BuildFakeUDPFromOriginalV4(raw, udpCfg.FakeLen, cfg.Bypass.Faking.TTL)
 			if ok {
-				if cfg.UDP.FakingStrategy == "checksum" {
+				if udpCfg.FakingStrategy == "checksum" {
 					ipHdrLen := int((fake[0] & 0x0F) * 4)
 					if len(fake) >= ipHdrLen+8 {
 						fake[ipHdrLen+6] ^= 0xFF
@@ -283,8 +289,8 @@ func (w *Worker) dropAndInjectQUIC(cfg *config.Config, raw []byte, dst net.IP) {
 					}
 				}
 				_ = w.sock.SendIPv4(fake, dst)
-				if cfg.Seg2Delay > 0 {
-					time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+				if seg2d > 0 {
+					time.Sleep(time.Duration(seg2d) * time.Millisecond)
 				} else {
 					time.Sleep(1 * time.Millisecond)
 				}
@@ -299,22 +305,23 @@ func (w *Worker) dropAndInjectQUIC(cfg *config.Config, raw []byte, dst net.IP) {
 		return
 	}
 
-	if cfg.Fragmentation.SNIReverse {
+	if cfg.Bypass.Fragmentation.SNIReverse {
 		_ = w.sock.SendIPv4(frags[0], dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(frags[1], dst)
 	} else {
 		_ = w.sock.SendIPv4(frags[1], dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(frags[0], dst)
 	}
 }
 
 func (w *Worker) dropAndInjectTCP(cfg *config.Config, raw []byte, dst net.IP) {
+	bp := &cfg.Bypass
 	if len(raw) < 40 {
 		_ = w.sock.SendIPv4(raw, dst)
 		return
@@ -330,11 +337,11 @@ func (w *Worker) dropAndInjectTCP(cfg *config.Config, raw []byte, dst net.IP) {
 		return
 	}
 
-	if cfg.Faking.SNI && cfg.Faking.SNISeqLength > 0 {
+	if bp.Faking.SNI && bp.Faking.SNISeqLength > 0 {
 		w.sendFakeSNISequence(cfg, raw, dst)
 	}
 
-	switch cfg.Fragmentation.Strategy {
+	switch bp.Fragmentation.Strategy {
 	case "tcp":
 		w.sendTCPFragments(cfg, raw, dst)
 	case "ip":
@@ -347,6 +354,8 @@ func (w *Worker) dropAndInjectTCP(cfg *config.Config, raw []byte, dst net.IP) {
 }
 
 func (w *Worker) sendTCPFragments(cfg *config.Config, packet []byte, dst net.IP) {
+	bp := &cfg.Bypass
+	seg2d := bp.TCP.Seg2Delay
 	ipHdrLen := int((packet[0] & 0x0F) * 4)
 	tcpHdrLen := int((packet[ipHdrLen+12] >> 4) * 4)
 	totalLen := len(packet)
@@ -358,11 +367,11 @@ func (w *Worker) sendTCPFragments(cfg *config.Config, packet []byte, dst net.IP)
 	}
 
 	payload := packet[payloadStart:]
-	p1 := cfg.Fragmentation.SNIPosition
+	p1 := bp.Fragmentation.SNIPosition
 	validP1 := p1 > 0 && p1 < payloadLen
 
 	p2 := -1
-	if cfg.Fragmentation.MiddleSNI {
+	if bp.Fragmentation.MiddleSNI {
 		if s, e, ok := locateSNI(payload); ok && e-s >= 4 {
 			p2 = s + (e-s)/2
 		}
@@ -413,24 +422,24 @@ func (w *Worker) sendTCPFragments(cfg *config.Config, packet []byte, dst net.IP)
 		sock.FixIPv4Checksum(seg3[:ipHdrLen])
 		sock.FixTCPChecksum(seg3)
 
-		if cfg.Fragmentation.SNIReverse {
+		if bp.Fragmentation.SNIReverse {
 			_ = w.sock.SendIPv4(seg2, dst)
-			if cfg.Seg2Delay > 0 {
-				time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+			if seg2d > 0 {
+				time.Sleep(time.Duration(seg2d) * time.Millisecond)
 			}
 			_ = w.sock.SendIPv4(seg1, dst)
-			if cfg.Seg2Delay > 0 {
-				time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+			if seg2d > 0 {
+				time.Sleep(time.Duration(seg2d) * time.Millisecond)
 			}
 			_ = w.sock.SendIPv4(seg3, dst)
 		} else {
 			_ = w.sock.SendIPv4(seg1, dst)
-			if cfg.Seg2Delay > 0 {
-				time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+			if seg2d > 0 {
+				time.Sleep(time.Duration(seg2d) * time.Millisecond)
 			}
 			_ = w.sock.SendIPv4(seg2, dst)
-			if cfg.Seg2Delay > 0 {
-				time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+			if seg2d > 0 {
+				time.Sleep(time.Duration(seg2d) * time.Millisecond)
 			}
 			_ = w.sock.SendIPv4(seg3, dst)
 		}
@@ -462,23 +471,25 @@ func (w *Worker) sendTCPFragments(cfg *config.Config, packet []byte, dst net.IP)
 	sock.FixIPv4Checksum(seg2[:ipHdrLen])
 	sock.FixTCPChecksum(seg2)
 
-	if cfg.Fragmentation.SNIReverse {
+	if bp.Fragmentation.SNIReverse {
 		_ = w.sock.SendIPv4(seg2, dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(seg1, dst)
 	} else {
 		_ = w.sock.SendIPv4(seg1, dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(seg2, dst)
 	}
 }
 
 func (w *Worker) sendIPFragments(cfg *config.Config, packet []byte, dst net.IP) {
-	splitPos := cfg.Fragmentation.SNIPosition
+	bp := &cfg.Bypass
+	splitPos := bp.Fragmentation.SNIPosition
+	seg2d := bp.TCP.Seg2Delay
 	if splitPos <= 0 || splitPos >= len(packet) {
 		_ = w.sock.SendIPv4(packet, dst)
 		return
@@ -521,23 +532,24 @@ func (w *Worker) sendIPFragments(cfg *config.Config, packet []byte, dst net.IP) 
 	binary.BigEndian.PutUint16(frag2[2:4], uint16(frag2Len))
 	sock.FixIPv4Checksum(frag2[:ipHdrLen])
 
-	if cfg.Fragmentation.SNIReverse {
+	if bp.Fragmentation.SNIReverse {
 		_ = w.sock.SendIPv4(frag2, dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(frag1, dst)
 	} else {
 		_ = w.sock.SendIPv4(frag1, dst)
-		if cfg.Seg2Delay > 0 {
-			time.Sleep(time.Duration(cfg.Seg2Delay) * time.Millisecond)
+		if seg2d > 0 {
+			time.Sleep(time.Duration(seg2d) * time.Millisecond)
 		}
 		_ = w.sock.SendIPv4(frag2, dst)
 	}
 }
 
 func (w *Worker) sendFakeSNISequence(cfg *config.Config, original []byte, dst net.IP) {
-	if !cfg.Faking.SNI || cfg.Faking.SNISeqLength <= 0 {
+	fk := &cfg.Bypass.Faking
+	if !fk.SNI || fk.SNISeqLength <= 0 {
 		return
 	}
 
@@ -545,17 +557,17 @@ func (w *Worker) sendFakeSNISequence(cfg *config.Config, original []byte, dst ne
 	ipHdrLen := int((fake[0] & 0x0F) * 4)
 	tcpHdrLen := int((fake[ipHdrLen+12] >> 4) * 4)
 
-	for i := 0; i < cfg.Faking.SNISeqLength; i++ {
+	for i := 0; i < fk.SNISeqLength; i++ {
 		_ = w.sock.SendIPv4(fake, dst)
 
 		// Update for next iteration
-		if i+1 < cfg.Faking.SNISeqLength {
+		if i+1 < fk.SNISeqLength {
 			// Increment IP ID
 			id := binary.BigEndian.Uint16(fake[4:6])
 			binary.BigEndian.PutUint16(fake[4:6], id+1)
 
 			// Adjust sequence number for non-past/rand strategies
-			if cfg.Faking.Strategy != "pastseq" && cfg.Faking.Strategy != "randseq" {
+			if fk.Strategy != "pastseq" && fk.Strategy != "randseq" {
 				payloadLen := len(fake) - (ipHdrLen + tcpHdrLen)
 				seq := binary.BigEndian.Uint32(fake[ipHdrLen+4 : ipHdrLen+8])
 				binary.BigEndian.PutUint32(fake[ipHdrLen+4:ipHdrLen+8], seq+uint32(payloadLen))
@@ -712,9 +724,9 @@ func (w *Worker) gc(cfg *config.Config) {
 			return
 		case <-t.C:
 
-			if cfg.WebServer.IsEnabled {
+			if cfg.System.WebServer.IsEnabled {
 				mtcs := metrics.GetMetricsCollector()
-				workerID := int(w.qnum - uint16(cfg.QueueStartNum))
+				workerID := int(w.qnum - uint16(cfg.Queue.StartNum))
 				processed := atomic.LoadUint64(&w.packetsProcessed)
 				mtcs.UpdateSingleWorker(workerID, "active", processed)
 			}

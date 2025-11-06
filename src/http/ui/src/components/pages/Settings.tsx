@@ -179,33 +179,40 @@ export default function Settings() {
     return {
       // Core
       0:
-        config.queue_start_num !== originalConfig.queue_start_num ||
-        config.threads !== originalConfig.threads ||
-        config.mark !== originalConfig.mark ||
-        config.conn_bytes_limit !== originalConfig.conn_bytes_limit ||
-        config.seg2delay !== originalConfig.seg2delay ||
-        config.skip_tables !== originalConfig.skip_tables ||
-        config.ipv4 !== originalConfig.ipv4 ||
-        config.ipv6 !== originalConfig.ipv6,
+        config.queue.start_num !== originalConfig.queue.start_num ||
+        config.queue.threads !== originalConfig.queue.threads ||
+        config.queue.mark !== originalConfig.queue.mark ||
+        config.bypass.tcp.conn_bytes_limit !==
+          originalConfig.bypass.tcp.conn_bytes_limit ||
+        config.bypass.udp.conn_bytes_limit !==
+          originalConfig.bypass.udp.conn_bytes_limit ||
+        config.bypass.tcp.seg2delay !== originalConfig.bypass.tcp.seg2delay ||
+        config.system.tables.skip_setup !==
+          originalConfig.system.tables.skip_setup ||
+        config.queue.ipv4 !== originalConfig.queue.ipv4 ||
+        config.queue.ipv6 !== originalConfig.queue.ipv6,
       // Domains
       1:
         JSON.stringify(config.domains) !==
         JSON.stringify(originalConfig.domains),
       // DPI Bypass
       2:
-        JSON.stringify(config.fragmentation) !==
-          JSON.stringify(originalConfig.fragmentation) ||
-        JSON.stringify(config.faking) !== JSON.stringify(originalConfig.faking),
+        JSON.stringify(config.bypass.fragmentation) !==
+          JSON.stringify(originalConfig.bypass.fragmentation) ||
+        JSON.stringify(config.bypass.faking) !==
+          JSON.stringify(originalConfig.bypass.faking),
       // Protocols
-      3: JSON.stringify(config.udp) !== JSON.stringify(originalConfig.udp),
+      3:
+        JSON.stringify(config.bypass.udp) !==
+        JSON.stringify(originalConfig.bypass.udp),
       // Testing
       4:
-        JSON.stringify(config.checker) !==
-        JSON.stringify(originalConfig.checker),
+        JSON.stringify(config.system.checker) !==
+        JSON.stringify(originalConfig.system.checker),
       // Logging
       5:
-        JSON.stringify(config.logging) !==
-        JSON.stringify(originalConfig.logging),
+        JSON.stringify(config.system.logging) !==
+        JSON.stringify(originalConfig.system.logging),
     };
   }, [config, originalConfig, hasChanges]);
 
@@ -220,7 +227,7 @@ export default function Settings() {
       if (!response.ok) throw new Error("Failed to load configuration");
       const data = await response.json();
       setConfig(data);
-      setOriginalConfig(JSON.parse(JSON.stringify(data))); // Deep clone
+      setOriginalConfig(structuredClone(data)); // Deep clone
     } catch (error) {
       console.error("Error loading configuration:", error);
       setSnackbar({
@@ -249,7 +256,7 @@ export default function Settings() {
         throw new Error(error || "Failed to save configuration");
       }
 
-      setOriginalConfig(JSON.parse(JSON.stringify(config)));
+      setOriginalConfig(structuredClone(config));
 
       const requiresRestart = categoryHasChanges[0]; // Core settings require restart
       setSnackbar({
@@ -273,7 +280,7 @@ export default function Settings() {
 
   const resetChanges = () => {
     if (originalConfig) {
-      setConfig(JSON.parse(JSON.stringify(originalConfig)));
+      setConfig(structuredClone(originalConfig));
       setShowResetDialog(false);
       setSnackbar({
         open: true,
@@ -286,17 +293,21 @@ export default function Settings() {
   const handleChange = (field: string, value: any) => {
     if (!config) return;
 
-    if (field.includes(".")) {
-      const [parent, child] = field.split(".");
-      setConfig({
-        ...config,
-        [parent]: {
-          ...(config[parent as keyof B4Config] as any),
-          [child]: value,
-        },
-      });
-    } else {
+    const keys = field.split(".");
+
+    if (keys.length === 1) {
       setConfig({ ...config, [field]: value });
+    } else {
+      const newConfig = { ...config };
+      let current: any = newConfig;
+
+      for (let i = 0; i < keys.length - 1; i++) {
+        current[keys[i]] = { ...current[keys[i]] };
+        current = current[keys[i]];
+      }
+
+      current[keys[keys.length - 1]] = value;
+      setConfig(newConfig);
     }
   };
 
@@ -313,7 +324,7 @@ export default function Settings() {
     );
   }
 
-  const validTab = currentTab >= 0 ? currentTab : 0;
+  const validTab = Math.max(currentTab, 0);
 
   return (
     <Container
