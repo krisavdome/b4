@@ -294,8 +294,6 @@ export const RestartDialog: React.FC<RestartDialogProps> = ({
     }
   };
 
-  const dialogProps = getDialogProps();
-
   return (
     <B4Dialog
       {...getDialogProps()}

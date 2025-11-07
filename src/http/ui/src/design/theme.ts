@@ -72,24 +72,7 @@ export const theme = createTheme({
       },
     },
     MuiSvgIcon: {
-      styleOverrides: {
-        root: {
-          variants: [
-            {
-              props: { color: "tertiary" },
-              style: {
-                color: colors.tertiary,
-              },
-            },
-            {
-              props: { color: "quaternary" },
-              style: {
-                color: colors.quaternary,
-              },
-            },
-          ],
-        },
-      },
+      styleOverrides: {},
     },
   },
   typography: {

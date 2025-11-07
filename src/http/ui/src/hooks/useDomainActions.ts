@@ -134,7 +134,7 @@ export function useFilteredLogs(
     const fieldFilters: Record<string, string[]> = {};
     const globalFilters: string[] = [];
 
-    filters.forEach((filterTerm) => {
+    for (const filterTerm of filters) {
       const colonIndex = filterTerm.indexOf(":");
 
       if (colonIndex > 0) {
@@ -148,7 +148,7 @@ export function useFilteredLogs(
       } else {
         globalFilters.push(filterTerm);
       }
-    });
+    }
 
     return parsedLogs.filter((log) => {
       // Check field-specific filters (OR within field, AND across fields)
@@ -191,8 +191,8 @@ export function useSortedLogs(
 
       // Handle different data types
       if (sortColumn === "timestamp") {
-        aValue = new Date(aValue.replace(/\//g, "-")).getTime();
-        bValue = new Date(bValue.replace(/\//g, "-")).getTime();
+        aValue = new Date(aValue.replaceAll("/", "-")).getTime();
+        bValue = new Date(bValue.replaceAll("/", "-")).getTime();
       } else if (sortColumn === "isTarget") {
         aValue = aValue ? 1 : 0;
         bValue = bValue ? 1 : 0;
