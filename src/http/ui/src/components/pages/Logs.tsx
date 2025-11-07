@@ -65,8 +65,7 @@ export default function Logs() {
     return f ? lines.filter((l) => l.toLowerCase().includes(f)) : lines;
   }, [lines, filter]);
 
-  const handleHotkeysDown = (e: KeyboardEvent) => {
-    // Ignore shortcuts when typing in input fields
+  const handleHotkeysDown = React.useCallback((e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
     if (
       target.tagName === "INPUT" ||
@@ -83,7 +82,7 @@ export default function Logs() {
       e.preventDefault();
       setPaused((prev) => !prev);
     }
-  };
+  }, []);
 
   useEffect(() => {
     globalThis.window.addEventListener("keydown", handleHotkeysDown);

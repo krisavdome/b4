@@ -112,30 +112,32 @@ export default function Domains() {
     openModal(domain, variants);
   };
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setLines([]);
     clearLogPersistedLines();
-  };
+  }, []);
 
-  const handleHotkeysDown = (e: KeyboardEvent) => {
-    // Ignore shortcuts when typing in input fields
-    const target = e.target as HTMLElement;
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.isContentEditable
-    ) {
-      return;
-    }
+  const handleHotkeysDown = useCallback(
+    (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
 
-    if ((e.ctrlKey && e.key === "x") || e.key === "Delete") {
-      e.preventDefault();
-      handleReset();
-    } else if (e.key === "p" || e.key === "Pause") {
-      e.preventDefault();
-      setPaused((prev) => !prev);
-    }
-  };
+      if ((e.ctrlKey && e.key === "x") || e.key === "Delete") {
+        e.preventDefault();
+        handleReset();
+      } else if (e.key === "p" || e.key === "Pause") {
+        e.preventDefault();
+        setPaused((prev) => !prev);
+      }
+    },
+    [handleReset, setPaused]
+  );
 
   useEffect(() => {
     globalThis.window.addEventListener("keydown", handleHotkeysDown);

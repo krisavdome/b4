@@ -104,7 +104,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
     if (config.domains.geosite_path) {
       loadAvailableCategories();
     }
-  }, []);
+  }, [config.domains.geosite_path]);
 
   const loadAvailableCategories = async () => {
     setLoadingCategories(true);
