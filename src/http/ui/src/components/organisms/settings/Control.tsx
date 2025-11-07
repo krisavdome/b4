@@ -6,20 +6,15 @@ import {
   Hub as ControlIcon,
   Restore as RestoreIcon,
 } from "@mui/icons-material";
-import { B4Config } from "@models/Config";
 import { RestartDialog } from "./RestartDialog";
 import { colors } from "@design";
 import { ResetDialog } from "./ResetDialog";
 
 interface ControlSettingsProps {
-  config: B4Config;
-  onChange: (field: string, value: boolean) => void;
   loadConfig: () => void;
 }
 
 export const ControlSettings: React.FC<ControlSettingsProps> = ({
-  config,
-  onChange,
   loadConfig,
 }) => {
   const [saving] = useState(false);

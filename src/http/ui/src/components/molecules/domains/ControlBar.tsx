@@ -51,11 +51,13 @@ export const DomainsControlBar: React.FC<DomainsControlBarProps> = ({
           value={filter}
           onChange={(e) => onFilterChange(e.target.value)}
           sx={{ flex: 1 }}
-          InputProps={{
-            sx: {
-              bgcolor: colors.background.dark,
-              "& fieldset": {
-                borderColor: `${colors.border.default} !important`,
+          slotProps={{
+            input: {
+              sx: {
+                bgcolor: colors.background.dark,
+                "& fieldset": {
+                  borderColor: `${colors.border.default} !important`,
+                },
               },
             },
           }}

@@ -185,21 +185,29 @@ export function useSortedLogs(
       return filteredLogs;
     }
 
-    const sorted = [...filteredLogs].sort((a, b) => {
-      let aValue: any = a[sortColumn];
-      let bValue: any = b[sortColumn];
-
-      // Handle different data types
-      if (sortColumn === "timestamp") {
-        aValue = new Date(aValue.replaceAll("/", "-")).getTime();
-        bValue = new Date(bValue.replaceAll("/", "-")).getTime();
-      } else if (sortColumn === "isTarget") {
-        aValue = aValue ? 1 : 0;
-        bValue = bValue ? 1 : 0;
-      } else if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
+    function normalizeSortValue(
+      value: string | number | boolean | undefined,
+      column: SortColumn
+    ): number | string {
+      if (column === "timestamp") {
+        const str = typeof value === "string" ? value : "";
+        return new Date(str.replaceAll(/\/+/g, "-")).getTime();
       }
+      if (column === "isTarget") {
+        return value ? 1 : 0;
+      }
+      if (typeof value === "string") {
+        return value.toLowerCase();
+      }
+      if (typeof value === "boolean") {
+        return value ? 1 : 0;
+      }
+      return value ?? "";
+    }
+
+    const sorted = [...filteredLogs].sort((a, b) => {
+      const aValue = normalizeSortValue(a[sortColumn], sortColumn);
+      const bValue = normalizeSortValue(b[sortColumn], sortColumn);
 
       if (aValue < bValue) {
         return sortDirection === "asc" ? -1 : 1;

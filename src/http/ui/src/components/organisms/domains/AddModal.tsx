@@ -103,16 +103,19 @@ export const DomainAddModal: React.FC<DomainAddModalProps> = ({
                     }}
                   />
                 </ListItemIcon>
-                <ListItemText
-                  primary={variant}
-                  secondary={
-                    index === 0
-                      ? "Most specific - exact match only"
-                      : index === variants.length - 1
-                      ? "Broadest - matches all subdomains"
-                      : "Intermediate specificity"
+                {(() => {
+                  let secondaryText: string;
+                  if (index === 0) {
+                    secondaryText = "Most specific - exact match only";
+                  } else if (index === variants.length - 1) {
+                    secondaryText = "Broadest - matches all subdomains";
+                  } else {
+                    secondaryText = "Intermediate specificity";
                   }
-                />
+                  return (
+                    <ListItemText primary={variant} secondary={secondaryText} />
+                  );
+                })()}
               </ListItemButton>
             </ListItem>
           ))}

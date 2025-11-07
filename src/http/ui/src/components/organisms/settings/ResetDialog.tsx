@@ -37,7 +37,7 @@ export const ResetDialog: React.FC<ResetDialogProps> = ({
 }) => {
   const [state, setState] = useState<ResetState>("confirm");
   const [message, setMessage] = useState("");
-  const { resetConfig, loading } = useConfigReset();
+  const { resetConfig } = useConfigReset();
 
   const handleReset = async () => {
     setState("resetting");
@@ -45,7 +45,7 @@ export const ResetDialog: React.FC<ResetDialogProps> = ({
 
     const response = await resetConfig();
 
-    if (response && response.success) {
+    if (response?.success) {
       setState("success");
       setMessage("Configuration reset successfully!");
       setTimeout(() => {

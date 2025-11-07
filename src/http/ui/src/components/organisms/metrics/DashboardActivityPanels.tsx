@@ -105,8 +105,8 @@ export const DashboardActivityPanels: React.FC<
             Recent Activity
           </Typography>
           <List dense sx={{ maxHeight: 400, overflow: "auto" }}>
-            {recentConnections.map((conn, index) => (
-              <ListItem key={index}>
+            {recentConnections.map((conn) => (
+              <ListItem key={conn.timestamp}>
                 <ListItemText
                   primary={
                     <Stack direction="row" spacing={1} alignItems="center">

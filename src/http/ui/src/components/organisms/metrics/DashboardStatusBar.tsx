@@ -8,7 +8,7 @@ interface DashboardStatusBarProps {
   metrics: {
     nfqueue_status: string;
     tables_status: string;
-    worker_status: Array<any>;
+    worker_status: Array<unknown>;
     tcp_connections: number;
     udp_connections: number;
   };

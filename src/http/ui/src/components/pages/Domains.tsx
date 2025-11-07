@@ -70,21 +70,6 @@ export default function Domains() {
     }
   }, [lines, autoScroll]);
 
-  // // Auto-scroll when sorting changes
-  // useEffect(() => {
-  //   const el = tableRef.current;
-  //   if (el && sortColumn && sortDirection) {
-  //     setTimeout(() => {
-  //       if (sortDirection === "asc") {
-  //         el.scrollTo({ top: 0, behavior: "smooth" });
-  //       } else if (sortDirection === "desc") {
-  //         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  //       }
-  //     }, 50);
-  //   }
-  // }, [sortColumn, sortDirection]);
-
-  // Data processing
   const parsedLogs = useParsedLogs(lines);
   const filteredLogs = useFilteredLogs(parsedLogs, filter);
   const sortedData = useSortedLogs(filteredLogs, sortColumn, sortDirection);

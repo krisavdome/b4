@@ -124,9 +124,9 @@ export const DomainsTable: React.FC<DomainsTableProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            data.map((log, i) => (
+            data.map((log) => (
               <TableRow
-                key={i}
+                key={log.raw}
                 sx={{
                   "&:hover": {
                     bgcolor: colors.accent.primaryStrong,

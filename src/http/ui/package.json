@@ -7,7 +7,8 @@
     "dev": "vite",
     "watch": "pnpm dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "pnpm eslint . --fix"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -21,12 +22,15 @@
     "react-router-dom": "^6.29.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/node": "^24.7.2",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
+    "eslint": "^9.39.1",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.46.3",
     "vite": "^5.4.9",
     "vite-tsconfig-paths": "^5.1.4"
   },

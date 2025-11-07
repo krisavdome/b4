@@ -327,8 +327,8 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
             Test Results
           </Typography>
           <Grid container spacing={2}>
-            {suite.results.map((result, idx) => (
-              <Grid key={idx} size={{ xs: 12, md: 6, lg: 4 }}>
+            {suite.results.map((result) => (
+              <Grid key={result.domain} size={{ xs: 12, md: 6, lg: 4 }}>
                 <TestResultCard
                   domain={result.domain}
                   status={result.status}

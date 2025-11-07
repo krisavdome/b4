@@ -35,7 +35,7 @@ export const SimplePieChart: React.FC<SimplePieChartProps> = ({ data }) => {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       <svg width="200" height="200" viewBox="0 0 200 200">
-        {pieData.map((slice, index) => {
+        {pieData.map((slice) => {
           const startAngleRad = (slice.startAngle * Math.PI) / 180;
           const endAngleRad = (slice.endAngle * Math.PI) / 180;
 
@@ -55,7 +55,7 @@ export const SimplePieChart: React.FC<SimplePieChartProps> = ({ data }) => {
 
           return (
             <path
-              key={index}
+              key={slice.name}
               d={pathData}
               fill={slice.color}
               stroke={colors.background.paper}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, ReactNode } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, HTMLMotionProps } from "motion/react";
 
 const styles = {
@@ -7,7 +7,7 @@ const styles = {
     whiteSpace: "pre-wrap",
   },
   srOnly: {
-    position: "absolute" as "absolute",
+    position: "absolute" as const,
     width: "1px",
     height: "1px",
     padding: 0,
@@ -45,12 +45,12 @@ export default function DecryptedText({
   encryptedClassName = "",
   animateOn = "hover",
   ...props
-}: DecryptedTextProps) {
+}: Readonly<DecryptedTextProps>) {
   const [displayText, setDisplayText] = useState<string>(text);
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const [isScrambling, setIsScrambling] = useState<boolean>(false);
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(
-    new Set(),
+    new Set()
   );
   const [hasAnimated, setHasAnimated] = useState<boolean>(false);
   const containerRef = useRef<HTMLSpanElement>(null);
@@ -96,7 +96,7 @@ export default function DecryptedText({
 
     const shuffleText = (
       originalText: string,
-      currentRevealed: Set<number>,
+      currentRevealed: Set<number>
     ): string => {
       if (useOriginalCharsOnly) {
         const positions = originalText.split("").map((char, i) => ({
@@ -192,12 +192,12 @@ export default function DecryptedText({
     if (animateOn !== "view" && animateOn !== "both") return;
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
+      for (const entry of entries) {
         if (entry.isIntersecting && !hasAnimated) {
           setIsHovering(true);
           setHasAnimated(true);
         }
-      });
+      }
     };
 
     const observerOptions = {
@@ -208,7 +208,7 @@ export default function DecryptedText({
 
     const observer = new IntersectionObserver(
       observerCallback,
-      observerOptions,
+      observerOptions
     );
     const currentRef = containerRef.current;
     if (currentRef) {
@@ -247,7 +247,7 @@ export default function DecryptedText({
 
           return (
             <span
-              key={index}
+              key={`${char}-${index}`}
               className={isRevealedOrDone ? className : encryptedClassName}
             >
               {char}

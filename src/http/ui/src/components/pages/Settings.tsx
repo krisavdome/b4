@@ -292,7 +292,10 @@ export default function Settings() {
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (
+    field: string,
+    value: string | number | boolean | string[] | null | undefined
+  ) => {
     if (!config) return;
 
     const keys = field.split(".");
@@ -301,11 +304,11 @@ export default function Settings() {
       setConfig({ ...config, [field]: value });
     } else {
       const newConfig = { ...config };
-      let current: any = newConfig;
+      let current: Record<string, unknown> = newConfig;
 
       for (let i = 0; i < keys.length - 1; i++) {
-        current[keys[i]] = { ...current[keys[i]] };
-        current = current[keys[i]];
+        current[keys[i]] = { ...(current[keys[i]] as object) };
+        current = current[keys[i]] as Record<string, unknown>;
       }
 
       current[keys[keys.length - 1]] = value;
@@ -489,11 +492,7 @@ export default function Settings() {
               <NetworkSettings config={config} onChange={handleChange} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <ControlSettings
-                config={config}
-                onChange={handleChange}
-                loadConfig={loadConfig}
-              />
+              <ControlSettings loadConfig={loadConfig} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <FeatureSettings config={config} onChange={handleChange} />

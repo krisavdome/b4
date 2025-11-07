@@ -67,7 +67,7 @@ export interface Metrics {
   current_pps: number;
 }
 
-const safeNumber = (val: any, defaultValue: number = 0): number => {
+const safeNumber = (val: number, defaultValue: number = 0): number => {
   if (val === null || val === undefined) return defaultValue;
   const num = Number(val);
   if (Number.isNaN(num) || !Number.isFinite(num)) return defaultValue;
@@ -76,7 +76,7 @@ const safeNumber = (val: any, defaultValue: number = 0): number => {
   return num;
 };
 
-const normalizeMetrics = (data: any): Metrics => {
+const normalizeMetrics = (data: null | Metrics): Metrics => {
   if (!data || typeof data !== "object") {
     return {
       total_connections: 0,
@@ -122,13 +122,15 @@ const normalizeMetrics = (data: any): Metrics => {
     udp_connections: safeNumber(data.udp_connections),
     targeted_connections: safeNumber(data.targeted_connections),
     connection_rate: Array.isArray(data.connection_rate)
-      ? data.connection_rate.map((item: any) => ({
-          timestamp: safeNumber(item?.timestamp),
-          value: safeNumber(item?.value),
-        }))
+      ? data.connection_rate.map(
+          (item: { timestamp: number; value: number }) => ({
+            timestamp: safeNumber(item?.timestamp),
+            value: safeNumber(item?.value),
+          })
+        )
       : [],
     packet_rate: Array.isArray(data.packet_rate)
-      ? data.packet_rate.map((item: any) => ({
+      ? data.packet_rate.map((item: { timestamp: number; value: number }) => ({
           timestamp: safeNumber(item?.timestamp),
           value: safeNumber(item?.value),
         }))
@@ -173,33 +175,46 @@ const normalizeMetrics = (data: any): Metrics => {
       percent: safeNumber(data?.memory_usage?.percent),
     },
     worker_status: Array.isArray(data.worker_status)
-      ? data.worker_status.map((w: any) => ({
-          id: safeNumber(w?.id),
-          status: String(w?.status || "unknown"),
-          processed: safeNumber(w?.processed),
-        }))
+      ? data.worker_status.map(
+          (w: { id: number; status: string; processed: number }) => ({
+            id: safeNumber(w?.id),
+            status: String(w?.status || "unknown"),
+            processed: safeNumber(w?.processed),
+          })
+        )
       : [],
     nfqueue_status: String(data.nfqueue_status || "unknown"),
     tables_status: String(data.tables_status || "unknown"),
     recent_connections: Array.isArray(data.recent_connections)
-      ? data.recent_connections.map((conn: any) => ({
-          timestamp: String(conn?.timestamp || ""),
-          protocol:
-            conn?.protocol === "TCP" || conn?.protocol === "UDP"
-              ? (conn.protocol as "TCP" | "UDP")
-              : ("TCP" as "TCP" | "UDP"),
-          domain: String(conn?.domain || ""),
-          source: String(conn?.source || ""),
-          destination: String(conn?.destination || ""),
-          is_target: Boolean(conn?.is_target),
-        }))
+      ? data.recent_connections.map(
+          (conn: {
+            timestamp?: string;
+            protocol?: "TCP" | "UDP";
+            domain?: string;
+            source?: string;
+            destination?: string;
+            is_target?: boolean;
+          }) => ({
+            timestamp: String(conn?.timestamp || ""),
+            protocol:
+              conn?.protocol === "TCP" || conn?.protocol === "UDP"
+                ? conn.protocol
+                : ("TCP" as "TCP" | "UDP"),
+            domain: String(conn?.domain || ""),
+            source: String(conn?.source || ""),
+            destination: String(conn?.destination || ""),
+            is_target: Boolean(conn?.is_target),
+          })
+        )
       : [],
     recent_events: Array.isArray(data.recent_events)
-      ? data.recent_events.map((evt: any) => ({
-          timestamp: String(evt?.timestamp || ""),
-          level: String(evt?.level || ""),
-          message: String(evt?.message || ""),
-        }))
+      ? data.recent_events.map(
+          (evt: { timestamp?: string; level?: string; message?: string }) => ({
+            timestamp: String(evt?.timestamp || ""),
+            level: String(evt?.level || ""),
+            message: String(evt?.message || ""),
+          })
+        )
       : [],
     current_cps: safeNumber(data.current_cps),
     current_pps: safeNumber(data.current_pps),
@@ -227,7 +242,8 @@ export default function Dashboard() {
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(event.data) as Metrics;
+          console.log("Received metrics data:", data);
           const normalizedData = normalizeMetrics(data);
           setMetrics(normalizedData);
         } catch (error) {
