@@ -1,0 +1,8 @@
+engines:
+  eslint:
+    enabled: true
+    exclude_paths:
+      - "src/http/ui/dist/**"
+      - "src/http/ui/node_modules/**"
+  typescript:
+    enabled: false
