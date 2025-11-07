@@ -52,7 +52,13 @@ export const useSystemRestart = () => {
       return data;
     } catch (err) {
       // Connection error is expected after restart is initiated
-      console.log("Connection lost (expected during restart)");
+      if (err instanceof Error) {
+        console.log("Connection lost (expected during restart):", err.message);
+        setError(`Connection lost (expected during restart): ${err.message}`);
+      } else {
+        console.log("Connection lost (expected during restart)");
+        setError("Connection lost (expected during restart)");
+      }
       return {
         success: true,
         message: "Service is restarting...",
@@ -82,6 +88,15 @@ export const useSystemRestart = () => {
           }
         } catch (err) {
           // Service not yet available
+          if (err instanceof Error) {
+            console.warn(
+              `Attempt ${attempts + 1}: Service not available yet - ${
+                err.message
+              }`
+            );
+          } else {
+            console.warn(`Attempt ${attempts + 1}: Service not available yet`);
+          }
           attempts++;
         }
       }

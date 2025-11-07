@@ -3,15 +3,12 @@ import { Box, Typography } from "@mui/material";
 import { colors } from "@design";
 
 interface SimpleChartProps {
-  data: Array<{ timestamp: number; value: number }>;
+  data: { timestamp: number; value: number }[];
   height?: number;
   color?: string;
 }
 
-const createSmoothPath = (
-  points: Array<{ x: number; y: number }>,
-  height: number
-): string => {
+const createSmoothPath = (points: { x: number; y: number }[]): string => {
   if (points.length === 0) return "";
   if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
 
@@ -59,13 +56,13 @@ export const SimpleLineChart: React.FC<SimpleChartProps> = ({
   }));
 
   // Create smooth path
-  const smoothPath = createSmoothPath(points, height);
+  const smoothPath = createSmoothPath(points);
 
   // Create area path (same as line but closed at bottom)
   const areaPath = `${smoothPath} L ${width},${height} L 0,${height} Z`;
 
   // Generate unique IDs for gradients
-  const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = `gradient-${Math.random().toString(36).substring(2, 11)}`;
 
   return (
     <Box sx={{ position: "relative", width: "100%", height, pl: 1 }}>

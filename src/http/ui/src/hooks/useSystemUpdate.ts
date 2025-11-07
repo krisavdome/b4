@@ -40,12 +40,15 @@ export const useSystemUpdate = () => {
 
         return data;
       } catch (err) {
-        console.log("Connection lost (expected during update)");
-        return {
-          success: true,
-          message: "Update is in progress...",
-          service_manager: "unknown",
-        };
+        if (err instanceof Error) {
+          console.error("Update error:", err.message);
+          setError(`Update failed: ${err.message}`);
+        } else {
+          console.error("Unknown error during update:", err);
+          setError("An unknown error occurred during update");
+        }
+        setLoading(false);
+        return null;
       }
     },
     []
@@ -71,6 +74,11 @@ export const useSystemUpdate = () => {
         } catch (err) {
           // Service not yet available
           attempts++;
+          if (err instanceof Error) {
+            console.warn("Reconnection attempt failed:", err.message);
+          } else {
+            console.warn("Unknown error during reconnection attempt:", err);
+          }
         }
       }
 

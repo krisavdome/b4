@@ -11,7 +11,7 @@ import { colors } from "@design";
 
 interface B4SelectProps extends Omit<SelectProps<string | number>, "variant"> {
   label: string;
-  options: Array<{ value: string | number; label: string }>;
+  options: { value: string | number; label: string }[];
   helperText?: string;
 }
 

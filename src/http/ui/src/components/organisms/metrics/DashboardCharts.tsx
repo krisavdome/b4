@@ -5,7 +5,7 @@ import { SimplePieChart } from "@molecules/metrics/SimplePieChart";
 import { colors } from "@design";
 
 interface DashboardChartsProps {
-  connectionRate: Array<{ timestamp: number; value: number }>;
+  connectionRate: { timestamp: number; value: number }[];
   protocolDist: Record<string, number>;
 }
 

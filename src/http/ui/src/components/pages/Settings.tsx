@@ -41,17 +41,22 @@ import { UDPSettings } from "@organisms/settings/Udp";
 import { CheckerSettings } from "@organisms/settings/Checker";
 import { ControlSettings } from "@organisms/settings/Control";
 
-import B4Config from "@models/Config";
+import { B4Config } from "@models/Config";
 import { colors, spacing, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@molecules/common/B4Dialog";
-// Tab panel component
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
 
-function TabPanel({ children, value, index, ...other }: TabPanelProps) {
+function TabPanel({
+  children,
+  value,
+  index,
+  ...other
+}: Readonly<TabPanelProps>) {
   return (
     <div
       role="tabpanel"

@@ -4,7 +4,7 @@ import { Description as DescriptionIcon } from "@mui/icons-material";
 import SettingSection from "@molecules/common/B4Section";
 import SettingSelect from "@atoms/common/B4Select";
 import SettingSwitch from "@atoms/common/B4Switch";
-import B4Config, { LogLevel } from "@models/Config";
+import { B4Config, LogLevel } from "@models/Config";
 
 interface LoggingSettingsProps {
   config: B4Config;

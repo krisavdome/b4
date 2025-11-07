@@ -26,8 +26,8 @@ export interface Metrics {
   tcp_connections: number;
   udp_connections: number;
   targeted_connections: number;
-  connection_rate: Array<{ timestamp: number; value: number }>;
-  packet_rate: Array<{ timestamp: number; value: number }>;
+  connection_rate: { timestamp: number; value: number }[];
+  packet_rate: { timestamp: number; value: number }[];
   top_domains: Record<string, number>;
   protocol_dist: Record<string, number>;
   geo_dist: Record<string, number>;
