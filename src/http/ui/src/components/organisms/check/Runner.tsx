@@ -70,14 +70,14 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
   useEffect(() => {
     if (!testId || !running) return;
 
-    const interval = setInterval(async () => {
+    const fetchStatus = async () => {
       try {
         const response = await fetch(`/api/check/status?id=${testId}`);
         if (!response.ok) {
           throw new Error("Failed to fetch test status");
         }
 
-        const data: TestSuite = await response.json();
+        const data: TestSuite = (await response.json()) as TestSuite;
         setSuite(data);
 
         if (
@@ -95,6 +95,10 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
         setError(err instanceof Error ? err.message : "Unknown error");
         setRunning(false);
       }
+    };
+
+    const interval = setInterval(() => {
+      void fetchStatus();
     }, 1000);
 
     return () => clearInterval(interval);
@@ -126,7 +130,7 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
         throw new Error(text || "Failed to start test");
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { id: string };
       setTestId(data.id);
     } catch (err) {
       console.error("Failed to start test:", err);
@@ -185,7 +189,9 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
                 <Button
                   variant="contained"
                   startIcon={<StartIcon />}
-                  onClick={startTest}
+                  onClick={() => {
+                    void startTest();
+                  }}
                   sx={{
                     bgcolor: colors.secondary,
                     "&:hover": { bgcolor: colors.primary },
@@ -198,7 +204,9 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
                 <Button
                   variant="outlined"
                   startIcon={<StopIcon />}
-                  onClick={cancelTest}
+                  onClick={() => {
+                    void cancelTest();
+                  }}
                   sx={{
                     borderColor: colors.quaternary,
                     color: colors.quaternary,

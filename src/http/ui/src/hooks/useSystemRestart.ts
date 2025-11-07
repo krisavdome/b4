@@ -24,7 +24,7 @@ export const useSystemRestart = () => {
       if (!response.ok) {
         throw new Error("Failed to get system info");
       }
-      return await response.json();
+      return (await response.json()) as SystemInfo;
     } catch (err) {
       console.error("Error getting system info:", err);
       return null;
@@ -40,7 +40,7 @@ export const useSystemRestart = () => {
         method: "POST",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as RestartResponse;
 
       if (!response.ok) {
         setError(data.message || "Failed to restart service");

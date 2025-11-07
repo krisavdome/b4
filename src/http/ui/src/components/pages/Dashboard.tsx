@@ -242,7 +242,10 @@ export default function Dashboard() {
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as Metrics;
+          const data =
+            typeof event.data === "string"
+              ? (JSON.parse(event.data) as Metrics)
+              : normalizeMetrics(null);
           console.log("Received metrics data:", data);
           const normalizedData = normalizeMetrics(data);
           setMetrics(normalizedData);

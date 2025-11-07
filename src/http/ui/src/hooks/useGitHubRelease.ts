@@ -53,7 +53,7 @@ const isVersionLower = (version1: string, version2: string): boolean => {
 const getDismissedVersions = (): string[] => {
   try {
     const dismissed = localStorage.getItem(DISMISSED_VERSIONS_KEY);
-    return dismissed ? JSON.parse(dismissed) : [];
+    return dismissed ? (JSON.parse(dismissed) as string[]) : [];
   } catch {
     return [];
   }
@@ -110,7 +110,7 @@ export const useGitHubRelease = (): UseGitHubReleaseResult => {
           throw new Error(`GitHub API returned ${response.status}`);
         }
 
-        const data: GitHubRelease = await response.json();
+        const data: GitHubRelease = (await response.json()) as GitHubRelease;
 
         // Only set if it's not a prerelease
         if (!data.prerelease) {
@@ -124,10 +124,12 @@ export const useGitHubRelease = (): UseGitHubReleaseResult => {
       }
     };
 
-    fetchLatestRelease();
+    void fetchLatestRelease();
 
     // Check for updates every 6 hours
-    const interval = setInterval(fetchLatestRelease, 6 * 60 * 60 * 1000);
+    const interval = setInterval(() => {
+      void fetchLatestRelease();
+    }, 6 * 60 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);

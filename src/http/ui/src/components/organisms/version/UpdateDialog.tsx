@@ -370,7 +370,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               Remind Me Later
             </Button>
             <Button
-              onClick={handleUpdate}
+              onClick={() => {
+                void handleUpdate();
+              }}
               variant="contained"
               startIcon={<CloudDownloadIcon />}
               disabled={isUpdating}

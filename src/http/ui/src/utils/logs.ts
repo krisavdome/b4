@@ -44,8 +44,8 @@ export function loadPersistedLines(): string[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
+      const parsed = JSON.parse(stored) as unknown;
+      return Array.isArray(parsed) ? (parsed as string[]) : [];
     }
   } catch (e) {
     console.error("Failed to load persisted domains:", e);

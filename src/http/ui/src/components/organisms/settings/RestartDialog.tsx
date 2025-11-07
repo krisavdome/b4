@@ -262,7 +262,9 @@ export const RestartDialog: React.FC<RestartDialogProps> = ({
             </Button>
             <Box sx={{ flex: 1 }} />
             <Button
-              onClick={handleRestart}
+              onClick={() => {
+                void handleRestart();
+              }}
               variant="contained"
               startIcon={<RestartIcon />}
               sx={{

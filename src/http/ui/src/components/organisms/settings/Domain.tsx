@@ -102,7 +102,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
 
   useEffect(() => {
     if (config.domains.geosite_path) {
-      loadAvailableCategories();
+      void loadAvailableCategories();
     }
   }, [config.domains.geosite_path]);
 
@@ -111,7 +111,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
     try {
       const response = await fetch("/api/geosite");
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as { tags: string[] };
         setAvailableCategories(data.tags || []);
       }
     } catch (error) {
@@ -202,7 +202,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
         `/api/geosite/category?tag=${encodeURIComponent(category)}`
       );
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as CategoryPreview;
         setPreviewDialog((prev) => ({ ...prev, data, loading: false }));
       }
     } catch (error) {
@@ -305,7 +305,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
           <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 0 }}>
             <Tabs
               value={tabValue}
-              onChange={(_, newValue) => setTabValue(newValue)}
+              onChange={(_, newValue: number) => setTabValue(newValue)}
               sx={{
                 borderBottom: `1px solid ${colors.border.light}`,
                 "& .MuiTab-root": {
@@ -517,7 +517,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
                                           }}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            previewCategory(category);
+                                            void previewCategory(category);
                                           }}
                                         >
                                           {stats.category_breakdown[category]}
@@ -718,7 +718,7 @@ export const DomainSettings: React.FC<DomainSettingsProps> = ({
                                         }}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          previewCategory(category);
+                                          void previewCategory(category);
                                         }}
                                       >
                                         {

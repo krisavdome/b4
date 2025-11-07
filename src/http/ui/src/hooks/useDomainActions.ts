@@ -74,7 +74,7 @@ export function useDomainActions() {
         });
         closeModal();
       } else {
-        const error = await response.json();
+        const error = (await response.json()) as { message: string };
         setSnackbar({
           open: true,
           message: `Failed to add domain: ${error.message}`,
@@ -84,7 +84,7 @@ export function useDomainActions() {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: `Error adding domain: ${error}`,
+        message: `Error adding domain: ${String(error)}`,
         severity: "error",
       });
     }

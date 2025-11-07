@@ -204,7 +204,9 @@ export default function Domains() {
         selected={modalState.selected}
         onClose={closeModal}
         onSelectVariant={selectVariant}
-        onAdd={addDomain}
+        onAdd={(...args) => {
+          void addDomain(...args);
+        }}
       />
 
       {/* Snackbar for notifications */}

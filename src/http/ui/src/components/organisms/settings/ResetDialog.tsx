@@ -123,7 +123,9 @@ export const ResetDialog: React.FC<ResetDialogProps> = ({
             </Button>
             <Box sx={{ flex: 1 }} />
             <Button
-              onClick={handleReset}
+              onClick={() => {
+                void handleReset();
+              }}
               variant="contained"
               startIcon={<ResetIcon />}
               sx={{

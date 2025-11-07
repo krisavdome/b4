@@ -29,7 +29,29 @@ export const useSystemUpdate = () => {
           body: JSON.stringify({ version } as UpdateRequest),
         });
 
-        const data = await response.json();
+        const rawData: unknown = await response.json();
+
+        function isUpdateResponse(obj: unknown): obj is UpdateResponse {
+          return (
+            typeof obj === "object" &&
+            obj !== null &&
+            "success" in obj &&
+            typeof (obj as { success: unknown }).success === "boolean" &&
+            "message" in obj &&
+            typeof (obj as { message: unknown }).message === "string" &&
+            "service_manager" in obj &&
+            typeof (obj as { service_manager: unknown }).service_manager ===
+              "string"
+          );
+        }
+
+        const data: UpdateResponse = isUpdateResponse(rawData)
+          ? rawData
+          : {
+              success: false,
+              message: "Invalid response format",
+              service_manager: "",
+            };
 
         if (!response.ok) {
           const errorMessage = data.message || "Failed to initiate update";

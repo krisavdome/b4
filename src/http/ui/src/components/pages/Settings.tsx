@@ -219,7 +219,7 @@ export default function Settings() {
   }, [config, originalConfig, hasChanges]);
 
   useEffect(() => {
-    loadConfig();
+    void loadConfig();
   }, []);
 
   const loadConfig = async () => {
@@ -227,7 +227,7 @@ export default function Settings() {
       setLoading(true);
       const response = await fetch("/api/config");
       if (!response.ok) throw new Error("Failed to load configuration");
-      const data = await response.json();
+      const data = (await response.json()) as unknown as B4Config;
       setConfig(data);
       setOriginalConfig(structuredClone(data)); // Deep clone
     } catch (error) {
@@ -393,7 +393,9 @@ export default function Settings() {
                 size="small"
                 variant="outlined"
                 startIcon={<RefreshIcon />}
-                onClick={loadConfig}
+                onClick={() => {
+                  void loadConfig();
+                }}
                 disabled={saving}
                 sx={{
                   borderColor: colors.border.default,
@@ -413,7 +415,9 @@ export default function Settings() {
                 startIcon={
                   saving ? <CircularProgress size={16} /> : <SaveIcon />
                 }
-                onClick={saveConfig}
+                onClick={() => {
+                  void saveConfig();
+                }}
                 disabled={!hasChanges || saving}
                 sx={{
                   bgcolor: colors.secondary,
@@ -492,7 +496,11 @@ export default function Settings() {
               <NetworkSettings config={config} onChange={handleChange} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <ControlSettings loadConfig={loadConfig} />
+              <ControlSettings
+                loadConfig={() => {
+                  void loadConfig();
+                }}
+              />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <FeatureSettings config={config} onChange={handleChange} />

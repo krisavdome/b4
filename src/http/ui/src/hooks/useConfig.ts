@@ -9,14 +9,14 @@ export function useConfigLoad() {
       try {
         const response = await fetch("/api/config");
         if (!response.ok) throw new Error("Failed to load configuration");
-        const data = await response.json();
+        const data = (await response.json()) as B4Config;
         setConfig(data);
       } catch (error) {
         console.error("Error loading config:", error);
       }
     };
 
-    fetchConfig();
+    void fetchConfig();
   }, []);
 
   return { config };
@@ -40,7 +40,7 @@ export const useConfigReset = () => {
         method: "POST",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ResetResponse;
 
       if (!response.ok) {
         const errorMessage = data.message || "Failed to reset configuration";
