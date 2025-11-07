@@ -1,5 +1,38 @@
 import { ParsedLog } from "@organisms/domains/Table";
 
+export const SORT_STORAGE_KEY = "b4_domains_sort";
+
+export interface DomainSortState {
+  column: string | null;
+  direction: "asc" | "desc" | null;
+}
+
+export function loadSortState(): DomainSortState {
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as DomainSortState;
+    }
+  } catch (e) {
+    console.error("Failed to load sort state:", e);
+  }
+  return { column: null, direction: null };
+}
+
+export function saveSortState(
+  column: string | null,
+  direction: "asc" | "desc" | null
+): void {
+  try {
+    localStorage.setItem(
+      SORT_STORAGE_KEY,
+      JSON.stringify({ column, direction })
+    );
+  } catch (e) {
+    console.error("Failed to save sort state:", e);
+  }
+}
+
 export function parseSniLogLine(line: string): ParsedLog | null {
   // Example: 2025/10/13 22:41:12.466126 [INFO] SNI TCP: assets.alicdn.com 192.168.1.100:38894 -> 92.123.206.67:443
   const regex =

@@ -10,7 +10,7 @@ import {
   useFilteredLogs,
   useSortedLogs,
 } from "@hooks/useDomainActions";
-import { generateDomainVariants } from "@utils";
+import { generateDomainVariants, loadSortState, saveSortState } from "@utils";
 import { colors } from "@design";
 import { useWebSocket } from "@/ctx/B4WsProvider";
 
@@ -25,9 +25,15 @@ export default function Domains() {
 
   const [filter, setFilter] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const tableRef = useRef<HTMLDivElement | null>(null);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(() => {
+    const saved = loadSortState();
+    return saved.column as SortColumn | null;
+  });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    const saved = loadSortState();
+    return saved.direction;
+  });
 
   const {
     modalState,
@@ -38,6 +44,10 @@ export default function Domains() {
     addDomain,
     closeSnackbar,
   } = useDomainActions();
+
+  useEffect(() => {
+    saveSortState(sortColumn, sortDirection);
+  }, [sortColumn, sortDirection]);
 
   useEffect(() => {
     const el = tableRef.current;
