@@ -59,7 +59,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const { domains } = useWebSocket();
+  const { unseenDomainsCount, resetDomainsBadge } = useWebSocket();
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -101,15 +101,20 @@ export default function App() {
           <List>
             {navItems.map((item) => {
               let badgeCount = 0;
-              if (item.path === "/domains" && domains.length > 0) {
-                badgeCount = domains.length;
+              if (item.path === "/domains" && unseenDomainsCount > 0) {
+                badgeCount = unseenDomainsCount;
               }
 
               return (
                 <ListItem key={item.path} disablePadding>
                   <ListItemButton
                     selected={isNavItemSelected(item.path)}
-                    onClick={() => navigate(item.path)}
+                    onClick={() => {
+                      if (item.path === "/domains") {
+                        resetDomainsBadge();
+                      }
+                      navigate(item.path);
+                    }}
                     sx={{
                       "&.Mui-selected": {
                         backgroundColor: colors.accent.primary,

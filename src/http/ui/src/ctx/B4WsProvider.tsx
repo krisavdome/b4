@@ -11,10 +11,12 @@ interface WebSocketContextType {
   domains: string[];
   pauseLogs: boolean;
   pauseDomains: boolean;
+  unseenDomainsCount: number;
   setPauseLogs: (paused: boolean) => void;
   setPauseDomains: (paused: boolean) => void;
   clearLogs: () => void;
   clearDomains: () => void;
+  resetDomainsBadge: () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -26,6 +28,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [domains, setDomains] = useState<string[]>([]);
   const [pauseLogs, setPauseLogs] = useState(false);
   const [pauseDomains, setPauseDomains] = useState(false);
+  const [unseenDomainsCount, setUnseenDomainsCount] = useState(0);
 
   useEffect(() => {
     const ws = new WebSocket(
@@ -57,6 +60,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       const line = String(ev.data);
       if (!pauseDomains) {
         setDomains((prev) => [...prev.slice(-999), line]);
+        setUnseenDomainsCount((count) => count + 1);
       }
     };
 
@@ -68,6 +72,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const clearLogs = useCallback(() => setLogs([]), []);
   const clearDomains = useCallback(() => setDomains([]), []);
 
+  const resetDomainsBadge = useCallback(() => {
+    setUnseenDomainsCount(0);
+  }, []);
+
   return (
     <WebSocketContext.Provider
       value={{
@@ -75,10 +83,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         domains,
         pauseLogs,
         pauseDomains,
+        unseenDomainsCount,
         setPauseLogs,
         setPauseDomains,
         clearLogs,
         clearDomains,
+        resetDomainsBadge,
       }}
     >
       {children}

@@ -15,8 +15,13 @@ import { colors } from "@design";
 import { useWebSocket } from "@/ctx/B4WsProvider";
 
 export default function Domains() {
-  const { domains, pauseDomains, setPauseDomains, clearDomains } =
-    useWebSocket();
+  const {
+    domains,
+    pauseDomains,
+    setPauseDomains,
+    clearDomains,
+    resetDomainsBadge,
+  } = useWebSocket();
 
   const [filter, setFilter] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
@@ -94,12 +99,13 @@ export default function Domains() {
       if ((e.ctrlKey && e.key === "x") || e.key === "Delete") {
         e.preventDefault();
         clearDomains();
+        resetDomainsBadge();
       } else if (e.key === "p" || e.key === "Pause") {
         e.preventDefault();
         setPauseDomains(!pauseDomains);
       }
     },
-    [clearDomains, pauseDomains, setPauseDomains]
+    [clearDomains, pauseDomains, setPauseDomains, resetDomainsBadge]
   );
 
   useEffect(() => {
