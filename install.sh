@@ -314,6 +314,8 @@ set_system_paths() {
         ;;
     esac
 
+    CONFIG_FILE="${CONFIG_DIR}/b4.json"
+
     print_info "Detected system: $SYSTEM_TYPE"
     print_info "Using install directory: $INSTALL_DIR"
     print_info "Using config directory: $CONFIG_DIR"
@@ -1217,7 +1219,6 @@ main_install() {
 
     # Detect system and set paths
     set_system_paths
-    CONFIG_FILE="${CONFIG_DIR}/b4.json"
 
     if [ "$QUIET_MODE" = "0" ]; then
         echo ""
@@ -1523,7 +1524,6 @@ detect_firewall_backend() {
 show_system_info() {
 
     set_system_paths
-    CONFIG_FILE="${CONFIG_DIR}/b4.json" #temprorary solution...
 
     echo ""
     echo "======================================="
