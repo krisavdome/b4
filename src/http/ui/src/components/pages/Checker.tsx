@@ -1,6 +1,7 @@
 import { Container, Alert, Stack } from "@mui/material";
 import { TestRunner } from "@organisms/check/Runner";
 import { colors } from "@design";
+import { Link } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 export default function Test() {
@@ -30,9 +31,13 @@ export default function Test() {
           speeds indicate successful bypass - if speeds are slow or connections
           fail, your DPI circumvention may need adjustment. Configure domains to
           test in{" "}
-          <RouterLink color="primary" to="/settings/checker">
+          <Link
+            component={RouterLink}
+            to="/settings/checker"
+            sx={{ color: colors.secondary }}
+          >
             Testing Settings
-          </RouterLink>
+          </Link>
           .
         </Alert>
         <TestRunner />
