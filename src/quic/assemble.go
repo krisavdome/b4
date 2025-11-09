@@ -2,6 +2,8 @@ package quic
 
 import (
 	"sync"
+
+	"github.com/daniellavrushin/b4/log"
 )
 
 type cbuf struct {
@@ -128,6 +130,11 @@ func AssembleCrypto(dcid, plain []byte) ([]byte, bool) {
 			continue
 		}
 		buf.write(int(f.off), f.b)
+		if buf.head > 1<<20 { // If buffer too large, likely invalid connection
+			log.Tracef("AssembleCrypto: buffer too large for key %s, deleting", key)
+			cmap.Delete(key)
+			return nil, false
+		}
 	}
 	return buf.snapshot()
 }

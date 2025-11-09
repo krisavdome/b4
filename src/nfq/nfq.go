@@ -151,11 +151,11 @@ func (w *Worker) Start() error {
 					host, ok := sni.ParseTLSClientHelloSNI(payload)
 
 					if ok {
-						matched, st := matcher.Match(host) // Now returns (bool, *config.SetConfig)
+						matched, st := matcher.Match(host)
 						target := "-"
 						if matched {
-							target = set.Name
 							set = st
+							target = set.Name
 						}
 
 						metrics := metrics.GetMetricsCollector()
@@ -197,8 +197,8 @@ func (w *Worker) Start() error {
 						matched, st := matcher.Match(host)
 						target := "-"
 						if matched {
-							target = set.Name
 							set = st
+							target = set.Name
 						}
 						log.Infof("UDP|%v: %s %s:%d -> %s:%d", target, host, src.String(), sport, dst.String(), dport)
 
@@ -228,7 +228,9 @@ func (w *Worker) Start() error {
 					case "parse":
 						if host != "" {
 							matched, st := matcher.Match(host)
-							set = st
+							if matched {
+								set = st
+							}
 							handle = matched
 						}
 					}
