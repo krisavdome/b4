@@ -109,14 +109,7 @@ func runB4(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load domains: %w", err)
 	}
 
-	if totalDomains == 0 {
-		log.Warnf("No domains configured in any set, B4 will not process any traffic")
-	} else {
-		for _, set := range cfg.Sets {
-			log.Infof("Set '%s': %d domains, %d IPs", set.Name, len(set.Targets.DomainsToMatch), len(set.Targets.IPs))
-		}
-		log.Infof("Total: %d domains, %d IPs across %d sets", totalDomains, totalIps, len(cfg.Sets))
-	}
+	log.Infof("Loaded targets: %d domains, %d IPs across %d sets", totalDomains, totalIps, len(cfg.Sets))
 
 	// Setup iptables/nftables rules
 	if !cfg.System.Tables.SkipSetup {

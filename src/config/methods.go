@@ -201,7 +201,7 @@ func (c *Config) LoadTargets() ([]*SetConfig, int, int, error) {
 
 	// Process all sets
 	for _, set := range c.Sets {
-		ips, domains, err := c.GetTargetsForSet(set)
+		domains, ips, err := c.GetTargetsForSet(set)
 		if err != nil {
 			return nil, -1, -1, fmt.Errorf("failed to load domains for set '%s': %w", set.Name, err)
 		}
@@ -241,6 +241,7 @@ func (c *Config) GetTargetsForSet(set *SetConfig) ([]string, []string, error) {
 	if len(set.Targets.SNIDomains) > 0 {
 		domains = append(domains, set.Targets.SNIDomains...)
 	}
+	set.Targets.DomainsToMatch = domains
 
 	//	 ips from geoip categories
 	if len(set.Targets.GeoIpCategories) > 0 && c.System.Geo.GeoIpPath != "" {
@@ -261,6 +262,7 @@ func (c *Config) GetTargetsForSet(set *SetConfig) ([]string, []string, error) {
 		ips = append(ips, set.Targets.IPs...)
 	}
 
+	set.Targets.IpsToMatch = ips
 	return domains, ips, nil
 }
 
