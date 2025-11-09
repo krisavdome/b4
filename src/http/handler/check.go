@@ -40,8 +40,8 @@ func (api *API) handleStartCheck(w http.ResponseWriter, r *http.Request) {
 	domains := []string{}
 	if len(api.cfg.Sets) > 0 {
 		for _, set := range api.cfg.Sets {
-			if len(set.Domains.SNIDomains) > 0 {
-				domains = append(domains, set.Domains.SNIDomains...)
+			if len(set.Targets.SNIDomains) > 0 {
+				domains = append(domains, set.Targets.SNIDomains...)
 			}
 		}
 	}

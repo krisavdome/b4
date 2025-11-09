@@ -39,8 +39,8 @@ func NewAPIHandler(cfg *config.Config) *API {
 	geoCategories := []string{}
 	if len(cfg.Sets) > 0 {
 		for _, set := range cfg.Sets {
-			if len(set.Domains.GeoSiteCategories) > 0 {
-				geoCategories = append(geoCategories, set.Domains.GeoSiteCategories...)
+			if len(set.Targets.GeoSiteCategories) > 0 {
+				geoCategories = append(geoCategories, set.Targets.GeoSiteCategories...)
 			}
 		}
 	}
@@ -68,6 +68,7 @@ func (api *API) RegisterEndpoints(mux *http.ServeMux, cfg *config.Config) {
 	api.RegisterConfigApi()
 	api.RegisterMetricsApi()
 	api.RegisterGeositeApi()
+	api.RegisterGeoipApi()
 	api.RegisterSystemApi()
 	api.RegisterCheckApi()
 }

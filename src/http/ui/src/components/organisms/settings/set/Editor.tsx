@@ -15,7 +15,7 @@ import B4TextField from "@atoms/common/B4TextField";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4SetConfig, SystemConfig } from "@models/Config";
 
-import { DomainSettings } from "@/components/organisms/settings/set/Domain";
+import { TargetSettings } from "@/components/organisms/settings/set/Target";
 import { TcpSettings } from "./Tcp";
 import { UdpSettings } from "./Udp";
 import { FragmentationSettings } from "./Fragmentation";
@@ -42,14 +42,14 @@ export const SetEditor: React.FC<SetEditorProps> = ({
   onSave,
 }) => {
   enum TABS {
-    DOMAINS = 0,
+    TARGETS = 0,
     TCP,
     UDP,
     FRAGMENTATION,
     FAKING,
   }
 
-  const [activeTab, setActiveTab] = useState<TABS>(TABS.DOMAINS);
+  const [activeTab, setActiveTab] = useState<TABS>(TABS.TARGETS);
   const [editedSet, setEditedSet] = useState<B4SetConfig | null>(initialSet);
 
   React.useEffect(() => {
@@ -166,10 +166,10 @@ export const SetEditor: React.FC<SetEditorProps> = ({
           </Stack>
         </Box>
 
-        {/* Domain Settings */}
-        <Box hidden={activeTab !== TABS.DOMAINS}>
+        {/* Target Settings */}
+        <Box hidden={activeTab !== TABS.TARGETS}>
           <Stack spacing={2}>
-            <DomainSettings
+            <TargetSettings
               geo={settings.geo}
               config={editedSet}
               stats={stats}

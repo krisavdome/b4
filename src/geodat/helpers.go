@@ -1,6 +1,9 @@
 package geodat
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/urlesistiana/v2dat/v2data"
 )
 
@@ -30,6 +33,25 @@ func LoadDomainsFromCategories(geodataPath string, categories []string) ([]strin
 	}
 
 	return allDomains, nil
+}
+
+func LoadIpsFromCategories(geodataPath string, categories []string) ([]string, error) {
+	if geodataPath == "" || len(categories) == 0 {
+		return nil, nil
+	}
+
+	allIps := []string{}
+
+	save := func(tag string, geo *v2data.GeoIP) error {
+		fmt.Fprintf(os.Stdout, "# %s (%d cidr)\n", tag, len(geo.GetCidr()))
+		return convertV2CidrToText(geo.GetCidr(), os.Stdout)
+	}
+
+	if err := streamGeoIP(geodataPath, categories, save); err != nil {
+		return nil, err
+	}
+
+	return allIps, nil
 }
 
 // extractDomainValue extracts the domain string from a Domain record

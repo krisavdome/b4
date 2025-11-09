@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/netip"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/urlesistiana/v2dat/v2data"
@@ -95,62 +94,6 @@ func streamGeoIP(file string, filters []string, save func(string, *v2data.GeoIP)
 		}
 	}
 	return nil
-}
-
-func listGeoIPTags(filePath string) error {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	set := map[string]struct{}{}
-	r := bufio.NewReaderSize(f, 32*1024)
-	for {
-		b, err := r.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		if b != 0x0A {
-			return fmt.Errorf("unexpected wire tag %02X", b)
-		}
-		l, err := binary.ReadUvarint(r)
-		if err != nil {
-			return err
-		}
-		msg := make([]byte, l)
-		if _, err := io.ReadFull(r, msg); err != nil {
-			return err
-		}
-		tag, err := readCountryCode(msg)
-		if err != nil {
-			return err
-		}
-		set[tag] = struct{}{}
-	}
-
-	tags := make([]string, 0, len(set))
-	for t := range set {
-		tags = append(tags, t)
-	}
-	sort.Strings(tags)
-	for _, t := range tags {
-		fmt.Println(t)
-	}
-	return nil
-}
-
-func convertV2CidrToTextFile(cidr []*v2data.CIDR, file string) error {
-	f, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return convertV2CidrToText(cidr, f)
 }
 
 func convertV2CidrToText(cidr []*v2data.CIDR, w io.Writer) error {

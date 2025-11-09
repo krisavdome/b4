@@ -2,6 +2,11 @@
 package geodat
 
 import (
+	"bufio"
+	"encoding/binary"
+	"io"
+	"os"
+	"sort"
 	"sync"
 
 	"github.com/daniellavrushin/b4/log"
@@ -169,6 +174,52 @@ func (gm *GeodataManager) GetCachedCategoryBreakdown() map[string]int {
 	return breakdown
 }
 
+func (gm *GeodataManager) ListCategories(filePath string) ([]string, error) {
+
+	log.Tracef("Listing geo ip tags from %s", filePath)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	set := map[string]struct{}{}
+	r := bufio.NewReaderSize(f, 32*1024)
+	for {
+		b, err := r.ReadByte()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if b != 0x0A {
+			return nil, log.Errorf("unexpected wire tag %02X", b)
+		}
+		l, err := binary.ReadUvarint(r)
+		if err != nil {
+			return nil, log.Errorf("failed to read varint: %w", err)
+		}
+		msg := make([]byte, l)
+		if _, err := io.ReadFull(r, msg); err != nil {
+			return nil, err
+		}
+		tag, err := readCountryCode(msg)
+		if err != nil {
+			return nil, err
+		}
+		set[tag] = struct{}{}
+	}
+
+	tags := make([]string, 0, len(set))
+	for t := range set {
+		tags = append(tags, t)
+	}
+	sort.Strings(tags)
+
+	return tags, nil
+}
+
 // PreloadCategories loads and caches categories at startup
 func (gm *GeodataManager) PreloadCategories(categories []string) (map[string]int, error) {
 	log.Infof("Preloading %d geosite categories...", len(categories))
@@ -209,11 +260,16 @@ func (gm *GeodataManager) GetTotalCachedDomains() int {
 	return total
 }
 
-// IsConfigured returns true if geodata paths are configured
-func (gm *GeodataManager) IsConfigured() bool {
+func (gm *GeodataManager) IsGeositeConfigured() bool {
 	gm.mu.RLock()
 	defer gm.mu.RUnlock()
 	return gm.geositePath != ""
+}
+
+func (gm *GeodataManager) IsGeoipConfigured() bool {
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
+	return gm.geoipPath != ""
 }
 
 // GetGeositePath returns the current geosite path
@@ -221,4 +277,10 @@ func (gm *GeodataManager) GetGeositePath() string {
 	gm.mu.RLock()
 	defer gm.mu.RUnlock()
 	return gm.geositePath
+}
+
+func (gm *GeodataManager) GetGeoipPath() string {
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
+	return gm.geoipPath
 }

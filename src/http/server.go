@@ -26,24 +26,19 @@ func StartServer(cfg *config.Config, pool *nfq.Pool) (*stdhttp.Server, error) {
 
 	mux := stdhttp.NewServeMux()
 
-	// Register WebSocket endpoints
 	handler.SetNFQPool(pool)
 	registerWebSocketEndpoints(mux)
 
-	// Register REST API endpoints
 	registerAPIEndpoints(mux, cfg)
 
-	// Register SPA (Single Page Application)
 	handler.RegisterSpa(mux, uiDist)
 
-	// Apply CORS middleware
 	var httpHandler stdhttp.Handler = mux
 	httpHandler = cors(httpHandler)
 
 	addr := fmt.Sprintf(":%d", cfg.System.WebServer.Port)
 	log.Infof("Starting web server on %s", addr)
 
-	// Record startup event
 	metrics := handler.GetMetricsCollector()
 	metrics.RecordEvent("info", fmt.Sprintf("Web server started on port %d", cfg.System.WebServer.Port))
 
@@ -66,12 +61,8 @@ func StartServer(cfg *config.Config, pool *nfq.Pool) (*stdhttp.Server, error) {
 
 // registerWebSocketEndpoints registers all WebSocket handlers
 func registerWebSocketEndpoints(mux *stdhttp.ServeMux) {
-	// WebSocket endpoint for log streaming
 	mux.HandleFunc("/api/ws/logs", ws.HandleLogsWebSocket)
-
-	// WebSocket endpoint for real-time metrics
 	mux.HandleFunc("/api/ws/metrics", ws.HandleMetricsWebSocket)
-
 	log.Tracef("WebSocket endpoints registered: /api/ws/logs, /api/ws/metrics")
 }
 

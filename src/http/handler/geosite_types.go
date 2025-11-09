@@ -15,9 +15,11 @@ type ConfigResponse struct {
 
 // DomainStatistics provides overview of domain configuration
 type DomainStatistics struct {
-	TotalDomains      int            `json:"total_domains"`
+	TotalDomains      int            `json:"total_domains,omitempty"`
+	TotalIPs          int            `json:"total_ips,omitempty"`
 	CategoryBreakdown map[string]int `json:"category_breakdown,omitempty"`
 	GeositeAvailable  bool           `json:"geosite_available"`
+	GeoipAvailable    bool           `json:"geoip_available"`
 }
 
 // CategoryPreviewResponse for previewing category contents

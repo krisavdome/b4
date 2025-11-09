@@ -33,7 +33,7 @@ func NewSuffixSet(sets []*config.SetConfig) *SuffixSet {
 	seenRegexes := make(map[string]bool)
 
 	for _, set := range sets {
-		for _, d := range set.Domains.DomainsToMatch {
+		for _, d := range set.Targets.DomainsToMatch {
 			d = strings.ToLower(strings.TrimSpace(d))
 			if d == "" {
 				continue

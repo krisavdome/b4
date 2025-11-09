@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/daniellavrushin/b4/config"
-	"github.com/daniellavrushin/b4/geodat"
 	"github.com/daniellavrushin/b4/log"
 )
 
@@ -57,13 +56,13 @@ func (a *API) addGeositeDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, existingDomain := range set.Domains.SNIDomains {
+	for _, existingDomain := range set.Targets.SNIDomains {
 		if existingDomain == req.Domain {
 			response := AddDomainResponse{
 				Success:      false,
 				Message:      fmt.Sprintf("Domain '%s' already exists in domains list", req.Domain),
 				Domain:       req.Domain,
-				TotalDomains: len(set.Domains.DomainsToMatch),
+				TotalDomains: len(set.Targets.DomainsToMatch),
 			}
 			setJsonHeader(w)
 			w.WriteHeader(http.StatusConflict)
@@ -72,7 +71,7 @@ func (a *API) addGeositeDomain(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	set.Domains.SNIDomains = append(set.Domains.SNIDomains, req.Domain)
+	set.Targets.SNIDomains = append(set.Targets.SNIDomains, req.Domain)
 	log.Infof("Added domain '%s' to set '%s' domains list", req.Domain, set.Id)
 
 	err := a.saveAndPushConfig(a.cfg)
@@ -87,8 +86,8 @@ func (a *API) addGeositeDomain(w http.ResponseWriter, r *http.Request) {
 		Success:       true,
 		Message:       fmt.Sprintf("Successfully added domain '%s'", req.Domain),
 		Domain:        req.Domain,
-		TotalDomains:  len(set.Domains.DomainsToMatch),
-		ManualDomains: set.Domains.SNIDomains,
+		TotalDomains:  len(set.Targets.DomainsToMatch),
+		ManualDomains: set.Targets.SNIDomains,
 	}
 
 	setJsonHeader(w)
@@ -100,13 +99,13 @@ func (a *API) getGeositeTags(w http.ResponseWriter) {
 	setJsonHeader(w)
 	enc := json.NewEncoder(w)
 
-	if !a.geodataManager.IsConfigured() {
+	if !a.geodataManager.IsGeositeConfigured() {
 		log.Tracef("Geosite path is not configured")
 		_ = enc.Encode(GeositeResponse{Tags: []string{}})
 		return
 	}
 
-	tags, err := geodat.ListGeoSiteTags(a.geodataManager.GetGeositePath())
+	tags, err := a.geodataManager.ListCategories(a.geodataManager.GetGeositePath())
 	if err != nil {
 		http.Error(w, "Failed to load geosite tags: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -131,7 +130,7 @@ func (a *API) previewGeoCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !a.geodataManager.IsConfigured() {
+	if !a.geodataManager.IsGeositeConfigured() {
 		http.Error(w, "Geosite path not configured", http.StatusBadRequest)
 		return
 	}

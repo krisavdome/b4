@@ -50,11 +50,13 @@ type FakingConfig struct {
 	CustomPayload string `json:"custom_payload" bson:"custom_payload"`
 }
 
-type DomainsConfig struct {
+type TargetsConfig struct {
 	SNIDomains        []string `json:"sni_domains" bson:"sni_domains"`
+	IPs               []string `json:"ip" bson:"ip"`
 	GeoSiteCategories []string `json:"geosite_categories" bson:"geosite_categories"`
 	GeoIpCategories   []string `json:"geoip_categories" bson:"geoip_categories"`
 	DomainsToMatch    []string `json:"-" bson:"-"`
+	IpsToMatch        []string `json:"-" bson:"-"`
 }
 
 type SystemConfig struct {
@@ -94,7 +96,7 @@ type SetConfig struct {
 	UDP           UDPConfig           `json:"udp" bson:"udp"`
 	Fragmentation FragmentationConfig `json:"fragmentation" bson:"fragmentation"`
 	Faking        FakingConfig        `json:"faking" bson:"faking"`
-	Domains       DomainsConfig       `json:"domains" bson:"domains"`
+	Targets       TargetsConfig       `json:"targets" bson:"targets"`
 }
 
 type GeoDatConfig struct {

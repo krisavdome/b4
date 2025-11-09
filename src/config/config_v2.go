@@ -54,7 +54,7 @@ var DefaultSetConfig = SetConfig{
 		SeqOffset:     10000,
 	},
 
-	Domains: DomainsConfig{
+	Targets: TargetsConfig{
 		SNIDomains:        []string{},
 		GeoSiteCategories: []string{},
 		GeoIpCategories:   []string{},

@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/daniellavrushin/b4/log"
@@ -113,52 +112,6 @@ func streamGeoSite(file string, filters []string, save func(string, []*v2data.Do
 		}
 	}
 	return nil
-}
-
-func ListGeoSiteTags(filePath string) ([]string, error) {
-
-	log.Tracef("Listing geo site tags from %s", filePath)
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	set := map[string]struct{}{}
-	r := bufio.NewReaderSize(f, 32*1024)
-	for {
-		b, err := r.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if b != 0x0A {
-			return nil, log.Errorf("unexpected wire tag %02X", b)
-		}
-		l, err := binary.ReadUvarint(r)
-		if err != nil {
-			return nil, log.Errorf("failed to read varint: %w", err)
-		}
-		msg := make([]byte, l)
-		if _, err := io.ReadFull(r, msg); err != nil {
-			return nil, err
-		}
-		tag, err := readCountryCode(msg)
-		if err != nil {
-			return nil, err
-		}
-		set[tag] = struct{}{}
-	}
-
-	tags := make([]string, 0, len(set))
-	for t := range set {
-		tags = append(tags, t)
-	}
-	sort.Strings(tags)
-
-	return tags, nil
 }
 
 func convertV2DomainToText(dom []*v2data.Domain, w io.Writer) error {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/daniellavrushin/b4/geodat"
 	"github.com/daniellavrushin/b4/log"
-	"github.com/daniellavrushin/b4/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -107,12 +106,13 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&c.MainSet.Faking.SNISeqLength, "fake-sni-len", c.MainSet.Faking.SNISeqLength, "Length of fake SNI sequence")
 	cmd.Flags().IntVar(&c.MainSet.Faking.SNIType, "fake-sni-type", c.MainSet.Faking.SNIType, "Type of fake SNI payload (0=random, 1=custom, 2=default)")
 
-	// Domain filtering
-	cmd.Flags().StringSliceVar(&c.MainSet.Domains.SNIDomains, "sni-domains", c.MainSet.Domains.SNIDomains, "List of SNI domains to match")
+	// Targets filtering
+	cmd.Flags().StringSliceVar(&c.MainSet.Targets.SNIDomains, "sni-domains", c.MainSet.Targets.SNIDomains, "List of SNI domains to match")
+	cmd.Flags().StringSliceVar(&c.MainSet.Targets.IPs, "ip", c.MainSet.Targets.IPs, "List of IPs/CIDRs to match")
 	cmd.Flags().StringVar(&c.System.Geo.GeoSitePath, "geosite", c.System.Geo.GeoSitePath, "Path to geosite file (e.g., geosite.dat)")
 	cmd.Flags().StringVar(&c.System.Geo.GeoIpPath, "geoip", c.System.Geo.GeoIpPath, "Path to geoip file (e.g., geoip.dat)")
-	cmd.Flags().StringSliceVar(&c.MainSet.Domains.GeoSiteCategories, "geosite-categories", c.MainSet.Domains.GeoSiteCategories, "Geographic categories to process (e.g., youtube,facebook,amazon)")
-	cmd.Flags().StringSliceVar(&c.MainSet.Domains.GeoIpCategories, "geoip-categories", c.MainSet.Domains.GeoIpCategories, "Geographic categories to process (e.g., youtube,facebook,amazon)")
+	cmd.Flags().StringSliceVar(&c.MainSet.Targets.GeoSiteCategories, "geosite-categories", c.MainSet.Targets.GeoSiteCategories, "Geographic categories to process (e.g., youtube,facebook,amazon)")
+	cmd.Flags().StringSliceVar(&c.MainSet.Targets.GeoIpCategories, "geoip-categories", c.MainSet.Targets.GeoIpCategories, "Geographic categories to process (e.g., youtube,facebook,amazon)")
 
 	// System configuration
 	cmd.Flags().IntVar(&c.System.Tables.MonitorInterval, "tables-monitor-interval", c.System.Tables.MonitorInterval, "Tables monitor interval in seconds (default 10, 0 to disable)")
@@ -152,8 +152,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("main set configuration is missing")
 	}
 
-	if len(c.MainSet.Domains.GeoSiteCategories) > 0 && c.System.Geo.GeoSitePath == "" {
+	if len(c.MainSet.Targets.GeoSiteCategories) > 0 && c.System.Geo.GeoSitePath == "" {
 		return fmt.Errorf("--geosite must be specified when using --geo-categories")
+	}
+
+	if len(c.MainSet.Targets.GeoIpCategories) > 0 && c.System.Geo.GeoIpPath == "" {
+		return fmt.Errorf("--geoip must be specified when using --geoip-categories")
 	}
 
 	if c.Queue.Threads < 1 {
@@ -189,50 +193,44 @@ func (c *Config) LogString() string {
 	return ""
 }
 
-// LoadDomains returns all domains from all sets grouped by set name
-func (c *Config) LoadDomains() ([]*SetConfig, int, error) {
+// LoadTargets returns all targets (domains and IPs) from all sets grouped by set name
+func (c *Config) LoadTargets() ([]*SetConfig, int, int, error) {
 	result := make([]*SetConfig, 0, len(c.Sets))
 	totalDomains := 0
+	totalIps := 0
 
 	// Process all sets
 	for _, set := range c.Sets {
-		domains, err := c.GetDomainsForSet(set)
+		ips, domains, err := c.GetTargetsForSet(set)
 		if err != nil {
-			return nil, -1, fmt.Errorf("failed to load domains for set '%s': %w", set.Name, err)
+			return nil, -1, -1, fmt.Errorf("failed to load domains for set '%s': %w", set.Name, err)
 		}
 		if len(domains) > 0 {
-			result = append(result, set)
 			totalDomains += len(domains)
 		}
+		if len(ips) > 0 {
+			totalIps += len(ips)
+		}
+		result = append(result, set)
 	}
 
-	// If no sets have domains, use MainSet as fallback
-	if len(result) == 0 && c.MainSet != nil {
-		domains, err := c.GetDomainsForSet(c.MainSet)
-		if err != nil {
-			return nil, -1, fmt.Errorf("failed to load domains for main set: %w", err)
-		}
-		if len(domains) > 0 {
-			result = append(result, c.MainSet)
-			totalDomains += len(domains)
-		}
-	}
-
-	return result, totalDomains, nil
+	return result, totalDomains, totalIps, nil
 }
 
-// GetDomainsForSet loads domains for a specific set, combining geosite and manual domains
-func (c *Config) GetDomainsForSet(set *SetConfig) ([]string, error) {
+// GetTargetsForSet loads domains for a specific set, combining geosite and manual domains
+func (c *Config) GetTargetsForSet(set *SetConfig) ([]string, []string, error) {
 
 	domains := []string{}
+	ips := []string{}
 
-	if len(set.Domains.GeoSiteCategories) > 0 && c.System.Geo.GeoSitePath != "" {
+	// domains from geosite categories
+	if len(set.Targets.GeoSiteCategories) > 0 && c.System.Geo.GeoSitePath != "" {
 		geoDomains, err := geodat.LoadDomainsFromCategories(
 			c.System.Geo.GeoSitePath,
-			set.Domains.GeoSiteCategories,
+			set.Targets.GeoSiteCategories,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load geosite domains for set '%s': %w", set.Name, err)
+			return nil, nil, fmt.Errorf("failed to load geosite domains for set '%s': %w", set.Name, err)
 		}
 
 		if len(geoDomains) > 0 {
@@ -240,16 +238,30 @@ func (c *Config) GetDomainsForSet(set *SetConfig) ([]string, error) {
 		}
 	}
 
-	if len(set.Domains.SNIDomains) > 0 {
-		domains = append(domains, set.Domains.SNIDomains...)
+	if len(set.Targets.SNIDomains) > 0 {
+		domains = append(domains, set.Targets.SNIDomains...)
 	}
 
-	if len(domains) > 0 {
-		set.Domains.DomainsToMatch = utils.FilterUniqueStrings(domains)
-		return set.Domains.DomainsToMatch, nil
+	//	 ips from geoip categories
+	if len(set.Targets.GeoIpCategories) > 0 && c.System.Geo.GeoIpPath != "" {
+		geoIps, err := geodat.LoadIpsFromCategories(
+			c.System.Geo.GeoIpPath,
+			set.Targets.GeoIpCategories,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load geosite domains for set '%s': %w", set.Name, err)
+		}
+
+		if len(geoIps) > 0 {
+			ips = append(ips, geoIps...)
+		}
 	}
 
-	return nil, nil
+	if len(set.Targets.IPs) > 0 {
+		ips = append(ips, set.Targets.IPs...)
+	}
+
+	return domains, ips, nil
 }
 
 func (c *Config) GetSetById(id string) *SetConfig {
@@ -267,11 +279,11 @@ func (set *SetConfig) ResetToDefaults() {
 	// Preserve data
 	id := set.Id
 	name := set.Name
-	domains := set.Domains
+	targets := set.Targets
 
 	*set = defaultSet
 
 	set.Id = id
 	set.Name = name
-	set.Domains = domains
+	set.Targets = targets
 }

@@ -35,9 +35,9 @@ func (a *API) getConfig(w http.ResponseWriter) {
 	totalDomains := 0
 	categories := []string{}
 	for _, set := range a.cfg.Sets {
-		totalDomains += len(set.Domains.DomainsToMatch)
+		totalDomains += len(set.Targets.DomainsToMatch)
 
-		categories = append(categories, set.Domains.GeoSiteCategories...)
+		categories = append(categories, set.Targets.GeoSiteCategories...)
 
 	}
 	categoryBreakdown, _ := a.geodataManager.GetCategoryCounts(utils.FilterUniqueStrings(categories))
@@ -46,7 +46,8 @@ func (a *API) getConfig(w http.ResponseWriter) {
 		Config: a.cfg,
 		DomainStats: DomainStatistics{
 			TotalDomains:      totalDomains,
-			GeositeAvailable:  a.geodataManager.IsConfigured(),
+			GeositeAvailable:  a.geodataManager.IsGeositeConfigured(),
+			GeoipAvailable:    a.geodataManager.IsGeoipConfigured(),
 			CategoryBreakdown: categoryBreakdown,
 		},
 	}
@@ -78,24 +79,20 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 	a.geodataManager.UpdatePaths(newConfig.System.Geo.GeoSitePath, newConfig.System.Geo.GeoIpPath)
 
 	allDomainsCount := 0
+	allIpsCount := 0
 	categories := []string{}
 
 	if newConfig.System.Geo.GeoSitePath != "" {
 
 		for _, set := range newConfig.Sets {
-			_, err := newConfig.GetDomainsForSet(set)
+			_, _, err := newConfig.GetTargetsForSet(set)
 			if err != nil {
 				log.Errorf("Failed to load domains for set '%s': %v", set.Name, err)
 			}
 
-			allDomainsCount += len(set.Domains.DomainsToMatch)
-			categories = append(categories, set.Domains.GeoSiteCategories...)
-
-			log.Infof("Loaded %d domains for set '%s' (manual: %d, geosite: %d)",
-				len(set.Domains.DomainsToMatch),
-				set.Name,
-				len(set.Domains.SNIDomains),
-				len(set.Domains.DomainsToMatch)-len(set.Domains.SNIDomains))
+			allDomainsCount += len(set.Targets.DomainsToMatch)
+			allIpsCount += len(set.Targets.IPs)
+			categories = append(categories, set.Targets.GeoSiteCategories...)
 		}
 
 	}
@@ -116,6 +113,7 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 		"message": "Configuration updated successfully",
 		"domain_stats": DomainStatistics{
 			TotalDomains:      allDomainsCount,
+			TotalIPs:          allIpsCount,
 			CategoryBreakdown: categoryBreakdown,
 		},
 	}
@@ -141,7 +139,10 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 
 	for _, set := range a.cfg.Sets {
 		set.ResetToDefaults()
-		_, _ = defaultCfg.GetDomainsForSet(set)
+		_, _, err := defaultCfg.GetTargetsForSet(set)
+		if err != nil {
+			log.Errorf("Failed to load domains for set '%s': %v", set.Name, err)
+		}
 		defaultCfg.Sets = append(defaultCfg.Sets, set)
 	}
 
