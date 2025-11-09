@@ -1,5 +1,12 @@
 # B4 - Bye Bye Big Bro
 
+## [1.12.0] - 2025-11-09
+
+- ADDED: Configuration Sets - fine-grained bypass control for different targets
+  - Create multiple configuration sets, each with independent TCP/UDP/fragmentation/faking settings
+  - Target packets by SNI domain, destination IP/CIDR ranges, or UDP port ranges
+- ADDED: `geoip.dat` support.
+
 ## [1.11.0] - 2025-11-05
 
 - ADDED: DPI Bypass Test feature to verify that circumvention is working. The feature tests configured domains and measures download speeds to ensure B4 is functioning correctly. Visit the `/test` page to run tests and `/settings/checker` to configure test settings (define which domains to test, etc.).

@@ -13,25 +13,32 @@ import {
   IconButton,
   Collapse,
   Divider,
+  Paper,
+  Tooltip,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   ContentCopy as CopyIcon,
-  Star as StarIcon,
   ExpandMore as ExpandIcon,
   ExpandLess as CollapseIcon,
   Layers as LayersIcon,
   Warning as WarningIcon,
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
+  AirlineStops,
+  CallSplit,
+  Deblur,
+  MultipleStop,
+  Security as SecurityIcon,
+  Category as CategoryIcon,
+  Language as LanguageIcon,
 } from "@mui/icons-material";
 import { v4 as uuidv4 } from "uuid";
 
 import B4Section from "@molecules/common/B4Section";
 import { B4Dialog } from "@molecules/common/B4Dialog";
-import { B4Badge } from "@atoms/common/B4Badge";
 import { SetEditor } from "./Editor";
 
 import { colors, radius, button_secondary } from "@design";
@@ -237,216 +244,416 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
         </Box>
 
         <List sx={{ p: 0 }}>
-          {sets.map((set) => {
-            const isMain = set.id === mainSetId;
-            const isExpanded = expandedSet === set.id;
-            const domainCount = getDomainCount(set);
+          <Stack spacing={2}>
+            {sets.map((set, index) => {
+              const isMain = set.id === mainSetId;
+              const isExpanded = expandedSet === set.id;
+              const domainCount = getDomainCount(set);
+              const hasTargets = domainCount > 0 || set.targets.ip.length > 0;
 
-            return (
-              <React.Fragment key={set.id}>
-                <ListItem
+              return (
+                <Paper
+                  key={set.id}
+                  elevation={isMain ? 2 : 1}
                   sx={{
-                    bgcolor: isMain
-                      ? colors.accent.primary
-                      : colors.background.dark,
-                    borderRadius: radius.md,
-                    mb: 1,
+                    position: "relative",
+                    overflow: "hidden",
                     border: `1px solid ${
                       isMain ? colors.primary : colors.border.default
                     }`,
-                    p: 2,
+                    borderRadius: radius.md,
+                    bgcolor: isMain
+                      ? `${colors.accent.primary}44`
+                      : colors.background.paper,
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      borderColor: isMain ? colors.secondary : colors.primary,
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 4px 12px ${colors.accent.primary}`,
+                    },
                   }}
-                  secondaryAction={
-                    <Stack direction="row" spacing={0.5}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleMoveSetUp(sets.indexOf(set))}
-                        disabled={sets.indexOf(set) === 0}
-                        title="Move up"
-                        sx={{
-                          color:
-                            sets.indexOf(set) === 0
-                              ? colors.text.disabled
-                              : colors.text.secondary,
-                        }}
-                      >
-                        <ArrowUpIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleMoveSetDown(sets.indexOf(set))}
-                        disabled={sets.indexOf(set) === sets.length - 1}
-                        title="Move down"
-                        sx={{
-                          color:
-                            sets.indexOf(set) === sets.length - 1
-                              ? colors.text.disabled
-                              : colors.text.secondary,
-                        }}
-                      >
-                        <ArrowDownIcon />
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setExpandedSet(isExpanded ? null : set.id)
-                        }
-                        title={isExpanded ? "Collapse" : "Expand details"}
-                      >
-                        {isExpanded ? <CollapseIcon /> : <ExpandIcon />}
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDuplicateSet(set)}
-                        title="Duplicate set"
-                      >
-                        <CopyIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditSet(set)}
-                        title="Edit set"
-                        sx={{ color: colors.secondary }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      {!isMain && (
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            setDeleteDialog({ open: true, setId: set.id })
-                          }
-                          title="Delete set"
-                          sx={{ color: colors.quaternary }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      )}
-                    </Stack>
-                  }
                 >
-                  <ListItemText
-                    primary={
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="h6">{set.name}</Typography>
-                        {isMain && (
-                          <B4Badge
-                            label="MAIN"
-                            badgeVariant="primary"
-                            icon={<StarIcon />}
-                          />
-                        )}
-                        {domainCount > 0 && (
-                          <Chip
-                            size="small"
-                            label={`${domainCount} domains`}
-                            sx={{
-                              bgcolor: colors.accent.tertiary,
-                              color: colors.tertiary,
-                            }}
-                          />
-                        )}
-                      </Stack>
-                    }
-                    secondary={
-                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                        <Chip
-                          label={`TCP: ${set.tcp.conn_bytes_limit}B`}
-                          size="small"
-                          variant="outlined"
-                        />
-                        <Chip
-                          label={`UDP: ${set.udp.mode}`}
-                          size="small"
-                          variant="outlined"
-                        />
-                        <Chip
-                          label={`Frag: ${set.fragmentation.strategy}`}
-                          size="small"
-                          variant="outlined"
-                        />
-                        <Chip
-                          label={`Fake: ${set.faking.strategy}`}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Stack>
-                    }
-                  />
-                </ListItem>
-
-                {/* Expanded Details */}
-                <Collapse in={isExpanded}>
+                  {/* Priority/Order indicator */}
                   <Box
                     sx={{
-                      ml: 2,
-                      mr: 2,
-                      mb: 2,
-                      p: 2,
-                      bgcolor: colors.background.paper,
-                      border: `1px solid ${colors.border.default}`,
-                      borderRadius: radius.sm,
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      bgcolor: isMain
+                        ? colors.secondary
+                        : `${colors.primary}${(100 - index * 20).toString(16)}`,
                     }}
-                  >
-                    <Grid container spacing={2}>
-                      <Grid size={{ xs: 12, md: 4 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
-                          TCP Configuration
+                  />
+
+                  {/* Main Content */}
+                  <Box sx={{ p: 2, pl: 3 }}>
+                    {/* Header Row */}
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Stack direction="row" alignItems="center" spacing={2}>
+                        {/* Priority Badge */}
+                        <Chip
+                          size="small"
+                          label={isMain ? "MAIN" : `#${index + 1}`}
+                          sx={{
+                            minWidth: 48,
+                            fontWeight: 600,
+                            bgcolor: isMain
+                              ? colors.secondary
+                              : colors.accent.tertiary,
+                            color: isMain
+                              ? colors.background.default
+                              : colors.text.primary,
+                          }}
+                        />
+
+                        {/* Set Name */}
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: isMain ? 600 : 500,
+                            color: colors.text.primary,
+                          }}
+                        >
+                          {set.name}
                         </Typography>
-                        <Stack spacing={0.5} sx={{ mt: 1 }}>
-                          <Typography variant="body2">
-                            Conn Bytes: {set.tcp.conn_bytes_limit}
-                          </Typography>
-                          <Typography variant="body2">
-                            Seg2 Delay: {set.tcp.seg2delay}ms
-                          </Typography>
+
+                        {/* Status Indicators */}
+                        <Stack direction="row" spacing={1}>
+                          {hasTargets && (
+                            <Tooltip
+                              title={`${domainCount} domains, ${set.targets.ip.length} IPs`}
+                            >
+                              <Chip
+                                icon={<LanguageIcon />}
+                                label={`${domainCount}/${set.targets.ip.length}`}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderColor: colors.secondary,
+                                  color: colors.secondary,
+                                }}
+                              />
+                            </Tooltip>
+                          )}
+
+                          {set.faking.sni && (
+                            <Tooltip title="SNI Faking Enabled">
+                              <Chip
+                                icon={<SecurityIcon />}
+                                label="SNI"
+                                size="small"
+                                sx={{
+                                  bgcolor: `${colors.secondary}22`,
+                                  color: colors.secondary,
+                                }}
+                              />
+                            </Tooltip>
+                          )}
                         </Stack>
+                      </Stack>
+
+                      {/* Action Buttons */}
+                      <Stack direction="row" spacing={0.5}>
+                        <Tooltip title="Move up">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveSetUp(index)}
+                            disabled={index === 0}
+                            sx={{
+                              opacity: index === 0 ? 0.3 : 1,
+                              "&:hover": { color: colors.secondary },
+                            }}
+                          >
+                            <ArrowUpIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Move down">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveSetDown(index)}
+                            disabled={index === sets.length - 1}
+                            sx={{
+                              opacity: index === sets.length - 1 ? 0.3 : 1,
+                              "&:hover": { color: colors.secondary },
+                            }}
+                          >
+                            <ArrowDownIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Divider
+                          orientation="vertical"
+                          flexItem
+                          sx={{ mx: 0.5 }}
+                        />
+
+                        <Tooltip
+                          title={isExpanded ? "Collapse" : "View details"}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setExpandedSet(isExpanded ? null : set.id)
+                            }
+                            sx={{ "&:hover": { color: colors.primary } }}
+                          >
+                            {isExpanded ? <CollapseIcon /> : <ExpandIcon />}
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Duplicate set">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDuplicateSet(set)}
+                            sx={{ "&:hover": { color: colors.tertiary } }}
+                          >
+                            <CopyIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Edit set">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditSet(set)}
+                            sx={{ "&:hover": { color: colors.secondary } }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        {!isMain && (
+                          <Tooltip title="Delete set">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setDeleteDialog({ open: true, setId: set.id })
+                              }
+                              sx={{ "&:hover": { color: colors.quaternary } }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </Stack>
+
+                    {/* Quick Config Overview - Always visible */}
+                    <Grid container spacing={2} sx={{ mt: 1.5 }}>
+                      {/* TCP Config */}
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: radius.sm,
+                            bgcolor: colors.background.dark,
+                            border: `1px solid ${colors.border.light}`,
+                          }}
+                        >
+                          <Stack spacing={0.5}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={0.5}
+                            >
+                              <AirlineStops
+                                sx={{
+                                  fontSize: 16,
+                                  color: colors.text.secondary,
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                TCP
+                              </Typography>
+                            </Stack>
+                            <Typography variant="body2" fontWeight={500}>
+                              {set.tcp.conn_bytes_limit}B limit
+                            </Typography>
+                            {set.tcp.seg2delay > 0 && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {set.tcp.seg2delay}ms delay
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
                       </Grid>
-                      <Grid size={{ xs: 12, md: 4 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Fragmentation
-                        </Typography>
-                        <Stack spacing={0.5} sx={{ mt: 1 }}>
-                          <Typography variant="body2">
-                            Strategy: {set.fragmentation.strategy}
-                          </Typography>
-                          <Typography variant="body2">
-                            SNI Position: {set.fragmentation.sni_position}
-                          </Typography>
-                          <Typography variant="body2">
-                            Reverse:{" "}
-                            {set.fragmentation.sni_reverse ? "Yes" : "No"}
-                          </Typography>
-                        </Stack>
+
+                      {/* UDP Config */}
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: radius.sm,
+                            bgcolor: colors.background.dark,
+                            border: `1px solid ${colors.border.light}`,
+                          }}
+                        >
+                          <Stack spacing={0.5}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={0.5}
+                            >
+                              <MultipleStop
+                                sx={{
+                                  fontSize: 16,
+                                  color: colors.text.secondary,
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                UDP
+                              </Typography>
+                            </Stack>
+                            <Typography variant="body2" fontWeight={500}>
+                              Mode: {set.udp.mode}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              QUIC: {set.udp.filter_quic}
+                            </Typography>
+                          </Stack>
+                        </Box>
                       </Grid>
-                      <Grid size={{ xs: 12, md: 4 }}>
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Faking
-                        </Typography>
-                        <Stack spacing={0.5} sx={{ mt: 1 }}>
-                          <Typography variant="body2">
-                            SNI: {set.faking.sni ? "Enabled" : "Disabled"}
-                          </Typography>
-                          <Typography variant="body2">
-                            Strategy: {set.faking.strategy}
-                          </Typography>
-                          <Typography variant="body2">
-                            TTL: {set.faking.ttl}
-                          </Typography>
-                        </Stack>
+
+                      {/* Fragmentation */}
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: radius.sm,
+                            bgcolor: colors.background.dark,
+                            border: `1px solid ${colors.border.light}`,
+                          }}
+                        >
+                          <Stack spacing={0.5}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={0.5}
+                            >
+                              <CallSplit
+                                sx={{
+                                  fontSize: 16,
+                                  color: colors.text.secondary,
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Fragment
+                              </Typography>
+                            </Stack>
+                            <Typography variant="body2" fontWeight={500}>
+                              {set.fragmentation.strategy.toUpperCase()}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5}>
+                              {set.fragmentation.sni_reverse && (
+                                <Chip
+                                  label="REV"
+                                  size="small"
+                                  sx={{ height: 16, fontSize: "0.65rem" }}
+                                />
+                              )}
+                              {set.fragmentation.middle_sni && (
+                                <Chip
+                                  label="MID"
+                                  size="small"
+                                  sx={{ height: 16, fontSize: "0.65rem" }}
+                                />
+                              )}
+                            </Stack>
+                          </Stack>
+                        </Box>
                       </Grid>
-                      {set.targets.sni_domains.length > 0 && (
-                        <Grid size={12}>
-                          <Divider sx={{ my: 1 }} />
+
+                      {/* Faking */}
+                      <Grid size={{ xs: 6, sm: 3 }}>
+                        <Box
+                          sx={{
+                            p: 1,
+                            borderRadius: radius.sm,
+                            bgcolor: colors.background.dark,
+                            border: `1px solid ${colors.border.light}`,
+                          }}
+                        >
+                          <Stack spacing={0.5}>
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              spacing={0.5}
+                            >
+                              <Deblur
+                                sx={{
+                                  fontSize: 16,
+                                  color: colors.text.secondary,
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Faking
+                              </Typography>
+                            </Stack>
+                            <Typography variant="body2" fontWeight={500}>
+                              {set.faking.strategy}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              TTL: {set.faking.ttl}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      </Grid>
+                    </Grid>
+
+                    {/* Expanded Details */}
+                    <Collapse in={isExpanded}>
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* Target Domains/IPs Preview */}
+                      {(set.targets.sni_domains.length > 0 ||
+                        set.targets.geosite_categories.length > 0) && (
+                        <Box sx={{ mb: 2 }}>
                           <Typography
                             variant="subtitle2"
-                            color="text.secondary"
+                            sx={{ mb: 1, color: colors.text.secondary }}
                           >
-                            Domains
+                            Target Domains & Categories
                           </Typography>
-                          <Box sx={{ mt: 1 }}>
+                          <Stack direction="row" flexWrap="wrap" gap={0.5}>
+                            {set.targets.geosite_categories.map((cat) => (
+                              <Chip
+                                key={cat}
+                                label={cat}
+                                size="small"
+                                icon={<CategoryIcon />}
+                                sx={{
+                                  bgcolor: `${colors.tertiary}22`,
+                                  color: colors.tertiary,
+                                }}
+                              />
+                            ))}
                             {set.targets.sni_domains
                               .slice(0, 5)
                               .map((domain) => (
@@ -454,7 +661,10 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
                                   key={domain}
                                   label={domain}
                                   size="small"
-                                  sx={{ mr: 0.5, mb: 0.5 }}
+                                  sx={{
+                                    bgcolor: `${colors.secondary}22`,
+                                    color: colors.secondary,
+                                  }}
                                 />
                               ))}
                             {set.targets.sni_domains.length > 5 && (
@@ -466,15 +676,61 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
                                 variant="outlined"
                               />
                             )}
-                          </Box>
-                        </Grid>
+                          </Stack>
+                        </Box>
                       )}
-                    </Grid>
+
+                      {/* Advanced Settings */}
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Advanced TCP/UDP Settings
+                          </Typography>
+                          <List dense disablePadding>
+                            <ListItem>
+                              <ListItemText
+                                primary="UDP Fake Length"
+                                secondary={`${set.udp.fake_len} bytes`}
+                              />
+                            </ListItem>
+                            <ListItem>
+                              <ListItemText
+                                primary="UDP Fake Strategy"
+                                secondary={set.udp.faking_strategy}
+                              />
+                            </ListItem>
+                          </List>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Faking Details
+                          </Typography>
+                          <List dense disablePadding>
+                            <ListItem>
+                              <ListItemText
+                                primary="SNI Type"
+                                secondary={
+                                  ["Random", "Custom", "Default"][
+                                    set.faking.sni_type
+                                  ]
+                                }
+                              />
+                            </ListItem>
+                            <ListItem>
+                              <ListItemText
+                                primary="Sequence Offset"
+                                secondary={set.faking.seq_offset}
+                              />
+                            </ListItem>
+                          </List>
+                        </Grid>
+                      </Grid>
+                    </Collapse>
                   </Box>
-                </Collapse>
-              </React.Fragment>
-            );
-          })}
+                </Paper>
+              );
+            })}
+          </Stack>
         </List>
       </B4Section>
 

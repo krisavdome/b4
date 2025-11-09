@@ -14,11 +14,18 @@ type ipRange struct {
 	set   *config.SetConfig
 }
 
+type portRange struct {
+	min int
+	max int
+	set *config.SetConfig
+}
+
 type SuffixSet struct {
 	sets       map[string]*config.SetConfig
 	regexes    []*regexWithSet
 	regexCache sync.Map
 	ipRanges   []ipRange
+	portRanges []portRange
 }
 
 type regexWithSet struct {
@@ -91,9 +98,46 @@ func NewSuffixSet(sets []*config.SetConfig) *SuffixSet {
 				s.ipRanges = append(s.ipRanges, ipRange{ipNet: ipNet, set: set})
 			}
 		}
+
+		if set.UDP.DPortMin > 0 || set.UDP.DPortMax > 0 {
+			s.portRanges = append(s.portRanges, portRange{
+				min: set.UDP.DPortMin,
+				max: set.UDP.DPortMax,
+				set: set,
+			})
+		}
 	}
 
 	return s
+}
+
+func (s *SuffixSet) MatchUDPPort(dport uint16) (bool, *config.SetConfig) {
+	if s == nil || len(s.portRanges) == 0 {
+		return false, nil
+	}
+
+	port := int(dport)
+
+	for _, r := range s.portRanges {
+		matched := false
+
+		if r.min > 0 && r.max > 0 {
+			// Both set: check range
+			matched = port >= r.min && port <= r.max
+		} else if r.min > 0 {
+			// Only min set
+			matched = port >= r.min
+		} else if r.max > 0 {
+			// Only max set
+			matched = port <= r.max
+		}
+
+		if matched {
+			return true, r.set
+		}
+	}
+
+	return false, nil
 }
 
 func (s *SuffixSet) MatchSNI(host string) (bool, *config.SetConfig) {

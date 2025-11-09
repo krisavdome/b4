@@ -220,6 +220,12 @@ func (w *Worker) Start() error {
 				host := ""
 				matchedIP := matched
 				matchedSNI := false
+				matchedPort := false
+
+				// Check UDP port range matching
+				if matchedPort, _ := matcher.MatchUDPPort(dport); matchedPort {
+					matchedPort = true
+				}
 
 				if h, ok := sni.ParseQUICClientHelloSNI(payload); ok {
 					host = h
@@ -245,6 +251,9 @@ func (w *Worker) Start() error {
 					sniTarget := "-"
 					if matchedIP {
 						ipTarget = st.Name
+					}
+					if matchedPort {
+						ipTarget = set.Name // same as ipTarget for simplicity
 					}
 					if matchedSNI {
 						sniTarget = set.Name
