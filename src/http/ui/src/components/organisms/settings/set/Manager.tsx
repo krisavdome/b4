@@ -44,22 +44,22 @@ import { SetEditor } from "./Editor";
 import { colors, radius, button_secondary } from "@design";
 import { B4Config, B4SetConfig } from "@models/Config";
 
-export interface TargetStatistics {
-  // Bypass stats
+export interface SetStats {
   manual_domains: number;
+  manual_ips: number;
   geosite_domains: number;
+  geoip_ips: number;
   total_domains: number;
-  category_breakdown?: Record<string, number>;
-  geosite_available: boolean;
-  // Block stats
-  block_manual_domains?: number;
-  block_geosite_domains?: number;
-  block_total_domains?: number;
-  block_category_breakdown?: Record<string, number>;
+  total_ips: number;
+  geosite_category_breakdown?: Record<string, number>;
+  geoip_category_breakdown?: Record<string, number>;
 }
 
+export interface SetWithStats extends B4SetConfig {
+  stats: SetStats;
+}
 interface SetsManagerProps {
-  config: B4Config & { domain_stats?: TargetStatistics };
+  config: B4Config & { sets?: SetWithStats[] };
   onChange: (
     field: string,
     value: boolean | string | number | B4SetConfig[]
@@ -87,32 +87,34 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
     open: false,
     setId: null,
   });
-
   const mainSetId = "11111111-1111-1111-1111-111111111111";
-  const sets = config.sets || [];
+  const setsData = config.sets || [];
+  const sets = setsData.map((s) => ("set" in s ? s.set : s)) as B4SetConfig[];
+  const setsStats = setsData.map((s) =>
+    "stats" in s ? s.stats : null
+  ) as SetStats[];
 
   const handleAddSet = () => {
     const newSet: B4SetConfig = {
       id: uuidv4(),
       name: `Set ${sets.length + 1}`,
-      tcp: { conn_bytes_limit: 19, seg2delay: 0 },
+      tcp: { conn_bytes_limit: 19, seg2delay: 0 } as B4SetConfig["tcp"],
       udp: {
         mode: "fake",
         fake_seq_length: 6,
         fake_len: 64,
         faking_strategy: "none",
-        dport_min: 0,
-        dport_max: 0,
+        dport_filter: "",
         filter_quic: "disabled",
         filter_stun: true,
         conn_bytes_limit: 8,
-      },
+      } as B4SetConfig["udp"],
       fragmentation: {
         strategy: "tcp",
         sni_reverse: true,
         middle_sni: true,
         sni_position: 1,
-      },
+      } as B4SetConfig["fragmentation"],
       faking: {
         sni: true,
         ttl: 8,
@@ -121,16 +123,33 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
         sni_seq_length: 1,
         sni_type: 2,
         custom_payload: "",
-      },
+      } as B4SetConfig["faking"],
       targets: {
         sni_domains: [],
         ip: [],
         geosite_categories: [],
         geoip_categories: [],
-      },
+      } as B4SetConfig["targets"],
     };
 
     setEditDialog({ open: true, set: newSet, isNew: true });
+  };
+
+  const getDomainCount = (set: B4SetConfig, index: number): number => {
+    if (setsStats[index]) {
+      return setsStats[index].total_domains;
+    }
+    return (
+      (set.targets?.sni_domains?.length || 0) +
+      (set.targets?.geosite_categories?.length || 0)
+    );
+  };
+
+  const getIpCount = (set: B4SetConfig, index: number): number => {
+    if (setsStats[index]) {
+      return setsStats[index].total_ips;
+    }
+    return set.targets?.ip?.length || 0;
   };
 
   const handleEditSet = (set: B4SetConfig) => {
@@ -179,13 +198,6 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
     };
 
     onChange("sets", [...sets, duplicated]);
-  };
-
-  const getDomainCount = (set: B4SetConfig): number => {
-    return (
-      (set.targets?.sni_domains?.length || 0) +
-      (set.targets?.geosite_categories?.length || 0)
-    );
   };
 
   const handleMoveSetUp = (index: number) => {
@@ -248,8 +260,9 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
             {sets.map((set, index) => {
               const isMain = set.id === mainSetId;
               const isExpanded = expandedSet === set.id;
-              const domainCount = getDomainCount(set);
-              const hasTargets = domainCount > 0 || set.targets.ip.length > 0;
+              const domainCount = getDomainCount(set, index);
+              const ipCount = getIpCount(set, index);
+              const hasTargets = domainCount > 0 || ipCount > 0;
 
               return (
                 <Paper
@@ -327,11 +340,37 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
                         <Stack direction="row" spacing={1}>
                           {hasTargets && (
                             <Tooltip
-                              title={`${domainCount} domains, ${set.targets.ip.length} IPs`}
+                              title={
+                                <Box>
+                                  <Typography variant="caption">
+                                    Domains:{" "}
+                                    {setsStats[index]?.total_domains ||
+                                      domainCount}
+                                    {setsStats[index]?.manual_domains > 0 &&
+                                      ` (${setsStats[index].manual_domains} manual)`}
+                                    {setsStats[index]?.geosite_domains > 0 &&
+                                      ` (${setsStats[index].geosite_domains} from geosite)`}
+                                  </Typography>
+                                  <br />
+                                  <Typography variant="caption">
+                                    IPs:{" "}
+                                    {setsStats[index]?.total_ips || ipCount}
+                                    {setsStats[index]?.manual_ips > 0 &&
+                                      ` (${setsStats[index].manual_ips} manual)`}
+                                    {setsStats[index]?.geoip_ips > 0 &&
+                                      ` (${setsStats[index].geoip_ips} from geoip)`}
+                                  </Typography>
+                                </Box>
+                              }
                             >
                               <Chip
                                 icon={<LanguageIcon />}
-                                label={`${domainCount}/${set.targets.ip.length}`}
+                                label={`${
+                                  setsStats[index]?.total_domains || domainCount
+                                }/${
+                                  setsStats[index]?.total_ips ||
+                                  set.targets.ip.length
+                                }`}
                                 size="small"
                                 variant="outlined"
                                 sx={{
@@ -734,13 +773,15 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
         </List>
       </B4Section>
 
-      {/* Set Editor Dialog */}
       <SetEditor
         open={editDialog.open}
         settings={config.system}
         set={editDialog.set!}
         isNew={editDialog.isNew}
-        stats={config?.domain_stats}
+        stats={
+          setsStats[sets.findIndex((s) => s.id === editDialog.set?.id)] ||
+          undefined
+        }
         onClose={() => setEditDialog({ open: false, set: null, isNew: false })}
         onSave={handleSaveSet}
       />

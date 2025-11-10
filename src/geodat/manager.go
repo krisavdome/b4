@@ -12,22 +12,35 @@ import (
 	"github.com/daniellavrushin/b4/log"
 )
 
+type GeodataType int
+
+const (
+	GEOSITE GeodataType = iota
+	GEOIP
+)
+
 // GeodataManager handles geodata file operations with caching and statistics
 type GeodataManager struct {
-	mu              sync.RWMutex
-	geositePath     string
-	geoipPath       string
-	categoryDomains map[string][]string // category -> domains (cached)
-	categoryCounts  map[string]int      // category -> domain count (fast lookup)
+	mu          sync.RWMutex
+	geositePath string
+	geoipPath   string
+
+	categoryDomains       map[string][]string // category -> domains (cached)
+	categoryDomainsCounts map[string]int      // category -> domain count (fast lookup)
+
+	categoryIps       map[string][]string // category -> IPs (cached)
+	categoryIpsCounts map[string]int      // category -> IP count (fast lookup)
 }
 
 // NewGeodataManager creates a new geodata manager instance
 func NewGeodataManager(geositePath, geoipPath string) *GeodataManager {
 	return &GeodataManager{
-		geositePath:     geositePath,
-		geoipPath:       geoipPath,
-		categoryDomains: make(map[string][]string),
-		categoryCounts:  make(map[string]int),
+		geositePath:           geositePath,
+		geoipPath:             geoipPath,
+		categoryDomains:       make(map[string][]string),
+		categoryDomainsCounts: make(map[string]int),
+		categoryIps:           make(map[string][]string),
+		categoryIpsCounts:     make(map[string]int),
 	}
 }
 
@@ -43,13 +56,44 @@ func (gm *GeodataManager) UpdatePaths(geositePath, geoipPath string) {
 
 	if pathsChanged {
 		gm.categoryDomains = make(map[string][]string)
-		gm.categoryCounts = make(map[string]int)
+		gm.categoryDomainsCounts = make(map[string]int)
+		gm.categoryIps = make(map[string][]string)
+		gm.categoryIpsCounts = make(map[string]int)
 		log.Infof("Geodata paths updated, cache cleared")
 	}
 }
 
-// LoadCategory loads domains for a single category (uses cache if available)
-func (gm *GeodataManager) LoadCategory(category string) ([]string, error) {
+func (gm *GeodataManager) LoadGeoipCategory(category string) ([]string, error) {
+	gm.mu.RLock()
+	if ips, exists := gm.categoryIps[category]; exists {
+		gm.mu.RUnlock()
+		log.Tracef("Using cached domains for category: %s (%d domains)", category, len(ips))
+		return ips, nil
+	}
+	gm.mu.RUnlock()
+
+	// Load from file
+	if gm.geoipPath == "" {
+		return nil, log.Errorf("geoip path not configured")
+	}
+
+	ips, err := LoadIpsFromCategories(gm.geoipPath, []string{category})
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the result
+	gm.mu.Lock()
+	gm.categoryIps[category] = ips
+	gm.categoryIpsCounts[category] = len(ips)
+	gm.mu.Unlock()
+
+	log.Tracef("Loaded and cached %d domains for category: %s", len(ips), category)
+	return ips, nil
+}
+
+// loads domains for a single category (uses cache if available)
+func (gm *GeodataManager) LoadGeositeCategory(category string) ([]string, error) {
 	gm.mu.RLock()
 	if domains, exists := gm.categoryDomains[category]; exists {
 		gm.mu.RUnlock()
@@ -71,15 +115,15 @@ func (gm *GeodataManager) LoadCategory(category string) ([]string, error) {
 	// Cache the result
 	gm.mu.Lock()
 	gm.categoryDomains[category] = domains
-	gm.categoryCounts[category] = len(domains)
+	gm.categoryDomainsCounts[category] = len(domains)
 	gm.mu.Unlock()
 
 	log.Tracef("Loaded and cached %d domains for category: %s", len(domains), category)
 	return domains, nil
 }
 
-// LoadCategories loads domains for multiple categories and returns combined domains + counts
-func (gm *GeodataManager) LoadCategories(categories []string) ([]string, map[string]int, error) {
+// loads domains for multiple categories and returns combined domains + counts
+func (gm *GeodataManager) LoadGeositeCategories(categories []string) ([]string, map[string]int, error) {
 	if len(categories) == 0 {
 		return []string{}, make(map[string]int), nil
 	}
@@ -99,7 +143,7 @@ func (gm *GeodataManager) LoadCategories(categories []string) ([]string, map[str
 	for cachedCategory := range gm.categoryDomains {
 		if !requestedCategories[cachedCategory] {
 			delete(gm.categoryDomains, cachedCategory)
-			delete(gm.categoryCounts, cachedCategory)
+			delete(gm.categoryDomainsCounts, cachedCategory)
 			log.Tracef("Removed category %s from cache (no longer selected)", cachedCategory)
 		}
 	}
@@ -109,7 +153,7 @@ func (gm *GeodataManager) LoadCategories(categories []string) ([]string, map[str
 	categoryStats := make(map[string]int)
 
 	for _, category := range categories {
-		domains, err := gm.LoadCategory(category)
+		domains, err := gm.LoadGeositeCategory(category)
 		if err != nil {
 			log.Errorf("Failed to load category %s: %v", category, err)
 			continue
@@ -130,8 +174,8 @@ func (gm *GeodataManager) LoadCategories(categories []string) ([]string, map[str
 	return allDomains, categoryStats, nil
 }
 
-// GetCategoryCounts returns domain counts for specified categories (loads if not cached)
-func (gm *GeodataManager) GetCategoryCounts(categories []string) (map[string]int, error) {
+// returns domain counts for specified categories (loads if not cached)
+func (gm *GeodataManager) GetGeositeCategoryCounts(categories []string) (map[string]int, error) {
 	if len(categories) == 0 {
 		return make(map[string]int), nil
 	}
@@ -141,7 +185,7 @@ func (gm *GeodataManager) GetCategoryCounts(categories []string) (map[string]int
 	for _, category := range categories {
 		// Check cache first
 		gm.mu.RLock()
-		if count, exists := gm.categoryCounts[category]; exists {
+		if count, exists := gm.categoryDomainsCounts[category]; exists {
 			counts[category] = count
 			gm.mu.RUnlock()
 			continue
@@ -149,7 +193,7 @@ func (gm *GeodataManager) GetCategoryCounts(categories []string) (map[string]int
 		gm.mu.RUnlock()
 
 		// Not in cache, load it
-		domains, err := gm.LoadCategory(category)
+		domains, err := gm.LoadGeositeCategory(category)
 		if err != nil {
 			log.Errorf("Failed to get count for category %s: %v", category, err)
 			counts[category] = 0
@@ -161,21 +205,39 @@ func (gm *GeodataManager) GetCategoryCounts(categories []string) (map[string]int
 	return counts, nil
 }
 
-// GetCachedCategoryBreakdown returns counts for all cached categories
-func (gm *GeodataManager) GetCachedCategoryBreakdown() map[string]int {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
-
-	breakdown := make(map[string]int, len(gm.categoryCounts))
-	for category, count := range gm.categoryCounts {
-		breakdown[category] = count
+func (gm *GeodataManager) GetGeoipCategoryCounts(categories []string) (map[string]int, error) {
+	if len(categories) == 0 {
+		return make(map[string]int), nil
 	}
-	return breakdown
+
+	counts := make(map[string]int)
+
+	for _, category := range categories {
+		// Check cache first
+		gm.mu.RLock()
+		if count, exists := gm.categoryIpsCounts[category]; exists {
+			counts[category] = count
+			gm.mu.RUnlock()
+			continue
+		}
+		gm.mu.RUnlock()
+
+		// Not in cache, load it
+		ips, err := gm.LoadGeoipCategory(category)
+		if err != nil {
+			log.Errorf("Failed to get count for category %s: %v", category, err)
+			counts[category] = 0
+			continue
+		}
+		counts[category] = len(ips)
+	}
+
+	return counts, nil
 }
 
 func (gm *GeodataManager) ListCategories(filePath string) ([]string, error) {
 
-	log.Tracef("Listing geo ip tags from %s", filePath)
+	log.Tracef("Listing geo dat tags from %s", filePath)
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -220,15 +282,25 @@ func (gm *GeodataManager) ListCategories(filePath string) ([]string, error) {
 }
 
 // PreloadCategories loads and caches categories at startup
-func (gm *GeodataManager) PreloadCategories(categories []string) (map[string]int, error) {
+func (gm *GeodataManager) PreloadCategories(t GeodataType, categories []string) (map[string]int, error) {
 	log.Infof("Preloading %d geosite categories...", len(categories))
 
-	_, counts, err := gm.LoadCategories(categories)
-	if err != nil {
-		return nil, err
+	totalDomains := 0
+	var counts map[string]int
+	var err error
+
+	if t == GEOIP {
+		counts, err = gm.GetGeoipCategoryCounts(categories)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		counts, err = gm.GetGeositeCategoryCounts(categories)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	totalDomains := 0
 	for _, count := range counts {
 		totalDomains += count
 	}
@@ -243,20 +315,10 @@ func (gm *GeodataManager) ClearCache() {
 	defer gm.mu.Unlock()
 
 	gm.categoryDomains = make(map[string][]string)
-	gm.categoryCounts = make(map[string]int)
+	gm.categoryDomainsCounts = make(map[string]int)
+	gm.categoryIps = make(map[string][]string)
+	gm.categoryIpsCounts = make(map[string]int)
 	log.Infof("Geodata cache cleared")
-}
-
-// GetTotalCachedDomains returns the total number of domains across all cached categories
-func (gm *GeodataManager) GetTotalCachedDomains() int {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
-
-	total := 0
-	for _, count := range gm.categoryCounts {
-		total += count
-	}
-	return total
 }
 
 func (gm *GeodataManager) IsGeositeConfigured() bool {

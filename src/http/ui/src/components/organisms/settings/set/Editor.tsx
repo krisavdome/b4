@@ -20,13 +20,13 @@ import { TcpSettings } from "./Tcp";
 import { UdpSettings } from "./Udp";
 import { FragmentationSettings } from "./Fragmentation";
 import { FakingSettings } from "./Faking";
-import { TargetStatistics } from "@organisms/settings/set/Manager";
+import { SetStats } from "@organisms/settings/set/Manager";
 
 export interface SetEditorProps {
   open: boolean;
   settings: SystemConfig;
   set: B4SetConfig;
-  stats?: TargetStatistics;
+  stats?: SetStats;
   isNew: boolean;
   onClose: () => void;
   onSave: (set: B4SetConfig) => void;

@@ -31,12 +31,12 @@ import SettingAutocomplete from "@atoms/common/B4Autocomplete";
 import { colors, button_primary } from "@design";
 import { B4Dialog } from "@molecules/common/B4Dialog";
 import { B4SetConfig, GeoConfig } from "@models/Config";
-import { TargetStatistics } from "@organisms/settings/set/Manager";
+import { SetStats } from "@organisms/settings/set/Manager";
 
 interface TargetSettingsProps {
   config: B4SetConfig;
   geo: GeoConfig;
-  stats?: TargetStatistics;
+  stats?: SetStats;
   onChange: (field: string, value: string | string[]) => void;
 }
 
@@ -406,51 +406,53 @@ export const TargetSettings: React.FC<TargetSettingsProps> = ({
                             bgcolor: colors.background.paper,
                           }}
                         >
-                          {config.targets.geosite_categories.map((category) => (
-                            <Chip
-                              size="small"
-                              key={category}
-                              label={
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <span>{category}</span>
-                                  {stats?.category_breakdown?.[category] && (
-                                    <Typography
-                                      component="span"
-                                      variant="caption"
-                                      sx={{
-                                        cursor: "pointer",
-                                        bgcolor: "action.selected",
-                                        px: 0.5,
-                                        ml: 0.5,
-                                        borderRadius: 1,
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        void previewCategory(category);
-                                      }}
-                                    >
-                                      {stats.category_breakdown[category]}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              }
-                              onDelete={() =>
-                                handleRemoveBypassCategory(category)
-                              }
-                              sx={{
-                                bgcolor: colors.accent.primary,
-                                color: colors.secondary,
-                                "& .MuiChip-deleteIcon": {
+                          {config.targets.geosite_categories.map((category) => {
+                            const count =
+                              stats?.geosite_category_breakdown?.[category];
+                            return (
+                              <Chip
+                                size="small"
+                                key={category}
+                                label={
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <span>{category}</span>
+                                    {count && (
+                                      <Typography
+                                        component="span"
+                                        variant="caption"
+                                        sx={{
+                                          bgcolor: "action.selected",
+                                          px: 0.5,
+                                          borderRadius: 1,
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        {count}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                }
+                                onDelete={() =>
+                                  handleRemoveBypassCategory(category)
+                                }
+                                onClick={() => void previewCategory(category)}
+                                sx={{
+                                  bgcolor: colors.accent.primary,
                                   color: colors.secondary,
-                                },
-                              }}
-                            />
-                          ))}
+                                  cursor: "pointer",
+                                  "& .MuiChip-deleteIcon": {
+                                    color: colors.secondary,
+                                  },
+                                }}
+                              />
+                            );
+                          })}
                         </Box>
                       </Box>
                     )}
@@ -603,23 +605,51 @@ export const TargetSettings: React.FC<TargetSettingsProps> = ({
                             bgcolor: colors.background.paper,
                           }}
                         >
-                          {config.targets.geoip_categories.map((category) => (
-                            <Chip
-                              key={category}
-                              label={category}
-                              onDelete={() =>
-                                handleRemoveBypassGeoIPCategory(category)
-                              }
-                              size="small"
-                              sx={{
-                                bgcolor: colors.accent.primary,
-                                color: colors.secondary,
-                                "& .MuiChip-deleteIcon": {
+                          {config.targets.geoip_categories.map((category) => {
+                            const count =
+                              stats?.geoip_category_breakdown?.[category];
+                            return (
+                              <Chip
+                                key={category}
+                                label={
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <span>{category}</span>
+                                    {count && (
+                                      <Typography
+                                        component="span"
+                                        variant="caption"
+                                        sx={{
+                                          bgcolor: "action.selected",
+                                          px: 0.5,
+                                          borderRadius: 1,
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        {count}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                }
+                                onDelete={() =>
+                                  handleRemoveBypassGeoIPCategory(category)
+                                }
+                                size="small"
+                                sx={{
+                                  bgcolor: colors.accent.primary,
                                   color: colors.secondary,
-                                },
-                              }}
-                            />
-                          ))}
+                                  "& .MuiChip-deleteIcon": {
+                                    color: colors.secondary,
+                                  },
+                                }}
+                              />
+                            );
+                          })}
                         </Box>
                       </Box>
                     )}

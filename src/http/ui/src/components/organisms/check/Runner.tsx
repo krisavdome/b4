@@ -30,6 +30,7 @@ interface TestResult {
   timestamp: string;
   is_baseline: boolean;
   improvement: number;
+  status_code: number;
 }
 
 interface TestSuite {
@@ -344,6 +345,7 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
                   speed={result.speed}
                   improvement={result.improvement}
                   error={result.error}
+                  status_code={result.status_code}
                 />
               </Grid>
             ))}

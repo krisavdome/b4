@@ -7,19 +7,20 @@ type GeositeResponse struct {
 	Tags []string `json:"tags"`
 }
 
-// ConfigResponse wraps the config with additional metadata
-type ConfigResponse struct {
-	*config.Config
-	DomainStats DomainStatistics `json:"domain_stats"`
+type SetStatistics struct {
+	ManualDomains            int            `json:"manual_domains"`
+	ManualIPs                int            `json:"manual_ips"`
+	GeositeDomains           int            `json:"geosite_domains"`
+	GeoipIPs                 int            `json:"geoip_ips"`
+	TotalDomains             int            `json:"total_domains"`
+	TotalIPs                 int            `json:"total_ips"`
+	GeositeCategoryBreakdown map[string]int `json:"geosite_category_breakdown,omitempty"`
+	GeoipCategoryBreakdown   map[string]int `json:"geoip_category_breakdown,omitempty"`
 }
 
-// DomainStatistics provides overview of domain configuration
-type DomainStatistics struct {
-	TotalDomains      int            `json:"total_domains,omitempty"`
-	TotalIPs          int            `json:"total_ips,omitempty"`
-	CategoryBreakdown map[string]int `json:"category_breakdown,omitempty"`
-	GeositeAvailable  bool           `json:"geosite_available"`
-	GeoipAvailable    bool           `json:"geoip_available"`
+type SetWithStats struct {
+	*config.SetConfig
+	Stats SetStatistics `json:"stats"`
 }
 
 // CategoryPreviewResponse for previewing category contents

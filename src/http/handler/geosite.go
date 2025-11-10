@@ -126,7 +126,7 @@ func (a *API) previewGeoCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	domains, err := a.geodataManager.LoadCategory(category)
+	domains, err := a.geodataManager.LoadGeositeCategory(category)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to load category: %v", err), http.StatusInternalServerError)
 		return

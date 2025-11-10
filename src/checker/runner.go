@@ -136,11 +136,12 @@ func (ts *CheckSuite) testDomain(domain string) CheckResult {
 	log.Tracef("Checking domain: %s (URL: %s)", domain, testURL)
 
 	start := time.Now()
-	bytesRead, err := ts.fetchURL(testURL)
+	bytesRead, statusCode, err := ts.fetchURL(testURL)
 	duration := time.Since(start)
 
 	result.Duration = duration
 	result.BytesRead = bytesRead
+	result.StatusCode = statusCode
 
 	if err != nil {
 		result.Status = CheckStatusFailed
@@ -158,7 +159,7 @@ func (ts *CheckSuite) testDomain(domain string) CheckResult {
 	return result
 }
 
-func (ts *CheckSuite) fetchURL(url string) (int64, error) {
+func (ts *CheckSuite) fetchURL(url string) (int64, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), ts.Config.Timeout)
 	defer cancel()
 
@@ -173,26 +174,24 @@ func (ts *CheckSuite) fetchURL(url string) (int64, error) {
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
-		return 0, fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
+	statusCode := resp.StatusCode
 
 	// Read response body (limit to 1MB to avoid huge downloads)
 	bytesRead, err := io.CopyN(io.Discard, resp.Body, 1024*1024)
 	if err != nil && err != io.EOF {
-		return bytesRead, nil // Partial read is ok
+		return bytesRead, statusCode, nil // Partial read is ok
 	}
 
-	return bytesRead, nil
+	return bytesRead, statusCode, nil
 }
 
 func (ts *CheckSuite) calculateSummary() {

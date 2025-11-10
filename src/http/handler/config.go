@@ -9,7 +9,6 @@ import (
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/daniellavrushin/b4/metrics"
-	"github.com/daniellavrushin/b4/utils"
 )
 
 func (api *API) RegisterConfigApi() {
@@ -32,29 +31,69 @@ func (a *API) handleConfig(w http.ResponseWriter, r *http.Request) {
 func (a *API) getConfig(w http.ResponseWriter) {
 	setJsonHeader(w)
 
+	// Calculate statistics for each set
+	setsWithStats := make([]SetWithStats, len(a.cfg.Sets))
 	totalDomains := 0
-	categories := []string{}
-	for _, set := range a.cfg.Sets {
-		totalDomains += len(set.Targets.DomainsToMatch)
+	totalIPs := 0
 
-		categories = append(categories, set.Targets.GeoSiteCategories...)
+	for i, set := range a.cfg.Sets {
+		// Count manual domains and IPs
+		manualDomains := len(set.Targets.SNIDomains)
+		manualIPs := len(set.Targets.IPs)
 
+		// Get geosite category counts
+		geositeCounts := make(map[string]int)
+		geositeTotalDomains := 0
+		if len(set.Targets.GeoSiteCategories) > 0 && a.geodataManager.IsGeositeConfigured() {
+			counts, err := a.geodataManager.GetGeositeCategoryCounts(set.Targets.GeoSiteCategories)
+			if err == nil {
+				geositeCounts = counts
+				for _, count := range counts {
+					geositeTotalDomains += count
+				}
+			}
+		}
+
+		// Get geoip category counts
+		geoipCounts := make(map[string]int)
+		geoipTotalIPs := 0
+		if len(set.Targets.GeoIpCategories) > 0 && a.geodataManager.IsGeoipConfigured() {
+			counts, err := a.geodataManager.GetGeoipCategoryCounts(set.Targets.GeoIpCategories)
+			if err == nil {
+				geoipCounts = counts
+				for _, count := range counts {
+					geoipTotalIPs += count
+				}
+			}
+		}
+
+		setTotalDomains := manualDomains + geositeTotalDomains
+		setTotalIPs := manualIPs + geoipTotalIPs
+
+		totalDomains += setTotalDomains
+		totalIPs += setTotalIPs
+
+		setsWithStats[i] = SetWithStats{
+			SetConfig: set,
+			Stats: SetStatistics{
+				ManualDomains:            manualDomains,
+				ManualIPs:                manualIPs,
+				GeositeDomains:           geositeTotalDomains,
+				GeoipIPs:                 geoipTotalIPs,
+				TotalDomains:             setTotalDomains,
+				TotalIPs:                 setTotalIPs,
+				GeositeCategoryBreakdown: geositeCounts,
+				GeoipCategoryBreakdown:   geoipCounts,
+			},
+		}
 	}
-	categoryBreakdown, _ := a.geodataManager.GetCategoryCounts(utils.FilterUniqueStrings(categories))
 
 	response := ConfigResponse{
-		Config: a.cfg,
-		DomainStats: DomainStatistics{
-			TotalDomains:      totalDomains,
-			GeositeAvailable:  a.geodataManager.IsGeositeConfigured(),
-			GeoipAvailable:    a.geodataManager.IsGeoipConfigured(),
-			CategoryBreakdown: categoryBreakdown,
-		},
+		Config:  a.cfg,
+		Sets:    setsWithStats,
+		Success: true,
+		Message: "Configuration retrieved successfully",
 	}
-
-	configCopy := *a.cfg
-	response.Config = &configCopy
-
 	enc := json.NewEncoder(w)
 	_ = enc.Encode(response)
 }
@@ -70,25 +109,67 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newConfig.ConfigPath = a.cfg.ConfigPath
-
 	a.geodataManager.UpdatePaths(newConfig.System.Geo.GeoSitePath, newConfig.System.Geo.GeoIpPath)
 
+	// Calculate statistics for response
+	setsWithStats := make([]SetWithStats, len(newConfig.Sets))
 	allDomainsCount := 0
 	allIpsCount := 0
-	categories := []string{}
 
-	for _, set := range newConfig.Sets {
+	for i, set := range newConfig.Sets {
 		_, _, err := newConfig.GetTargetsForSet(set)
 		if err != nil {
 			log.Errorf("Failed to load domains for set '%s': %v", set.Name, err)
 		}
 
-		allDomainsCount += len(set.Targets.DomainsToMatch)
-		allIpsCount += len(set.Targets.IPs)
-		categories = append(categories, set.Targets.GeoSiteCategories...)
-	}
+		manualDomains := len(set.Targets.SNIDomains)
+		manualIPs := len(set.Targets.IPs)
 
-	categoryBreakdown, _ := a.geodataManager.GetCategoryCounts(utils.FilterUniqueStrings(categories))
+		// Get geosite counts
+		geositeCounts := make(map[string]int)
+		geositeTotalDomains := 0
+		if len(set.Targets.GeoSiteCategories) > 0 {
+			counts, err := a.geodataManager.GetGeositeCategoryCounts(set.Targets.GeoSiteCategories)
+			if err == nil {
+				geositeCounts = counts
+				for _, count := range counts {
+					geositeTotalDomains += count
+				}
+			}
+		}
+
+		// Get geoip counts
+		geoipCounts := make(map[string]int)
+		geoipTotalIPs := 0
+		if len(set.Targets.GeoIpCategories) > 0 {
+			counts, err := a.geodataManager.GetGeoipCategoryCounts(set.Targets.GeoIpCategories)
+			if err == nil {
+				geoipCounts = counts
+				for _, count := range counts {
+					geoipTotalIPs += count
+				}
+			}
+		}
+
+		setTotalDomains := manualDomains + geositeTotalDomains
+		setTotalIPs := manualIPs + geoipTotalIPs
+
+		allDomainsCount += setTotalDomains
+		allIpsCount += setTotalIPs
+
+		setsWithStats[i] = SetWithStats{
+			SetConfig: set,
+			Stats: SetStatistics{
+				ManualDomains:            manualDomains,
+				ManualIPs:                manualIPs,
+				GeositeDomains:           geositeTotalDomains,
+				TotalDomains:             setTotalDomains,
+				TotalIPs:                 setTotalIPs,
+				GeositeCategoryBreakdown: geositeCounts,
+				GeoipCategoryBreakdown:   geoipCounts,
+			},
+		}
+	}
 
 	if err := newConfig.Validate(); err != nil {
 		log.Errorf("Invalid configuration: %v", err)
@@ -103,17 +184,14 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := metrics.GetMetricsCollector()
-	m.RecordEvent("info", fmt.Sprintf("Loaded %d domains from geodata across %d sets", allDomainsCount, len(newConfig.Sets)))
-	log.Infof("Loaded %d domains from geodata across %d sets", allDomainsCount, len(newConfig.Sets))
+	m.RecordEvent("info", fmt.Sprintf("Loaded %d domains and %d IPs across %d sets", allDomainsCount, allIpsCount, len(newConfig.Sets)))
+	log.Infof("Loaded %d domains and %d IPs across %d sets", allDomainsCount, allIpsCount, len(newConfig.Sets))
 
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Configuration updated successfully",
-		"domain_stats": DomainStatistics{
-			TotalDomains:      allDomainsCount,
-			TotalIPs:          allIpsCount,
-			CategoryBreakdown: categoryBreakdown,
-		},
+	response := ConfigResponse{
+		Success: true,
+		Message: "Configuration updated successfully",
+		Config:  &newConfig,
+		Sets:    setsWithStats,
 	}
 
 	setJsonHeader(w)

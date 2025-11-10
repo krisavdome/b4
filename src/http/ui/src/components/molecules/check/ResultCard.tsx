@@ -14,6 +14,7 @@ import {
 import { colors } from "@design";
 import { TestStatusBadge, TestStatus } from "@atoms/check/Badge";
 import { SpeedIndicator } from "@atoms/check/SpeedIndicator";
+import { B4Badge } from "@/components/atoms/common/B4Badge";
 
 interface TestResultCardProps {
   domain: string;
@@ -22,6 +23,7 @@ interface TestResultCardProps {
   speed: number; // bytes per second
   improvement?: number;
   error?: string;
+  status_code: number;
 }
 
 export const TestResultCard: React.FC<TestResultCardProps> = ({
@@ -31,6 +33,7 @@ export const TestResultCard: React.FC<TestResultCardProps> = ({
   speed,
   improvement,
   error,
+  status_code,
 }) => {
   return (
     <Card
@@ -90,6 +93,11 @@ export const TestResultCard: React.FC<TestResultCardProps> = ({
                 <Typography variant="body2">
                   {(duration / 1000).toFixed(2)}s
                 </Typography>
+                <Box sx={{ flex: 1 }} />
+                <B4Badge
+                  badgeVariant="secondary"
+                  label={"http status: " + status_code}
+                />
               </Box>
             </Stack>
           )}

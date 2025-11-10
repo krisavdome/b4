@@ -27,6 +27,7 @@ type CheckResult struct {
 	Timestamp   time.Time     `json:"timestamp"`
 	IsBaseline  bool          `json:"is_baseline"`
 	Improvement float64       `json:"improvement"` // percentage improvement over baseline
+	StatusCode  int           `json:"status_code"`
 }
 
 type CheckSuite struct {

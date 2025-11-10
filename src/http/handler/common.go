@@ -34,20 +34,36 @@ func NewAPIHandler(cfg *config.Config) *API {
 	// Initialize geodata manager
 	geodataManager := geodat.NewGeodataManager(cfg.System.Geo.GeoSitePath, cfg.System.Geo.GeoIpPath)
 
-	// Preload categories if configured
-
-	geoCategories := []string{}
+	// Preload geosite categories if configured
+	geositeCategories := []string{}
 	if len(cfg.Sets) > 0 {
 		for _, set := range cfg.Sets {
 			if len(set.Targets.GeoSiteCategories) > 0 {
-				geoCategories = append(geoCategories, set.Targets.GeoSiteCategories...)
+				geositeCategories = append(geositeCategories, set.Targets.GeoSiteCategories...)
 			}
 		}
 	}
-	geoCategories = utils.FilterUniqueStrings(geoCategories)
+	geositeCategories = utils.FilterUniqueStrings(geositeCategories)
 
-	if cfg.System.Geo.GeoSitePath != "" && len(geoCategories) > 0 {
-		_, err := geodataManager.PreloadCategories(geoCategories)
+	if cfg.System.Geo.GeoSitePath != "" && len(geositeCategories) > 0 {
+		_, err := geodataManager.PreloadCategories(geodat.GEOSITE, geositeCategories)
+		if err != nil {
+			log.Errorf("Failed to preload categories: %v", err)
+		}
+	}
+
+	geoipCategories := []string{}
+	if len(cfg.Sets) > 0 {
+		for _, set := range cfg.Sets {
+			if len(set.Targets.GeoIpCategories) > 0 {
+				geoipCategories = append(geoipCategories, set.Targets.GeoIpCategories...)
+			}
+		}
+	}
+	geoipCategories = utils.FilterUniqueStrings(geoipCategories)
+
+	if cfg.System.Geo.GeoIpPath != "" && len(geoipCategories) > 0 {
+		_, err := geodataManager.PreloadCategories(geodat.GEOIP, geoipCategories)
 		if err != nil {
 			log.Errorf("Failed to preload categories: %v", err)
 		}

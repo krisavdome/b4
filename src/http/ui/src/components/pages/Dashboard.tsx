@@ -246,7 +246,6 @@ export default function Dashboard() {
             typeof event.data === "string"
               ? (JSON.parse(event.data) as Metrics)
               : normalizeMetrics(null);
-          console.log("Received metrics data:", data);
           const normalizedData = normalizeMetrics(data);
           setMetrics(normalizedData);
         } catch (error) {

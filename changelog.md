@@ -4,12 +4,14 @@
 
 - ADDED: Click on destination IP addresses in `/domains` monitoring page to add them to configuration. Modal allows adding either exact IP or CIDR notation for broader site coverage. This does not require to reload or restart B4, works on the fly.
 - ADDED: Toggle switch in `/domains` monitoring page to view all packets or only those with identified SNI/domain. Useful for monitoring and debugging `UDP` traffic.
+- ADDED: Geodat domain/IP counters at configuration sets.
 - CHANGED: `UDP` port filtering now uses a single flexible field instead of separate "from" and "to" fields. Supports comma-separated ports and ranges (e.g., `80,443,2000-3000`).
 - CHANGED: Packages count badge in `/domains` menu now only counts packets processed by B4 targets.
 - CHANGED: Replaced `--udp-dport-min` and `--udp-dport-max` flags with single `--udp-dport-filter` flag for flexible port filtering.
 - FIXED: `UDP` entries are now logged even when UDP packets are configured to be ignored in the configuration
 - FIXED: `UI` crash when using filter in /domains monitoring page.
 - FIXED: Manually added domains no longer require service restart when geodat files are not configured.
+- FIXED: Test Suites now correctly report success when DPI is bypassed regardless of `HTTP status code`. Any HTTP response (including non-200 codes) indicates successful DPI circumvention.
 
 ## [1.12.0] - 2025-11-09
 
