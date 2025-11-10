@@ -1089,16 +1089,16 @@ update_config_geodat_path() {
 }
 
 # Setup geosite data
-setup_geosite() {
+setup_geodat() {
     echo ""
     echo "======================================="
-    echo "  Geosite Data Setup"
+    echo "  GEO Data Setup"
     echo "======================================="
     echo ""
 
     if [ -z "$GEOSITE_SRC" ] && [ -z "$GEOSITE_DST" ]; then
         # Ask if user wants to download geosite
-        printf "${CYAN}Do you want to download geosite.dat file? (y/N): ${NC}"
+        printf "${CYAN}Do you want to download geosite.dat & geoip.dat files? (y/N): ${NC}"
         read answer
     else
         answer="y"
@@ -1293,7 +1293,7 @@ main_install() {
     fi
 
     if [ "$QUIET_MODE" = "0" ]; then
-        setup_geosite
+        setup_geodat
 
         # Print installation summary
         echo ""
