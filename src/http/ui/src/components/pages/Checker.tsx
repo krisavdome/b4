@@ -35,7 +35,7 @@ export default function Test() {
           }}
         >
           <Tab label="Quick Test" />
-          <Tab label="Configuration Discovery" />
+          <Tab label="Discovery" />
         </Tabs>
 
         {activeTab === 0 && (
@@ -65,6 +65,10 @@ export default function Test() {
 
         {activeTab === 1 && (
           <>
+            <Alert severity="warning">
+              This feature is EXPEREMENTAL and may affect your current
+              configuration.
+            </Alert>
             <Alert
               severity="info"
               sx={{

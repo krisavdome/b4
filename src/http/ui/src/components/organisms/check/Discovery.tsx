@@ -8,13 +8,8 @@ import {
   Alert,
   Paper,
   Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
+  Grid,
 } from "@mui/material";
 import {
   PlayArrow as StartIcon,
@@ -67,6 +62,11 @@ interface DiscoverySuite {
   total_checks: number;
   completed_checks: number;
   domain_discovery_results?: Record<string, DomainDiscoveryResult>;
+}
+
+interface ConfigDetail {
+  category: string;
+  settings: Array<{ label: string; value: string }>;
 }
 
 export const DiscoveryRunner: React.FC = () => {
@@ -160,6 +160,132 @@ export const DiscoveryRunner: React.FC = () => {
   const progress = suite
     ? (suite.completed_checks / suite.total_checks) * 100
     : 0;
+
+  function formatConfigDetails(presetName: string): ConfigDetail[] {
+    const details: ConfigDetail[] = [];
+
+    // TCP
+    details.push({
+      category: "TCP Configuration",
+      settings: [
+        { label: "Connection Bytes", value: "19 bytes" },
+        {
+          label: "Segment Delay",
+          value: presetName.includes("delay") ? "5-10ms" : "0ms",
+        },
+      ],
+    });
+
+    // Fragmentation
+    if (presetName.includes("tcp-frag")) {
+      const position = presetName.includes("pos1")
+        ? "1"
+        : presetName.includes("pos2")
+        ? "2"
+        : "Variable";
+      details.push({
+        category: "Fragmentation",
+        settings: [
+          { label: "Strategy", value: "TCP" },
+          { label: "SNI Position", value: position },
+          {
+            label: "Reverse Order",
+            value: presetName.includes("reverse") ? "Yes" : "No",
+          },
+          {
+            label: "Middle SNI",
+            value: presetName.includes("middle") ? "Yes" : "No",
+          },
+        ],
+      });
+    } else if (presetName.includes("ip-frag")) {
+      details.push({
+        category: "Fragmentation",
+        settings: [
+          { label: "Strategy", value: "IP-level" },
+          { label: "SNI Position", value: "1" },
+          {
+            label: "Reverse Order",
+            value: presetName.includes("reverse") ? "Yes" : "No",
+          },
+        ],
+      });
+    } else if (presetName.includes("no-frag")) {
+      details.push({
+        category: "Fragmentation",
+        settings: [{ label: "Strategy", value: "None" }],
+      });
+    }
+
+    // Faking
+    if (presetName.includes("no-fake")) {
+      details.push({
+        category: "Fake Packets",
+        settings: [{ label: "Status", value: "Disabled" }],
+      });
+    } else if (presetName.includes("fake")) {
+      const ttl = presetName.includes("ttl-low") ? "3" : "5-8";
+      const strategy = presetName.includes("randseq")
+        ? "Random Seq"
+        : presetName.includes("md5sum")
+        ? "MD5"
+        : "Past Seq";
+      const count = presetName.includes("multi")
+        ? "5"
+        : presetName.includes("aggressive")
+        ? "3-5"
+        : "1-2";
+
+      details.push({
+        category: "Fake Packets",
+        settings: [
+          { label: "TTL", value: ttl },
+          { label: "Strategy", value: strategy },
+          { label: "Count", value: count },
+        ],
+      });
+    } else {
+      details.push({
+        category: "Fake Packets",
+        settings: [
+          { label: "TTL", value: "8" },
+          { label: "Strategy", value: "Past Seq" },
+          { label: "Count", value: "1" },
+        ],
+      });
+    }
+
+    // UDP/QUIC
+    if (presetName.includes("quic-drop")) {
+      details.push({
+        category: "UDP/QUIC",
+        settings: [
+          { label: "Mode", value: "Drop" },
+          { label: "QUIC Filter", value: "All" },
+        ],
+      });
+    } else if (presetName.includes("quic-fake")) {
+      details.push({
+        category: "UDP/QUIC",
+        settings: [
+          { label: "Mode", value: "Fake & Frag" },
+          { label: "Fake Count", value: "10" },
+          { label: "Fake Size", value: "128 bytes" },
+        ],
+      });
+    } else {
+      details.push({
+        category: "UDP/QUIC",
+        settings: [
+          { label: "Mode", value: "Fake & Frag" },
+          { label: "Fake Count", value: "6" },
+          { label: "QUIC Filter", value: "Disabled" },
+        ],
+      });
+    }
+
+    return details;
+  }
 
   return (
     <Stack spacing={3}>
@@ -277,120 +403,227 @@ export const DiscoveryRunner: React.FC = () => {
       {/* Results Table */}
       {suite?.domain_discovery_results &&
         Object.keys(suite.domain_discovery_results).length > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              bgcolor: colors.background.paper,
-              border: `1px solid ${colors.border.default}`,
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
-          >
-            <Box sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, color: colors.text.primary }}
-              >
-                Best Configuration Per Domain
-              </Typography>
-              <Divider sx={{ mb: 2, borderColor: colors.border.default }} />
-            </Box>
+          <Stack spacing={2}>
+            {Object.values(suite.domain_discovery_results)
+              .sort((a, b) => b.best_speed - a.best_speed)
+              .map((domainResult) => {
+                const configDetails = domainResult.best_success
+                  ? formatConfigDetails(domainResult.best_preset)
+                  : [];
 
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: colors.background.dark }}>
-                    <TableCell
-                      sx={{ color: colors.text.primary, fontWeight: 600 }}
+                return (
+                  <Paper
+                    key={domainResult.domain}
+                    elevation={0}
+                    sx={{
+                      bgcolor: colors.background.paper,
+                      border: `1px solid ${colors.border.default}`,
+                      borderRadius: 2,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Domain Header */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: colors.accent.primary,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
                     >
-                      Domain
-                    </TableCell>
-                    <TableCell
-                      sx={{ color: colors.text.primary, fontWeight: 600 }}
-                    >
-                      Best Configuration
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ color: colors.text.primary, fontWeight: 600 }}
-                    >
-                      Speed
-                    </TableCell>
-                    <TableCell
-                      sx={{ color: colors.text.primary, fontWeight: 600 }}
-                    >
-                      Status
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Object.values(suite.domain_discovery_results)
-                    .sort((a, b) => b.best_speed - a.best_speed)
-                    .map((domainResult) => (
-                      <TableRow
-                        key={domainResult.domain}
-                        sx={{
-                          "&:hover": { bgcolor: colors.accent.primaryStrong },
-                        }}
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
                       >
-                        <TableCell sx={{ color: colors.text.primary }}>
-                          {domainResult.domain}
-                        </TableCell>
-                        <TableCell sx={{ color: colors.text.secondary }}>
-                          {domainResult.best_success ? (
-                            <Chip
-                              label={domainResult.best_preset}
-                              size="small"
-                              sx={{
-                                bgcolor: colors.secondary,
-                                color: colors.text.primary,
-                              }}
-                            />
-                          ) : (
-                            <Typography color="error" variant="body2">
-                              No successful config
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{ color: colors.text.secondary }}
+                        <Typography
+                          variant="h6"
+                          sx={{ color: colors.text.primary }}
                         >
-                          {domainResult.best_success
-                            ? `${(
-                                domainResult.best_speed /
-                                1024 /
-                                1024
-                              ).toFixed(2)} MB/s`
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {domainResult.best_success ? (
-                            <Chip
-                              label="Success"
-                              size="small"
-                              sx={{
-                                bgcolor: colors.secondary,
-                                color: colors.text.primary,
-                              }}
-                            />
-                          ) : (
-                            <Chip
-                              label="Failed"
-                              size="small"
-                              sx={{
-                                bgcolor: colors.quaternary,
-                                color: colors.text.primary,
-                              }}
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+                          {domainResult.domain}
+                        </Typography>
+                        {domainResult.best_success ? (
+                          <Chip
+                            label="Success"
+                            size="small"
+                            sx={{
+                              bgcolor: colors.secondary,
+                              color: colors.background.default,
+                            }}
+                          />
+                        ) : (
+                          <Chip
+                            label="Failed"
+                            size="small"
+                            sx={{
+                              bgcolor: colors.quaternary,
+                              color: colors.text.primary,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="h6"
+                        sx={{ color: colors.secondary, fontWeight: 600 }}
+                      >
+                        {domainResult.best_success
+                          ? `${(domainResult.best_speed / 1024 / 1024).toFixed(
+                              2
+                            )} MB/s`
+                          : "No successful config"}
+                      </Typography>
+                    </Box>
+
+                    {/* Configuration Details */}
+                    {domainResult.best_success && (
+                      <Box sx={{ p: 3 }}>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              color: colors.text.secondary,
+                              mb: 1,
+                              textTransform: "uppercase",
+                              fontSize: "0.7rem",
+                            }}
+                          >
+                            Best Configuration
+                          </Typography>
+                          <Chip
+                            label={domainResult.best_preset}
+                            sx={{
+                              bgcolor: colors.accent.secondary,
+                              color: colors.secondary,
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
+
+                        <Divider
+                          sx={{ my: 2, borderColor: colors.border.default }}
+                        />
+
+                        <Grid container spacing={2}>
+                          {configDetails.map((detail, idx) => (
+                            <Grid key={idx} size={{ xs: 12, sm: 6, md: 3 }}>
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  bgcolor: colors.background.dark,
+                                  borderRadius: 1,
+                                  border: `1px solid ${colors.border.light}`,
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    color: colors.secondary,
+                                    fontWeight: 600,
+                                    mb: 1.5,
+                                    textTransform: "uppercase",
+                                    fontSize: "0.7rem",
+                                  }}
+                                >
+                                  {detail.category}
+                                </Typography>
+                                <Stack spacing={1}>
+                                  {detail.settings.map((setting, i) => (
+                                    <Box key={i}>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: colors.text.secondary,
+                                          display: "block",
+                                          fontSize: "0.7rem",
+                                        }}
+                                      >
+                                        {setting.label}
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          color: colors.text.primary,
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        {setting.value}
+                                      </Typography>
+                                    </Box>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            </Grid>
+                          ))}
+                        </Grid>
+
+                        {/* All Tested Configs */}
+                        <Box sx={{ mt: 3 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              color: colors.text.secondary,
+                              mb: 1,
+                              textTransform: "uppercase",
+                              fontSize: "0.7rem",
+                            }}
+                          >
+                            All Tested Configurations
+                          </Typography>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            flexWrap="wrap"
+                            gap={1}
+                          >
+                            {Object.values(domainResult.results)
+                              .sort((a, b) => b.speed - a.speed)
+                              .map((result) => (
+                                <Chip
+                                  key={result.preset_name}
+                                  label={`${result.preset_name}: ${
+                                    result.status === "complete"
+                                      ? `${(result.speed / 1024 / 1024).toFixed(
+                                          2
+                                        )} MB/s`
+                                      : "Failed"
+                                  }`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor:
+                                      result.preset_name ===
+                                      domainResult.best_preset
+                                        ? colors.accent.secondary
+                                        : colors.background.dark,
+                                    color:
+                                      result.status === "complete"
+                                        ? colors.text.primary
+                                        : colors.quaternary,
+                                    border:
+                                      result.preset_name ===
+                                      domainResult.best_preset
+                                        ? `1px solid ${colors.secondary}`
+                                        : `1px solid ${colors.border.light}`,
+                                  }}
+                                />
+                              ))}
+                          </Stack>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* Failed state */}
+                    {!domainResult.best_success && (
+                      <Box sx={{ p: 3 }}>
+                        <Alert severity="error">
+                          All {Object.keys(domainResult.results).length} tested
+                          configurations failed for this domain. Check your
+                          network connection and domain accessibility.
+                        </Alert>
+                      </Box>
+                    )}
+                  </Paper>
+                );
+              })}
+          </Stack>
         )}
     </Stack>
   );
