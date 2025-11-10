@@ -206,7 +206,14 @@ func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 
 	// Copy MainSet
 	mainSet := *ds.originalConfig.MainSet
+
 	cfg.MainSet = &mainSet
+	cfg.MainSet.Targets = ds.originalConfig.MainSet.Targets
+	cfg.MainSet.Targets.DomainsToMatch = ds.originalConfig.MainSet.Targets.SNIDomains
+	if len(ds.originalConfig.MainSet.Targets.GeoSiteCategories) > 0 {
+		cfg.MainSet.Targets.DomainsToMatch = ds.originalConfig.MainSet.Targets.DomainsToMatch
+	}
+	cfg.MainSet.Targets.IpsToMatch = ds.originalConfig.MainSet.Targets.IPs
 
 	// Apply preset configuration to MainSet
 	cfg.MainSet.Fragmentation = preset.Config.Fragmentation
