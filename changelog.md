@@ -1,5 +1,12 @@
 # B4 - Bye Bye Big Bro
 
+## [1.14.0] - 2025-11-XX
+
+- ADDED: Select target configuration set when adding domains or IP/CIDR addresses from `/domains` monitoring page. Allows precise control over which configuration set receives the new entry.
+- ADDED: One-click configuration adoption from `Discovery` test results. Apply the best-performing configuration directly to your configuration list without manual copying.
+- CHANGED: Complete overhaul of `Discovery` testing service with improved reliability and performance. Now they should work as expected.
+- FIXED: Memory leaks and overall memory management improvements for better long-term stability.
+
 ## [1.13.0] - 2025-11-10
 
 - ADDED: Click on destination IP addresses in `/domains` monitoring page to add them to configuration. Modal allows adding either exact IP or CIDR notation for broader site coverage. This does not require to reload or restart B4, works on the fly.
