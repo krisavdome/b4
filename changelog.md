@@ -1,6 +1,6 @@
 # B4 - Bye Bye Big Bro
 
-## [1.14.0] - 2025-11-XX
+## [1.14.0] - 2025-11-13
 
 - ADDED: Select target configuration set when adding domains or IP/CIDR addresses from `/domains` monitoring page. Allows precise control over which configuration set receives the new entry.
 - ADDED: One-click configuration adoption from `Discovery` test results. Apply the best-performing configuration directly to your configuration list without manual copying.
