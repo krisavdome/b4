@@ -1455,7 +1455,10 @@ perform_update() {
     GEOSITE_DST=""
     if [ -f "$CONFIG_FILE" ] && command_exists jq; then
         GEOSITE_SRC=$(jq -r '.domains.geosite_url // empty' "$CONFIG_FILE" 2>/dev/null)
-        GEOSITE_DST=$(jq -r '.domains.geosite_path // empty' "$CONFIG_FILE" 2>/dev/null | xargs dirname 2>/dev/null)
+        geosite_path=$(jq -r '.domains.geosite_path // empty' "$CONFIG_FILE" 2>/dev/null)
+        if [ -n "$geosite_path" ] && [ "$geosite_path" != "null" ]; then
+            GEOSITE_DST=$(dirname "$geosite_path")
+        fi
     fi
 
     # Stop the service
