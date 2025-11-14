@@ -33,6 +33,7 @@ var DefaultSetConfig = SetConfig{
 		FilterQUIC:     "disabled",
 		FilterSTUN:     true,
 		ConnBytesLimit: 8,
+		Seg2Delay:      0,
 	},
 
 	TCP: TCPConfig{

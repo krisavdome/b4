@@ -77,6 +77,7 @@ export interface UdpConfig {
   filter_quic: UdpFilterQuicMode;
   conn_bytes_limit: number;
   filter_stun: boolean;
+  seg2delay: number;
 }
 export interface QueueConfig {
   start_num: number;

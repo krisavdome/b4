@@ -32,6 +32,7 @@ type UDPConfig struct {
 	FilterQUIC     string `json:"filter_quic" bson:"filter_quic"`
 	FilterSTUN     bool   `json:"filter_stun" bson:"filter_stun"`
 	ConnBytesLimit int    `json:"conn_bytes_limit" bson:"conn_bytes_limit"`
+	Seg2Delay      int    `json:"seg2delay" bson:"seg2delay"`
 }
 
 type FragmentationConfig struct {

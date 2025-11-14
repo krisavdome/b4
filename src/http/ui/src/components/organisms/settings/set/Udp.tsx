@@ -264,6 +264,18 @@ export const UdpSettings: React.FC<UdpSettingsProps> = ({
                 helperText="Size of each fake UDP packet payload"
               />
             </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <B4Slider
+                label="Segment 2 Delay"
+                value={config.udp.seg2delay}
+                onChange={(value) => onChange("udp.seg2delay", value)}
+                min={0}
+                max={1000}
+                step={10}
+                valueSuffix=" ms"
+                helperText="Delay between segments"
+              />
+            </Grid>
           </>
         )}
       </Grid>

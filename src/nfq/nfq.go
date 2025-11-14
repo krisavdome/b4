@@ -349,7 +349,7 @@ func (w *Worker) Start() error {
 
 func (w *Worker) dropAndInjectQUIC(cfg *config.SetConfig, raw []byte, dst net.IP) {
 	udpCfg := &cfg.UDP
-	seg2d := cfg.TCP.Seg2Delay
+	seg2d := udpCfg.Seg2Delay
 	if udpCfg.Mode != "fake" {
 		return
 	}

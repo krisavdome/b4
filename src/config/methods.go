@@ -93,6 +93,7 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&c.MainSet.UDP.FilterQUIC, "udp-filter-quic", c.MainSet.UDP.FilterQUIC, "QUIC filtering mode (disabled|all|parse)")
 	cmd.Flags().BoolVar(&c.MainSet.UDP.FilterSTUN, "udp-filter-stun", c.MainSet.UDP.FilterSTUN, "STUN filtering mode (disabled|all|parse)")
 	cmd.Flags().IntVar(&c.MainSet.UDP.ConnBytesLimit, "udp-conn-bytes-limit", c.MainSet.UDP.ConnBytesLimit, "UDP connection bytes limit (default 8)")
+	cmd.Flags().IntVar(&c.MainSet.UDP.Seg2Delay, "udp-seg2delay", c.MainSet.UDP.Seg2Delay, "Delay between segments in ms (default 0)")
 
 	// Fragmentation configuration
 	cmd.Flags().StringVar(&c.MainSet.Fragmentation.Strategy, "frag", c.MainSet.Fragmentation.Strategy, "Fragmentation strategy (tcp|ip|none)")
