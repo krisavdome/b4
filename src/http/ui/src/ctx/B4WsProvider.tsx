@@ -62,30 +62,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => ws.close();
   }, [pauseLogs, pauseDomains]);
 
-  useEffect(() => {
-    const ws = new WebSocket(
-      (location.protocol === "https:" ? "wss://" : "ws://") +
-        location.host +
-        "/api/ws/logs"
-    );
-
-    ws.onmessage = (ev) => {
-      const line = String(ev.data);
-
-      if (!pauseDomains) {
-        const log = parseSniLogLine(line);
-        setDomains((prev) => [...prev.slice(-999), line]);
-        if (log?.hostSet || log?.ipSet) {
-          setUnseenDomainsCount((count) => count + 1);
-        }
-      }
-    };
-
-    ws.onerror = () => setDomains((prev) => [...prev, "[WS ERROR]"]);
-
-    return () => ws.close();
-  }, [pauseDomains, showAll]);
-
   const clearLogs = useCallback(() => setLogs([]), []);
   const clearDomains = useCallback(() => {
     setDomains([]);
