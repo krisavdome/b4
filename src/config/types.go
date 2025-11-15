@@ -10,7 +10,6 @@ const (
 
 type ApiConfig struct {
 	IPInfoToken string `json:"ipinfo_token" bson:"ipinfo_token"`
-	BdcKey      string `json:"bdc_key" bson:"bdc_key"`
 }
 
 type QueueConfig struct {

@@ -117,7 +117,6 @@ export interface GeoConfig {
 
 export interface ApiConfig {
   ipinfo_token: string;
-  bdc_key: string;
 }
 
 export interface SystemConfig {

@@ -112,7 +112,6 @@ var DefaultConfig = Config{
 		},
 		API: ApiConfig{
 			IPInfoToken: "",
-			BdcKey:      "",
 		},
 	},
 }
