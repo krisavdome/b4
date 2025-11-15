@@ -3,8 +3,6 @@ import { useState } from "react";
 import { TestRunner } from "@organisms/check/Runner";
 import { DiscoveryRunner } from "@organisms/check/Discovery";
 import { colors } from "@design";
-import { Link } from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
 
 export default function Test() {
   const [activeTab, setActiveTab] = useState(0);
@@ -48,16 +46,8 @@ export default function Test() {
               }}
             >
               <strong>Quick Test:</strong> Test your current configuration
-              against configured domains. This validates your existing DPI
-              bypass settings without making any changes. Configure domains in{" "}
-              <Link
-                component={RouterLink}
-                to="/settings/checker"
-                sx={{ color: colors.secondary }}
-              >
-                Testing Settings
-              </Link>
-              .
+              against the domains you specify below. This validates your
+              existing DPI bypass settings without making any changes.
             </Alert>
             <TestRunner />
           </>
@@ -66,7 +56,7 @@ export default function Test() {
         {activeTab === 1 && (
           <>
             <Alert severity="warning">
-              This feature is EXPEREMENTAL and may affect your current
+              This feature is EXPERIMENTAL and may affect your current
               configuration.
             </Alert>
             <Alert
@@ -78,9 +68,9 @@ export default function Test() {
             >
               <strong>Configuration Discovery:</strong> Automatically test
               multiple configuration presets to find the most effective DPI
-              bypass settings for your domains. B4 will temporarily apply
-              different configurations and measure their performance, then
-              recommend the best one.
+              bypass settings for the domains you specify below. B4 will
+              temporarily apply different configurations and measure their
+              performance.
             </Alert>
             <DiscoveryRunner />
           </>

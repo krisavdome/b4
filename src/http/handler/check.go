@@ -42,23 +42,23 @@ func (api *API) handleStartCheck(w http.ResponseWriter, r *http.Request) {
 		req.MaxConcurrent = chckCfg.MaxConcurrent
 	}
 
-	domains := []string{}
-	if len(api.cfg.Sets) > 0 {
-		for _, set := range api.cfg.Sets {
-			if len(set.Targets.SNIDomains) > 0 {
-				domains = append(domains, set.Targets.SNIDomains...)
+	domains := req.Domains
+	if len(domains) == 0 {
+		if len(api.cfg.Sets) > 0 {
+			for _, set := range api.cfg.Sets {
+				if len(set.Targets.SNIDomains) > 0 {
+					domains = append(domains, set.Targets.SNIDomains...)
+				}
 			}
 		}
+		domains = append(domains, chckCfg.Domains...)
+		domains = utils.FilterUniqueStrings(domains)
 	}
-	domains = append(domains, chckCfg.Domains...)
-	domains = utils.FilterUniqueStrings(domains)
 
 	if len(domains) == 0 {
-
-		http.Error(w, "No domains configured for checking", http.StatusBadRequest)
+		http.Error(w, "No domains provided. Please specify domains to test.", http.StatusBadRequest)
 		return
 	}
-
 	config := checker.CheckConfig{
 		CheckURL:      req.CheckURL,
 		Timeout:       req.Timeout,
@@ -152,22 +152,23 @@ func (api *API) handleStartDiscovery(w http.ResponseWriter, r *http.Request) {
 		req.MaxConcurrent = chckCfg.MaxConcurrent
 	}
 
-	domains := []string{}
-	if len(api.cfg.Sets) > 0 {
-		for _, set := range api.cfg.Sets {
-			if len(set.Targets.SNIDomains) > 0 {
-				domains = append(domains, set.Targets.SNIDomains...)
+	domains := req.Domains
+	if len(domains) == 0 {
+		if len(api.cfg.Sets) > 0 {
+			for _, set := range api.cfg.Sets {
+				if len(set.Targets.SNIDomains) > 0 {
+					domains = append(domains, set.Targets.SNIDomains...)
+				}
 			}
 		}
+		domains = append(domains, chckCfg.Domains...)
+		domains = utils.FilterUniqueStrings(domains)
 	}
-	domains = append(domains, chckCfg.Domains...)
-	domains = utils.FilterUniqueStrings(domains)
 
 	if len(domains) == 0 {
-		http.Error(w, "No domains configured for checking", http.StatusBadRequest)
+		http.Error(w, "No domains provided. Please specify domains to test.", http.StatusBadRequest)
 		return
 	}
-
 	config := checker.CheckConfig{
 		CheckURL:      req.CheckURL,
 		Timeout:       req.Timeout,

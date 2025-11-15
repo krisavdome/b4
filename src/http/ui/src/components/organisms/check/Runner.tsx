@@ -19,6 +19,7 @@ import { colors } from "@design";
 import { TestResultCard } from "@molecules/check/ResultCard";
 import { TestStatus } from "@atoms/check/Badge";
 import { useConfigLoad } from "@hooks/useConfig";
+import SettingTextField from "@atoms/common/B4TextField";
 
 interface TestResult {
   domain: string;
@@ -66,6 +67,7 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
   const [suite, setSuite] = useState<TestSuite | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { config } = useConfigLoad();
+  const [testDomains, setTestDomains] = useState<string>("");
 
   // Poll for test status
   useEffect(() => {
@@ -117,12 +119,20 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
     try {
       const timeout = (config?.system.checker.timeout || 15) * 1e9;
       const maxConcurrent = config?.system.checker.max_concurrent || 5;
+
+      // Parse domains from textarea (split by newlines, commas, spaces)
+      const domains = testDomains
+        .split(/[\n,\s]+/)
+        .map((d) => d.trim())
+        .filter((d) => d.length > 0);
+
       const response = await fetch("/api/check/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           timeout: timeout,
           max_concurrent: maxConcurrent,
+          domains: domains,
         }),
       });
 
@@ -233,6 +243,25 @@ export const TestRunner: React.FC<TestRunnerProps> = ({
           </Box>
 
           {error && <Alert severity="error">{error}</Alert>}
+
+          <Box>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, color: colors.text.primary }}
+            >
+              Domains to Test
+            </Typography>
+            <SettingTextField
+              label="Enter domains"
+              value={testDomains}
+              onChange={(e) => setTestDomains(e.target.value)}
+              multiline
+              rows={4}
+              placeholder="youtube.com, google.com, facebook.com"
+              helperText="Enter domains separated by commas, spaces, or new lines"
+              disabled={running}
+            />
+          </Box>
 
           {running && suite && (
             <Box>
