@@ -6,6 +6,7 @@
 - ADDED: Clear button next to the IP/CIDR list in the set configuration.
 - ADDED: Download `GeoSite`/`GeoIP` database files directly from Settings UI with preset sources.
 - IMPROVED: Redesigned `/test` page UX - domains are now managed directly on the test page.
+- IMPROVED: Refactor `Discovery` presets generation logic and add new test strategies.
 - FIXED: Resolved severe performance bottleneck on `/domains` page when adding ASN filters (caused by expensive ASN lookup operations executing on every render).
 - REMOVED: Test domain configuration from `Settings` - domains are now managed exclusively on the Test page.
 
