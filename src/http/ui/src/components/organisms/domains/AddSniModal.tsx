@@ -27,7 +27,7 @@ interface AddSniModalProps {
   sets: B4SetConfig[];
   onClose: () => void;
   onSelectVariant: (variant: string) => void;
-  onAdd: (setId: string) => void;
+  onAdd: (setId: string, setName?: string) => void;
 }
 
 export const AddSniModal: React.FC<AddSniModalProps> = ({
@@ -41,8 +41,10 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
   onAdd,
 }) => {
   const [selectedSetId, setSelectedSetId] = React.useState<string>("");
+  const [setName, setSetName] = React.useState<string>("");
+
   const handleAdd = () => {
-    onAdd(selectedSetId);
+    onAdd(selectedSetId, setName);
   };
 
   React.useEffect(() => {
@@ -94,7 +96,10 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
           <SetSelector
             sets={sets}
             value={selectedSetId}
-            onChange={setSelectedSetId}
+            onChange={(setId, name) => {
+              setSelectedSetId(setId);
+              if (name) setSetName(name);
+            }}
           />
         )}
         <List>
