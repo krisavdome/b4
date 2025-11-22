@@ -496,9 +496,15 @@ func (w *Worker) sendTCPFragments(cfg *config.SetConfig, packet []byte, dst net.
 	p2 := -1
 	if cfg.Fragmentation.MiddleSNI {
 		if s, e, ok := locateSNI(payload); ok && e-s >= 4 {
-			p2 = s + (e-s)/2
+			sniLen := e - s
+			if sniLen > 30 {
+				p2 = e - 12
+			} else {
+				p2 = s + sniLen/2
+			}
 		}
 	}
+
 	validP2 := p2 > 0 && p2 < payloadLen && (!validP1 || p2 != p1)
 
 	if !validP1 && !validP2 {
