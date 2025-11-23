@@ -2,10 +2,6 @@
 
 ## [1.17.1] - 2025-11-23
 
-- FIXED: update default fake SNI payload to use new format.
-
-## [1.17.0] - 2025-11-23
-
 - ADDED: `Out-of-Band` (OOB) data handling with configurable position, reverse order, and character (`--frag=oob`).
 - ADDED: `Out-of-Band` (OOB) strategies to `B4Discovery`.
 - ADDED: `TLS Record Splitting` fragmentation strategy (`--frag=tls`) - splits ClientHello into multiple TLS records to bypass DPI expecting single-record handshakes.
@@ -17,6 +13,7 @@
 - IMPROVED: Set `Fragmentation` tab refactored.
 - FIXED: Logs level can be switched witout reloading the app.
 - FIXED: Config validation bug where Main Set was compared against itself, causing startup failure with `TCP ConnBytesLimit greater than main set` error.
+- FIXED: update default fake SNI payload to use new format.
 - CHANGED: Renamed `--frag-sni-reverse` to `--frag-reverse` and update related configurations.
 
 ## [1.16.1] - 2025-11-20
