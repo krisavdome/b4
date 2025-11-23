@@ -513,6 +513,7 @@ func GetTestPresets() []ConfigPreset {
 		{"max-tls", 256, 15, 3, "tls"},
 		{"max-tls-sack", 512, 20, 1, "tls"},
 		{"ultra-tls", 512, 20, 1, "tls"},
+		{"ultra-tls-sack", 512, 20, 1, "tls"},
 	}
 
 	for _, ac := range aggressiveConfigs {
