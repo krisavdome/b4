@@ -444,12 +444,6 @@ func (w *Worker) dropAndInjectTCP(cfg *config.SetConfig, raw []byte, dst net.IP)
 		return
 	}
 
-	if cfg.Fragmentation.OOBPosition > 0 {
-		if w.sendWithOOB(cfg, raw, dst) {
-			return
-		}
-	}
-
 	ipHdrLen := int((raw[0] & 0x0F) * 4)
 	tcpHdrLen := int((raw[ipHdrLen+12] >> 4) * 4)
 	payloadStart := ipHdrLen + tcpHdrLen
@@ -469,6 +463,8 @@ func (w *Worker) dropAndInjectTCP(cfg *config.SetConfig, raw []byte, dst net.IP)
 		w.sendTCPFragments(cfg, raw, dst)
 	case "ip":
 		w.sendIPFragments(cfg, raw, dst)
+	case "oob":
+		w.sendOOBFragments(cfg, raw, dst)
 	case "none":
 		_ = w.sock.SendIPv4(raw, dst)
 	default:

@@ -20,7 +20,7 @@ export interface FakingConfig {
   custom_payload: string;
 }
 
-export type FragmentationStrategy = "tcp" | "ip" | "none";
+export type FragmentationStrategy = "tcp" | "ip" | "oob" | "none";
 
 export interface FragmentationConfig {
   strategy: FragmentationStrategy;

@@ -12,7 +12,7 @@ import (
 
 // sendWithOOB sends TCP packet with OOB (urgent) data
 // Supports both normal and reverse order based on config.OOBReverse flag
-func (w *Worker) sendWithOOB(cfg *config.SetConfig, packet []byte, dst net.IP) bool {
+func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.IP) bool {
 	if cfg.Fragmentation.OOBPosition <= 0 {
 		return false
 	}
@@ -116,7 +116,7 @@ func (w *Worker) sendWithOOB(cfg *config.SetConfig, packet []byte, dst net.IP) b
 	return true
 }
 
-func (w *Worker) sendWithOOBv6(cfg *config.SetConfig, packet []byte, dst net.IP) bool {
+func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst net.IP) bool {
 	if cfg.Fragmentation.OOBPosition <= 0 {
 		return false
 	}

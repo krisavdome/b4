@@ -53,7 +53,7 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 3. SYN Fake with Combined Strategies (fixed to match strategies)
+	// 3. SYN Fake with Combined Strategies
 	synConfigs := []struct {
 		synLen   int
 		strategy string
@@ -142,7 +142,79 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 6. Faking Strategies with SeqOffset variations
+	// 6. OOB (Out-of-Band) Variations - NEW
+	oobConfigs := []struct {
+		pos     int
+		reverse bool
+		char    byte
+		name    string
+	}{
+		{1, false, 'x', "pos1"},
+		{1, true, 'x', "pos1-rev"},
+		{2, false, 'x', "pos2"},
+		{3, false, 'x', "pos3"},
+		{5, false, 'x', "pos5"},
+		{1, false, 'a', "pos1-char-a"},
+		{1, false, 0x00, "pos1-null"},
+		{1, false, 0xFF, "pos1-xff"},
+		{2, true, 'y', "pos2-rev-y"},
+		{5, true, 'x', "pos5-rev"},
+	}
+
+	for _, oc := range oobConfigs {
+		presets = append(presets, ConfigPreset{
+			Name:        fmt.Sprintf("oob-%s", oc.name),
+			Description: fmt.Sprintf("OOB pos=%d reverse=%v char=%#x", oc.pos, oc.reverse, oc.char),
+			Config: config.SetConfig{
+				TCP:           config.TCPConfig{ConnBytesLimit: 19},
+				UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 8},
+				Fragmentation: config.FragmentationConfig{Strategy: "oob", OOBPosition: oc.pos, OOBReverse: oc.reverse, OOBChar: oc.char},
+				Faking:        config.FakingConfig{SNI: true, TTL: 8, Strategy: "pastseq", SeqOffset: 10000, SNISeqLength: 1, SNIType: 2},
+			},
+		})
+	}
+
+	// 7. OOB + Different Faking Strategies
+	oobFakeConfigs := []struct {
+		strategy string
+		ttl      uint8
+		seqLen   int
+		pos      int
+	}{
+		{"ttl", 3, 1, 1},
+		{"ttl", 5, 2, 2},
+		{"pastseq", 8, 2, 1},
+		{"pastseq", 5, 3, 3},
+		{"randseq", 8, 1, 1},
+		{"tcp_check", 8, 2, 2},
+	}
+
+	for _, ofc := range oobFakeConfigs {
+		presets = append(presets, ConfigPreset{
+			Name:        fmt.Sprintf("oob-fake-%s-pos%d", ofc.strategy, ofc.pos),
+			Description: fmt.Sprintf("OOB pos=%d + fake %s seqLen=%d", ofc.pos, ofc.strategy, ofc.seqLen),
+			Config: config.SetConfig{
+				TCP:           config.TCPConfig{ConnBytesLimit: 19},
+				UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 8},
+				Fragmentation: config.FragmentationConfig{Strategy: "oob", OOBPosition: ofc.pos, OOBReverse: false, OOBChar: 'x'},
+				Faking:        config.FakingConfig{SNI: true, TTL: ofc.ttl, Strategy: ofc.strategy, SeqOffset: 10000, SNISeqLength: ofc.seqLen, SNIType: 2},
+			},
+		})
+	}
+
+	// 8. OOB + Early Triggering
+	presets = append(presets, ConfigPreset{
+		Name:        "oob-immediate",
+		Description: "OOB with immediate trigger (connbytes=1)",
+		Config: config.SetConfig{
+			TCP:           config.TCPConfig{ConnBytesLimit: 1},
+			UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 1},
+			Fragmentation: config.FragmentationConfig{Strategy: "oob", OOBPosition: 1, OOBReverse: false, OOBChar: 'x'},
+			Faking:        config.FakingConfig{SNI: true, TTL: 8, Strategy: "pastseq", SeqOffset: 10000, SNISeqLength: 2, SNIType: 2},
+		},
+	})
+
+	// 9. Faking Strategies with SeqOffset variations
 	fakeConfigs := []struct {
 		strategy string
 		ttl      uint8
@@ -174,7 +246,7 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 7. UDP/QUIC with Port Filtering
+	// 10. UDP/QUIC with Port Filtering
 	udpConfigs := []struct {
 		mode       string
 		fakeLen    int
@@ -186,10 +258,10 @@ func GetTestPresets() []ConfigPreset {
 		{"fake", 64, 6, "ttl", "disabled", ""},
 		{"fake", 128, 10, "checksum", "parse", ""},
 		{"fake", 256, 12, "none", "all", ""},
-		{"fake", 64, 8, "ttl", "parse", "443"},         // HTTPS only
-		{"fake", 128, 10, "checksum", "all", "80,443"}, // HTTP+HTTPS
-		{"drop", 0, 0, "none", "all", "443"},           // Drop QUIC on 443
-		{"fake", 64, 6, "none", "disabled", ""},        // Allow STUN
+		{"fake", 64, 8, "ttl", "parse", "443"},
+		{"fake", 128, 10, "checksum", "all", "80,443"},
+		{"drop", 0, 0, "none", "all", "443"},
+		{"fake", 64, 6, "none", "disabled", ""},
 	}
 
 	for _, uc := range udpConfigs {
@@ -213,15 +285,15 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 8. IP Fragmentation variations
+	// 11. IP Fragmentation variations
 	ipFragConfigs := []struct {
 		pos     int
 		reverse bool
 	}{
 		{1, false},
 		{1, true},
-		{8, false}, // Fragment at 8-byte boundary
-		{20, true}, // Fragment after some data
+		{8, false},
+		{20, true},
 	}
 
 	for _, ifc := range ipFragConfigs {
@@ -242,7 +314,7 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 9. Delay variations
+	// 12. Delay variations
 	delays := []int{5, 10, 20, 50}
 	for _, delay := range delays {
 		presets = append(presets, ConfigPreset{
@@ -257,31 +329,41 @@ func GetTestPresets() []ConfigPreset {
 		})
 	}
 
-	// 10. Aggressive combinations
+	// 13. Aggressive combinations
 	aggressiveConfigs := []struct {
 		name   string
 		synLen int
 		udpSeq int
 		ttl    uint8
+		strat  string
 	}{
-		{"max", 256, 15, 3},
-		{"ultra", 512, 20, 1},
+		{"max-tcp", 256, 15, 3, "tcp"},
+		{"max-oob", 512, 20, 1, "oob"},
+		{"ultra-tcp", 512, 20, 1, "tcp"},
+		{"ultra-oob", 512, 25, 1, "oob"},
 	}
 
 	for _, ac := range aggressiveConfigs {
+		fragConfig := config.FragmentationConfig{}
+		if ac.strat == "oob" {
+			fragConfig = config.FragmentationConfig{Strategy: "oob", OOBPosition: 1, OOBReverse: true, OOBChar: 'x'}
+		} else {
+			fragConfig = config.FragmentationConfig{Strategy: "tcp", SNIPosition: 1, SNIReverse: true, MiddleSNI: true}
+		}
+
 		presets = append(presets, ConfigPreset{
 			Name:        fmt.Sprintf("aggressive-%s", ac.name),
 			Description: fmt.Sprintf("%s bypass: all techniques", ac.name),
 			Config: config.SetConfig{
 				TCP:           config.TCPConfig{ConnBytesLimit: 1, Seg2Delay: 10, SynFake: true, SynFakeLen: ac.synLen},
 				UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: ac.udpSeq, FakeLen: 256, FakingStrategy: "checksum", FilterQUIC: "all", FilterSTUN: true, ConnBytesLimit: 1},
-				Fragmentation: config.FragmentationConfig{Strategy: "tcp", SNIPosition: 1, SNIReverse: true, MiddleSNI: true},
-				Faking:        config.FakingConfig{SNI: true, TTL: ac.ttl, Strategy: "pastseq", SeqOffset: 100000, SNISeqLength: 5, SNIType: 0}, // Random SNI type
+				Fragmentation: fragConfig,
+				Faking:        config.FakingConfig{SNI: true, TTL: ac.ttl, Strategy: "pastseq", SeqOffset: 100000, SNISeqLength: 5, SNIType: 0},
 			},
 		})
 	}
 
-	// 11. Special edge cases
+	// 14. Special edge cases
 	presets = append(presets, ConfigPreset{
 		Name:        "no-sni-fake",
 		Description: "Fragmentation only, no fake SNI",
@@ -289,64 +371,18 @@ func GetTestPresets() []ConfigPreset {
 			TCP:           config.TCPConfig{ConnBytesLimit: 19},
 			UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 8},
 			Fragmentation: config.FragmentationConfig{Strategy: "tcp", SNIPosition: 1, SNIReverse: true, MiddleSNI: true},
-			Faking:        config.FakingConfig{SNI: false}, // No fake SNI
+			Faking:        config.FakingConfig{SNI: false},
 		},
 	})
 
-	// 12. OOB (Out-of-Band) variations
-	oobConfigs := []struct {
-		pos     int
-		reverse bool
-		char    byte
-	}{
-		{1, false, 'x'},  // Early position, normal order
-		{1, true, 'x'},   // Early position, reversed
-		{2, false, 0x00}, // Position 2, null byte
-		{3, true, 'x'},   // After TLS version
-		{1, false, 0x00}, // Null OOB byte
-	}
-
-	for _, oc := range oobConfigs {
-		name := fmt.Sprintf("oob-pos%d", oc.pos)
-		if oc.reverse {
-			name += "-rev"
-		}
-		if oc.char == 0x00 {
-			name += "-null"
-		}
-
-		presets = append(presets, ConfigPreset{
-			Name:        name,
-			Description: fmt.Sprintf("OOB at pos=%d reverse=%v", oc.pos, oc.reverse),
-			Config: config.SetConfig{
-				TCP:           config.TCPConfig{ConnBytesLimit: 19},
-				UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 8},
-				Fragmentation: config.FragmentationConfig{Strategy: "none", OOBPosition: oc.pos, OOBReverse: oc.reverse, OOBChar: oc.char},
-				Faking:        config.FakingConfig{SNI: false},
-			},
-		})
-	}
-
-	// 13. OOB + Fragmentation combined (powerful combo)
 	presets = append(presets, ConfigPreset{
-		Name:        "oob-frag-combo",
-		Description: "OOB with TCP fragmentation",
+		Name:        "oob-only",
+		Description: "OOB only, no fake SNI",
 		Config: config.SetConfig{
 			TCP:           config.TCPConfig{ConnBytesLimit: 19},
 			UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 6, FakeLen: 64, FakingStrategy: "none", FilterQUIC: "disabled", FilterSTUN: true, ConnBytesLimit: 8},
-			Fragmentation: config.FragmentationConfig{Strategy: "tcp", SNIPosition: 1, SNIReverse: true, OOBPosition: 2, OOBReverse: false, OOBChar: 'x'},
-			Faking:        config.FakingConfig{SNI: true, TTL: 8, Strategy: "pastseq", SeqOffset: 10000, SNISeqLength: 1, SNIType: 2},
-		},
-	})
-
-	presets = append(presets, ConfigPreset{
-		Name:        "fake-only",
-		Description: "Fake packets only, no fragmentation",
-		Config: config.SetConfig{
-			TCP:           config.TCPConfig{ConnBytesLimit: 19},
-			UDP:           config.UDPConfig{Mode: "fake", FakeSeqLength: 10, FakeLen: 128, FakingStrategy: "ttl", FilterQUIC: "parse", FilterSTUN: true, ConnBytesLimit: 8},
-			Fragmentation: config.FragmentationConfig{Strategy: "none"}, // No fragmentation
-			Faking:        config.FakingConfig{SNI: true, TTL: 3, Strategy: "pastseq", SeqOffset: 50000, SNISeqLength: 5, SNIType: 2},
+			Fragmentation: config.FragmentationConfig{Strategy: "oob", OOBPosition: 1, OOBReverse: false, OOBChar: 'x'},
+			Faking:        config.FakingConfig{SNI: false},
 		},
 	})
 
