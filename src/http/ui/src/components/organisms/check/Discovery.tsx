@@ -27,6 +27,8 @@ import { useConfigLoad } from "@hooks/useConfig";
 import { useTestDomains } from "@hooks/useTestDomains";
 import { B4SetConfig } from "@/models/Config";
 import SettingTextField from "@atoms/common/B4TextField";
+import { AddSniModal } from "@organisms/domains/AddSniModal";
+import { generateDomainVariants } from "@utils";
 
 interface DomainPresetResult {
   preset_name: string;
@@ -68,6 +70,8 @@ export const DiscoveryRunner: React.FC = () => {
   const [suite, setSuite] = useState<DiscoverySuite | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addingPreset, setAddingPreset] = useState<string | null>(null);
+  const [variants, setVariants] = useState<string[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -77,6 +81,19 @@ export const DiscoveryRunner: React.FC = () => {
   const { domains, addDomain, removeDomain, clearDomains, resetToDefaults } =
     useTestDomains();
   const [newDomain, setNewDomain] = useState("");
+
+  const [variantModal, setVariantModal] = useState<{
+    open: boolean;
+    domain: string;
+    result: DomainPresetResult | null;
+  }>({ open: false, domain: "", result: null });
+
+  const handleAddStrategy = (domain: string, result: DomainPresetResult) => {
+    const domainVariants = generateDomainVariants(domain);
+    setVariants(domainVariants);
+    setSelectedVariant(domainVariants[0]);
+    setVariantModal({ open: true, domain, result });
+  };
 
   // Poll for discovery status
   useEffect(() => {
@@ -165,29 +182,20 @@ export const DiscoveryRunner: React.FC = () => {
     setRunning(false);
   };
 
-  const handleAddStrategy = async (
-    domain: string,
-    result: DomainPresetResult
-  ) => {
-    if (!result.set) {
-      setSnackbar({
-        open: true,
-        message: "Configuration data not available",
-        severity: "error",
-      });
-      return;
-    }
-
-    setAddingPreset(`${domain}-${result.preset_name}`);
+  const confirmAddStrategy = async () => {
+    if (!variantModal.result?.set) return;
 
     try {
       const configToAdd = {
-        ...result.set,
+        ...variantModal.result.set,
         targets: {
-          ...result.set.targets,
-          sni_domains: [domain],
+          ...variantModal.result.set.targets,
+          sni_domains: [selectedVariant],
         },
       };
+      setAddingPreset(
+        `${variantModal.domain}-${variantModal.result.preset_name}`
+      );
 
       const response = await fetch("/api/check/add", {
         method: "POST",
@@ -206,6 +214,7 @@ export const DiscoveryRunner: React.FC = () => {
         message: `${data.message}`,
         severity: "success",
       });
+      setVariantModal({ open: false, domain: "", result: null });
     } catch (err) {
       console.error("Failed to add strategy:", err);
       setSnackbar({
@@ -931,6 +940,25 @@ export const DiscoveryRunner: React.FC = () => {
               })}
           </Stack>
         )}
+
+      <AddSniModal
+        open={variantModal.open}
+        domain={variantModal.domain}
+        variants={variants}
+        selected={selectedVariant || variants[0]}
+        sets={[]}
+        createNewSet={true}
+        onClose={() => {
+          setVariantModal({ open: false, domain: "", result: null });
+          setSelectedVariant(null);
+        }}
+        onSelectVariant={(variant) => {
+          setSelectedVariant(variant);
+        }}
+        onAdd={() => {
+          void confirmAddStrategy();
+        }}
+      />
 
       <Snackbar
         open={snackbar.open}

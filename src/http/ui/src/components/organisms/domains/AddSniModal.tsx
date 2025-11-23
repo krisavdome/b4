@@ -16,7 +16,7 @@ import DomainIcon from "@mui/icons-material/Language";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@molecules/common/B4Dialog";
 import { B4Badge } from "@/components/atoms/common/B4Badge";
-import { B4SetConfig, MAIN_SET_ID } from "@/models/Config";
+import { B4SetConfig, MAIN_SET_ID, NEW_SET_ID } from "@/models/Config";
 import { SetSelector } from "@molecules/common/SetSelector";
 
 interface AddSniModalProps {
@@ -25,6 +25,7 @@ interface AddSniModalProps {
   variants: string[];
   selected: string;
   sets: B4SetConfig[];
+  createNewSet?: boolean;
   onClose: () => void;
   onSelectVariant: (variant: string) => void;
   onAdd: (setId: string, setName?: string) => void;
@@ -36,6 +37,7 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
   variants,
   selected,
   sets,
+  createNewSet = false,
   onClose,
   onSelectVariant,
   onAdd,
@@ -48,10 +50,14 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
   };
 
   React.useEffect(() => {
-    if (open && sets.length > 0) {
-      setSelectedSetId(MAIN_SET_ID);
+    if (open) {
+      if (createNewSet) {
+        setSelectedSetId(NEW_SET_ID);
+      } else if (sets.length > 0) {
+        setSelectedSetId(MAIN_SET_ID);
+      }
     }
-  }, [open, sets]);
+  }, [open, sets, createNewSet]);
 
   return (
     <B4Dialog
@@ -92,7 +98,7 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Original domain: <B4Badge label={domain} badgeVariant="secondary" />
         </Typography>
-        {sets.length > 0 && (
+        {!createNewSet && sets.length > 0 && (
           <SetSelector
             sets={sets}
             value={selectedSetId}
