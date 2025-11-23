@@ -344,7 +344,7 @@ func GetTestPresets() []ConfigPreset {
 	}
 
 	for _, ac := range aggressiveConfigs {
-		fragConfig := config.FragmentationConfig{}
+		var fragConfig config.FragmentationConfig
 		if ac.strat == "oob" {
 			fragConfig = config.FragmentationConfig{Strategy: "oob", OOBPosition: 1, OOBReverse: true, OOBChar: 'x'}
 		} else {
