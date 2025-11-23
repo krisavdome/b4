@@ -17,6 +17,7 @@ func (api *API) RegisterSystemApi() {
 	api.mux.HandleFunc("/api/system/info", api.handleSystemInfo)
 	api.mux.HandleFunc("/api/version", api.handleVersion)
 	api.mux.HandleFunc("/api/system/update", api.handleUpdate)
+	api.mux.HandleFunc("/api/system/cache", api.handleCacheStats)
 }
 
 // detectServiceManager determines which service manager is managing B4
@@ -256,4 +257,24 @@ func (api *API) handleUpdate(w http.ResponseWriter, r *http.Request) {
 			log.Infof("Update process started (PID: %d)", cmd.Process.Pid)
 		}
 	}()
+}
+
+func (api *API) handleCacheStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if globalPool == nil || len(globalPool.Workers) == 0 {
+		http.Error(w, "No workers available", http.StatusServiceUnavailable)
+		return
+	}
+
+	stats := globalPool.Workers[0].GetCacheStats()
+
+	setJsonHeader(w)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"cache":   stats,
+	})
 }

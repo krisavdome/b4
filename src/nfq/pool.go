@@ -93,10 +93,13 @@ func (w *Worker) rebuildMatcher(cfg *config.Config) {
 	if len(cfg.Sets) > 0 {
 		m = sni.NewSuffixSet(cfg.Sets)
 		totalDomains := 0
+		totalIPs := 0
 		for _, set := range cfg.Sets {
 			totalDomains += len(set.Targets.DomainsToMatch)
+			totalIPs += len(set.Targets.IpsToMatch)
 		}
-		log.Tracef("Built matcher with %d domains across %d sets", totalDomains, len(cfg.Sets))
+		log.Infof("Rebuilt matcher with %d domains and %d IPs across %d sets (cache cleared, warming up...)",
+			totalDomains, totalIPs, len(cfg.Sets))
 	} else {
 		m = sni.NewSuffixSet([]*config.SetConfig{})
 		log.Tracef("Built empty matcher")
@@ -121,4 +124,9 @@ func (p *Pool) GetFirstWorkerConfig() *config.Config {
 		return nil
 	}
 	return p.Workers[0].getConfig()
+}
+
+func (w *Worker) GetCacheStats() map[string]interface{} {
+	matcher := w.getMatcher()
+	return matcher.GetCacheStats()
 }

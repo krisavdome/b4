@@ -349,3 +349,28 @@ func (s *SuffixSet) matchRegex(host string) (bool, *config.SetConfig) {
 
 	return matched, matchedSet
 }
+
+func (s *SuffixSet) GetCacheStats() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+
+	s.ipCacheMu.RLock()
+	ipCacheSize := len(s.ipCache)
+	s.ipCacheMu.RUnlock()
+
+	s.domainCacheMu.RLock()
+	domainCacheSize := len(s.domainCache)
+	s.domainCacheMu.RUnlock()
+
+	regexCacheSize := atomic.LoadInt32(&s.regexCacheSize)
+
+	return map[string]interface{}{
+		"ip_cache_size":      ipCacheSize,
+		"ip_cache_limit":     s.ipCacheLimit,
+		"domain_cache_size":  domainCacheSize,
+		"domain_cache_limit": s.domainCacheLimit,
+		"regex_cache_size":   regexCacheSize,
+		"regex_cache_limit":  10000,
+	}
+}
