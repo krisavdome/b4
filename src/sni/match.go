@@ -8,11 +8,22 @@ import (
 	"sync"
 
 	"github.com/daniellavrushin/b4/config"
+	"github.com/yl2chen/cidranger"
 )
 
 type ipRange struct {
 	ipNet *net.IPNet
 	set   *config.SetConfig
+}
+
+// rangerEntry implements cidranger.RangerEntry
+type rangerEntry struct {
+	ipNet *net.IPNet
+	set   *config.SetConfig
+}
+
+func (r *rangerEntry) Network() net.IPNet {
+	return *r.ipNet
 }
 
 type portRange struct {
@@ -25,7 +36,7 @@ type SuffixSet struct {
 	sets       map[string]*config.SetConfig
 	regexes    []*regexWithSet
 	regexCache sync.Map
-	ipRanges   []ipRange
+	ipRanger   cidranger.Ranger // Optimized radix tree for IP lookups
 	portRanges []portRange
 }
 
@@ -41,8 +52,9 @@ type cacheEntry struct {
 
 func NewSuffixSet(sets []*config.SetConfig) *SuffixSet {
 	s := &SuffixSet{
-		sets:    make(map[string]*config.SetConfig),
-		regexes: make([]*regexWithSet, 0),
+		sets:     make(map[string]*config.SetConfig),
+		regexes:  make([]*regexWithSet, 0),
+		ipRanger: cidranger.NewPCTrieRanger(), // Initialize radix tree
 	}
 
 	seenRegexes := make(map[string]bool)
@@ -102,7 +114,9 @@ func NewSuffixSet(sets []*config.SetConfig) *SuffixSet {
 			}
 
 			if err == nil && ipNet != nil {
-				s.ipRanges = append(s.ipRanges, ipRange{ipNet: ipNet, set: set})
+				// Insert into radix tree for O(log n) lookups
+				entry := &rangerEntry{ipNet: ipNet, set: set}
+				s.ipRanger.Insert(entry)
 			}
 		}
 
@@ -184,14 +198,25 @@ func (s *SuffixSet) MatchSNI(host string) (bool, *config.SetConfig) {
 }
 
 func (s *SuffixSet) MatchIP(ip net.IP) (bool, *config.SetConfig) {
-	if s == nil || len(s.ipRanges) == 0 || ip == nil {
+	if s == nil || s.ipRanger == nil || ip == nil {
 		return false, nil
 	}
 
-	for _, r := range s.ipRanges {
-		if r.ipNet.Contains(ip) {
-			return true, r.set
-		}
+	// Use radix tree for O(log n) lookup instead of O(n) linear search
+	contains, err := s.ipRanger.Contains(ip)
+	if err != nil || !contains {
+		return false, nil
+	}
+
+	// Get the matching entry to retrieve the set config
+	entries, err := s.ipRanger.ContainingNetworks(ip)
+	if err != nil || len(entries) == 0 {
+		return false, nil
+	}
+
+	// Return the first matching set (most specific match)
+	if entry, ok := entries[0].(*rangerEntry); ok {
+		return true, entry.set
 	}
 
 	return false, nil
