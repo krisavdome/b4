@@ -4,12 +4,16 @@ import (
 	"encoding/binary"
 	"math/rand"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/daniellavrushin/b4/sock"
 )
+
+var winRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+var winRandMu sync.Mutex
 
 // WindowManipulator handles TCP window size manipulation
 type WindowManipulator struct {
@@ -99,8 +103,7 @@ func (w *Worker) sendOscillatingWindows(packet []byte, dst net.IP, ipHdrLen int,
 		time.Sleep(100 * time.Microsecond)
 	}
 
-	// Now send the real packet (unchanged window)
-	// The DPI will be confused by conflicting window information
+	_ = w.sock.SendIPv4(packet, dst)
 }
 
 // sendZeroWindow sends zero window probe attack

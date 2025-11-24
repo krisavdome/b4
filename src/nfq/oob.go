@@ -163,11 +163,13 @@ func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 	copy(seg1, packet[:seg1Len])
 
 	seg1[ipv6HdrLen+13] |= 0x20
+	if cfg.Fragmentation.OOBChar != 0 {
+		// Inject OOB char at end of first segment
+		seg1 = append(seg1[:payloadStart+oobPos], cfg.Fragmentation.OOBChar)
+	}
 
 	binary.BigEndian.PutUint16(seg1[ipv6HdrLen+18:ipv6HdrLen+20], uint16(oobPos))
-
 	binary.BigEndian.PutUint16(seg1[4:6], uint16(seg1Len-ipv6HdrLen))
-
 	binary.BigEndian.PutUint32(seg1[ipv6HdrLen+4:ipv6HdrLen+8], seq)
 
 	// ===== Second segment =====

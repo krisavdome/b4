@@ -201,7 +201,12 @@ func (w *Worker) sendDesyncACK(packet []byte, dst net.IP, da *DesyncAttacker) {
 		binary.BigEndian.PutUint32(fake[ipHdrLen+8:ipHdrLen+12], futureAck)
 
 		// Low TTL
-		fake[8] = da.ttl - uint8(i)
+		if uint8(i) >= da.ttl {
+			fake[8] = 1
+		} else {
+			fake[8] = da.ttl - uint8(i)
+		}
+
 		if fake[8] < 1 {
 			fake[8] = 1
 		}
