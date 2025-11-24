@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Container, Paper, Snackbar, Alert } from "@mui/material";
 import { DomainsControlBar } from "@/components/organisms/domains/ControlBar";
 import { AddSniModal } from "@/components/organisms/domains/AddSniModal";
-import { DomainsTable, SortColumn } from "@organisms/domains/Table";
+import {
+  VirtualizedDomainsTable,
+  SortColumn,
+} from "@organisms/domains/VirtualizedTable";
 import { SortDirection } from "@atoms/common/SortableTableCell";
 import {
   useDomainActions,
@@ -10,19 +13,19 @@ import {
   useFilteredLogs,
   useSortedLogs,
 } from "@hooks/useDomainActions";
-
 import { useIpActions } from "@hooks/useIpActions";
 import {
   generateDomainVariants,
   loadSortState,
   saveSortState,
   generateIpVariants,
-  MAX_VISIBLE_ROWS,
 } from "@utils";
 import { colors } from "@design";
 import { useWebSocket } from "@ctx/B4WsProvider";
 import { AddIpModal } from "../organisms/domains/AddIpModal";
 import { B4Config, B4SetConfig } from "@/models/Config";
+
+const MAX_DISPLAY_ROWS = 1000;
 
 export default function Domains() {
   const {
@@ -36,8 +39,6 @@ export default function Domains() {
   } = useWebSocket();
 
   const [filter, setFilter] = useState("");
-  const [autoScroll, setAutoScroll] = useState(true);
-  const tableRef = useRef<HTMLDivElement | null>(null);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(() => {
     const saved = loadSortState();
     return saved.column as SortColumn | null;
@@ -69,22 +70,17 @@ export default function Domains() {
     saveSortState(sortColumn, sortDirection);
   }, [sortColumn, sortDirection]);
 
-  useEffect(() => {
-    const el = tableRef.current;
-    if (el && autoScroll) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [domains, autoScroll]);
-
+  // Limit displayed rows for performance
   const recentDomains = useMemo(
-    () => domains.slice(-MAX_VISIBLE_ROWS * 2),
+    () => domains.slice(-MAX_DISPLAY_ROWS),
     [domains]
   );
+
   const parsedLogs = useParsedLogs(recentDomains, showAll);
   const filteredLogs = useFilteredLogs(parsedLogs, filter);
   const sortedData = useSortedLogs(filteredLogs, sortColumn, sortDirection);
-  const [availableSets, setAvailableSets] = useState<B4SetConfig[]>([]);
 
+  const [availableSets, setAvailableSets] = useState<B4SetConfig[]>([]);
   const [ipInfoToken, setIpInfoToken] = useState<string>("");
 
   const fetchSets = useCallback(async () => {
@@ -108,45 +104,46 @@ export default function Domains() {
     void fetchSets();
   }, [fetchSets]);
 
-  const handleScroll = () => {
-    const el = tableRef.current;
-    if (el) {
-      const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-      setAutoScroll(isAtBottom);
-    }
-  };
+  const handleScrollStateChange = useCallback(() => {}, []);
 
-  const handleSort = (column: SortColumn) => {
-    setAutoScroll(false);
-
-    if (sortColumn === column) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
-      } else if (sortDirection === "desc") {
-        setSortDirection(null);
-        setSortColumn(null);
+  const handleSort = useCallback((column: SortColumn) => {
+    setSortColumn((prevColumn) => {
+      if (prevColumn === column) {
+        setSortDirection((prevDir) => {
+          if (prevDir === "asc") return "desc";
+          if (prevDir === "desc") {
+            setSortColumn(null);
+            return null;
+          }
+          return "asc";
+        });
+        return prevColumn;
       }
-    } else {
-      setSortColumn(column);
       setSortDirection("asc");
-    }
-  };
+      return column;
+    });
+  }, []);
 
-  const handleClearSort = () => {
+  const handleClearSort = useCallback(() => {
     setSortColumn(null);
     setSortDirection(null);
-    setAutoScroll(true);
-  };
+  }, []);
 
-  const handleIpClick = (ip: string) => {
-    const variants = generateIpVariants(ip);
-    openIpModal(ip, variants);
-  };
+  const handleIpClick = useCallback(
+    (ip: string) => {
+      const variants = generateIpVariants(ip);
+      openIpModal(ip, variants);
+    },
+    [openIpModal]
+  );
 
-  const handleDomainClick = (domain: string) => {
-    const variants = generateDomainVariants(domain);
-    openModal(domain, variants);
-  };
+  const handleDomainClick = useCallback(
+    (domain: string) => {
+      const variants = generateDomainVariants(domain);
+      openModal(domain, variants);
+    },
+    [openModal]
+  );
 
   const handleHotkeysDown = useCallback(
     (e: KeyboardEvent) => {
@@ -219,15 +216,14 @@ export default function Domains() {
           onReset={clearDomains}
         />
 
-        <DomainsTable
+        <VirtualizedDomainsTable
           data={sortedData}
           sortColumn={sortColumn}
           sortDirection={sortDirection}
           onSort={handleSort}
           onDomainClick={handleDomainClick}
           onIpClick={handleIpClick}
-          tableRef={tableRef}
-          onScroll={handleScroll}
+          onScrollStateChange={handleScrollStateChange}
         />
       </Paper>
 

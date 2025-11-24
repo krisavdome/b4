@@ -1,7 +1,26 @@
-import { useState, useCallback, useMemo } from "react";
-import { ParsedLog, SortColumn } from "@organisms/domains/Table";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { SortDirection } from "@atoms/common/SortableTableCell";
-import { parseSniLogLine, asnStorage } from "@utils";
+import { asnStorage } from "@utils";
+
+// Types
+export type SortColumn =
+  | "timestamp"
+  | "set"
+  | "protocol"
+  | "domain"
+  | "source"
+  | "destination";
+
+export interface ParsedLog {
+  timestamp: string;
+  protocol: "TCP" | "UDP";
+  hostSet: string;
+  ipSet: string;
+  domain: string;
+  source: string;
+  destination: string;
+  raw: string;
+}
 
 interface DomainModalState {
   open: boolean;
@@ -16,6 +35,100 @@ interface SnackbarState {
   severity: "success" | "error";
 }
 
+// Simple LRU Cache for parsed logs
+class ParseCache {
+  private cache = new Map<string, ParsedLog | null>();
+  private maxSize = 5000;
+
+  get(key: string): ParsedLog | null | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      // Move to end (most recently used)
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: string, value: ParsedLog | null): void {
+    if (this.cache.size >= this.maxSize) {
+      // Delete oldest (first) entry
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const parseCache = new ParseCache();
+
+// ASN Lookup cache
+const asnLookupCache = new Map<string, string | null>();
+
+export function getAsnForIp(destination: string): string | null {
+  if (!destination) return null;
+
+  const cached = asnLookupCache.get(destination);
+  if (cached !== undefined) return cached;
+
+  const asn = asnStorage.findAsnForIp(destination);
+  const result = asn?.name || null;
+
+  asnLookupCache.set(destination, result);
+
+  // Limit cache size
+  if (asnLookupCache.size > 2000) {
+    const entries = Array.from(asnLookupCache.entries());
+    asnLookupCache.clear();
+    entries.slice(-1000).forEach(([k, v]) => asnLookupCache.set(k, v));
+  }
+
+  return result;
+}
+
+export function clearAsnLookupCache(): void {
+  asnLookupCache.clear();
+}
+
+// Parse a single log line with caching
+function parseSniLogLine(line: string): ParsedLog | null {
+  // Check cache first
+  const cached = parseCache.get(line);
+  if (cached !== undefined) return cached;
+
+  const tokens = line.trim().split(",");
+  if (tokens.length < 7) {
+    parseCache.set(line, null);
+    return null;
+  }
+
+  const [timestamp, protocol, hostSet, domain, source, ipSet, destination] =
+    tokens;
+
+  const result: ParsedLog = {
+    timestamp: timestamp.replaceAll(" [INFO]", "").trim().split(".")[0],
+    protocol: protocol as "TCP" | "UDP",
+    hostSet,
+    domain,
+    source,
+    ipSet,
+    destination,
+    raw: line,
+  };
+
+  parseCache.set(line, result);
+  return result;
+}
+
+// Domain actions hook
 export function useDomainActions() {
   const [modalState, setModalState] = useState<DomainModalState>({
     open: false,
@@ -59,9 +172,7 @@ export function useDomainActions() {
       try {
         const response = await fetch("/api/geosite/domain", {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             domain: modalState.selected,
             set_id: setId,
@@ -110,53 +221,76 @@ export function useDomainActions() {
   };
 }
 
-const parseCache = new WeakMap<string[], ParsedLog[]>();
-const asnLookupCache = new Map<string, string | null>();
-
-export function useAsnLookup(destination: string): string | null {
-  return useMemo(() => {
-    if (!destination) return null;
-
-    const cached = asnLookupCache.get(destination);
-    if (cached !== undefined) return cached;
-
-    const asn = asnStorage.findAsnForIp(destination);
-    const result = asn?.name || null;
-
-    asnLookupCache.set(destination, result);
-
-    if (asnLookupCache.size > 1000) {
-      const entries = Array.from(asnLookupCache.entries());
-      asnLookupCache.clear();
-      entries.slice(-500).forEach(([k, v]) => asnLookupCache.set(k, v));
-    }
-
-    return result;
-  }, [destination]);
-}
-
-export function clearAsnLookupCache() {
-  asnLookupCache.clear();
-}
-
-// Hook to parse logs
+// Optimized hook to parse logs - uses stable reference tracking
 export function useParsedLogs(lines: string[], showAll: boolean): ParsedLog[] {
+  const prevLinesRef = useRef<string[]>([]);
+  const prevResultRef = useRef<ParsedLog[]>([]);
+  const prevShowAllRef = useRef<boolean>(showAll);
+
   return useMemo(() => {
-    // ADD cache check
-    if (parseCache.has(lines)) {
-      const cached = parseCache.get(lines)!;
-      return showAll ? cached : cached.filter((log) => log.domain !== "");
+    const prevLines = prevLinesRef.current;
+    const prevResult = prevResultRef.current;
+
+    // If showAll changed, refilter from cached parsed results
+    if (prevShowAllRef.current !== showAll && prevLines === lines) {
+      prevShowAllRef.current = showAll;
+      const filtered = showAll
+        ? prevResult
+        : prevResult.filter((log) => log.domain !== "");
+      return filtered;
     }
 
+    prevShowAllRef.current = showAll;
+
+    // Check if we can do incremental update
+    if (prevLines.length > 0 && lines.length > prevLines.length) {
+      // Check if this is an append operation
+      let isAppend = true;
+      const checkLength = Math.min(prevLines.length, 100); // Check last 100 items
+      for (let i = 0; i < checkLength; i++) {
+        const prevIdx = prevLines.length - checkLength + i;
+        const currIdx =
+          lines.length - (lines.length - prevLines.length) - checkLength + i;
+        if (
+          currIdx >= 0 &&
+          prevIdx >= 0 &&
+          lines[currIdx] !== prevLines[prevIdx]
+        ) {
+          isAppend = false;
+          break;
+        }
+      }
+
+      if (isAppend) {
+        // Only parse new lines
+        const newLines = lines.slice(prevLines.length);
+        const newParsed = newLines
+          .map(parseSniLogLine)
+          .filter((log): log is ParsedLog => log !== null);
+
+        const allParsed = [...prevResult, ...newParsed];
+        prevLinesRef.current = lines;
+        prevResultRef.current = allParsed;
+
+        return showAll
+          ? allParsed
+          : allParsed.filter((log) => log.domain !== "");
+      }
+    }
+
+    // Full parse needed
     const parsed = lines
       .map(parseSniLogLine)
       .filter((log): log is ParsedLog => log !== null);
 
-    parseCache.set(lines, parsed);
+    prevLinesRef.current = lines;
+    prevResultRef.current = parsed;
+
     return showAll ? parsed : parsed.filter((log) => log.domain !== "");
   }, [lines, showAll]);
 }
 
+// Optimized filtering with memoization
 export function useFilteredLogs(
   parsedLogs: ParsedLog[],
   filter: string
@@ -210,7 +344,7 @@ export function useFilteredLogs(
   }, [parsedLogs, filter]);
 }
 
-// Hook to sort logs
+// Optimized sorting
 export function useSortedLogs(
   filteredLogs: ParsedLog[],
   sortColumn: SortColumn | null,
@@ -221,39 +355,24 @@ export function useSortedLogs(
       return filteredLogs;
     }
 
-    function normalizeSortValue(
-      value: string | number | boolean | undefined,
-      column: SortColumn
-    ): number | string {
-      if (column === "timestamp") {
-        const str = typeof value === "string" ? value : "";
-        return new Date(str.replaceAll(/\/+/g, "-")).getTime();
-      }
-      if (typeof value === "string") {
-        return value.toLowerCase();
-      }
-      if (typeof value === "boolean") {
-        return value ? 1 : 0;
-      }
-      return value ?? "";
-    }
-
     const sorted = [...filteredLogs].sort((a, b) => {
-      const aValue = normalizeSortValue(
-        a[sortColumn as keyof ParsedLog],
-        sortColumn
-      );
-      const bValue = normalizeSortValue(
-        b[sortColumn as keyof ParsedLog],
-        sortColumn
-      );
+      let aValue: string | number;
+      let bValue: string | number;
 
-      if (aValue < bValue) {
-        return sortDirection === "asc" ? -1 : 1;
+      if (sortColumn === "timestamp") {
+        aValue = new Date(a.timestamp.replaceAll(/\/+/g, "-")).getTime() || 0;
+        bValue = new Date(b.timestamp.replaceAll(/\/+/g, "-")).getTime() || 0;
+      } else {
+        aValue = (a[sortColumn as keyof ParsedLog] || "")
+          .toString()
+          .toLowerCase();
+        bValue = (b[sortColumn as keyof ParsedLog] || "")
+          .toString()
+          .toLowerCase();
       }
-      if (aValue > bValue) {
-        return sortDirection === "asc" ? 1 : -1;
-      }
+
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
 
