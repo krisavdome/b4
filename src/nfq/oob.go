@@ -10,7 +10,7 @@ import (
 	"github.com/daniellavrushin/b4/sock"
 )
 
-// sendOOBFragments sends TCP packet with OOB (urgent) data - byedpi style
+// sendOOBFragments sends TCP packet with OOB (urgent) data
 // Splits at oobPos, marks first part as urgent WITHOUT adding extra bytes
 func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.IP) {
 	if cfg.Fragmentation.OOBPosition <= 0 {
@@ -47,7 +47,7 @@ func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.
 
 	// Validate position
 	if oobPos <= 0 || oobPos >= payloadLen {
-		oobPos = 1 // Default to 1 byte like byedpi
+		oobPos = 1
 	}
 
 	log.Tracef("OOB: Splitting at position %d of %d bytes (reverse=%v)",
@@ -66,7 +66,6 @@ func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.
 	seg1[ipHdrLen+13] |= 0x20
 
 	// Set urgent pointer to the END of urgent data
-	// byedpi uses oobPos here (points to last urgent byte + 1)
 	binary.BigEndian.PutUint16(seg1[ipHdrLen+18:ipHdrLen+20], uint16(oobPos))
 
 	// Update IP total length
@@ -100,11 +99,9 @@ func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.
 	sock.FixIPv4Checksum(seg2[:ipHdrLen])
 	sock.FixTCPChecksum(seg2)
 
-	// Send segments
 	seg2delay := cfg.TCP.Seg2Delay
 
 	if cfg.Fragmentation.ReverseOrder {
-		// Send second segment first (byedpi style)
 		_ = w.sock.SendIPv4(seg2, dst)
 		if seg2delay > 0 {
 			time.Sleep(time.Duration(seg2delay) * time.Millisecond)
@@ -112,7 +109,6 @@ func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.
 		_ = w.sock.SendIPv4(seg1, dst)
 		log.Tracef("OOB: Sent %d + %d bytes (reversed)", len(seg2), len(seg1))
 	} else {
-		// Normal order
 		_ = w.sock.SendIPv4(seg1, dst)
 		if seg2delay > 0 {
 			time.Sleep(time.Duration(seg2delay) * time.Millisecond)
@@ -122,7 +118,6 @@ func (w *Worker) sendOOBFragments(cfg *config.SetConfig, packet []byte, dst net.
 	}
 }
 
-// sendOOBFragmentsV6 - IPv6 version matching byedpi logic
 func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst net.IP) {
 	if cfg.Fragmentation.OOBPosition <= 0 {
 		_ = w.sock.SendIPv6(packet, dst)
@@ -144,10 +139,8 @@ func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 		return
 	}
 
-	// Calculate OOB split position
 	oobPos := cfg.Fragmentation.OOBPosition
 
-	// Handle middle SNI positioning
 	if cfg.Fragmentation.MiddleSNI {
 		if sniStart, sniEnd, ok := locateSNI(packet[payloadStart:]); ok {
 			oobPos = sniStart + (sniEnd-sniStart)/2
@@ -155,7 +148,6 @@ func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 		}
 	}
 
-	// Validate position
 	if oobPos <= 0 || oobPos >= payloadLen {
 		oobPos = 1
 	}
@@ -163,7 +155,6 @@ func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 	log.Tracef("OOB v6: Splitting at position %d of %d bytes (reverse=%v)",
 		oobPos, payloadLen, cfg.Fragmentation.ReverseOrder)
 
-	// Get original sequence
 	seq := binary.BigEndian.Uint32(packet[ipv6HdrLen+4 : ipv6HdrLen+8])
 
 	// ===== First segment with URG flag =====
@@ -171,16 +162,12 @@ func (w *Worker) sendOOBFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 	seg1 := make([]byte, seg1Len)
 	copy(seg1, packet[:seg1Len])
 
-	// Set URG flag
 	seg1[ipv6HdrLen+13] |= 0x20
 
-	// Set urgent pointer
 	binary.BigEndian.PutUint16(seg1[ipv6HdrLen+18:ipv6HdrLen+20], uint16(oobPos))
 
-	// Update IPv6 payload length
 	binary.BigEndian.PutUint16(seg1[4:6], uint16(seg1Len-ipv6HdrLen))
 
-	// Keep original sequence
 	binary.BigEndian.PutUint32(seg1[ipv6HdrLen+4:ipv6HdrLen+8], seq)
 
 	// ===== Second segment =====
