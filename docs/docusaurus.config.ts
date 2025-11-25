@@ -6,8 +6,8 @@ const config: Config = {
   title: "B4 - Bye Bye Big Bro",
   tagline: "Продвинутая система обхода DPI",
   favicon: "img/favicon.ico",
-  url: "https://your-domain.com",
-  baseUrl: "/",
+  url: "https://daniellavrushin.github.io/",
+  baseUrl: "/b4",
 
   i18n: {
     defaultLocale: "ru", // Russian as default
