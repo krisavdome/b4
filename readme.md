@@ -3,9 +3,13 @@
 ![GitHub Release](https://img.shields.io/github/v/release/daniellavrushin/b4)
 ![GitHub Downloads](https://img.shields.io/github/downloads/daniellavrushin/b4/total)
 
-[[русский язык](readme_ru.md)]
+[[русский язык](readme_ru.md)] [[telegram](https://t.me/byebyebigbro)]
 
 Network packet processor that bypasses Deep Packet Inspection (DPI) using netfilter queue manipulation.
+
+<a href="https://t.me/byebyebigbro" target="_blank">
+<img height="80" alt="image" src="https://github.com/user-attachments/assets/db8dea32-03c2-476d-b350-aeff349e853e" style="float:left"/> 
+B4 Telegram Group - join!</a>
 
 ![alt text](image.png)
 
