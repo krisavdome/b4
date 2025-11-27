@@ -148,14 +148,16 @@ export default function Settings() {
   const location = useLocation();
 
   // Determine current tab based on URL
-  const currentTabPath = location.pathname.split("/settings/")[1] || "core";
-  const currentTab = SETTING_CATEGORIES.findIndex(
-    (cat) => cat.path === currentTabPath
-  );
+  const currentTabPath = location.pathname.split("/settings/")[1] || "general";
+  const currentTab =
+    SETTING_CATEGORIES.find((cat) => cat.path === currentTabPath)?.id ??
+    TABS.GENERAL;
 
   // Handle tab change
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    const category = SETTING_CATEGORIES[newValue];
+    const category = SETTING_CATEGORIES.find(
+      (cat) => cat.id === (newValue as TABS)
+    );
     if (category) {
       navigate(`/settings/${category.path}`);
     }

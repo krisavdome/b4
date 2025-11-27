@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.19.0] - 2025-1\*-\*\*
+
+- FIXED: Settings tab navigation losing selected tab on page refresh.
+
 ## [1.18.5] - 2025-11-27
 
 - FIXED: revert back the Fake SNI payload for improved compatibility.
