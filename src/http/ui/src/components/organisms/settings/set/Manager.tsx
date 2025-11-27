@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Grid,
@@ -16,6 +16,7 @@ import {
   Paper,
   Tooltip,
   Switch,
+  TextField,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -71,6 +72,7 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
   config,
   onChange,
 }) => {
+  const [filterText, setFilterText] = useState("");
   const [expandedSet, setExpandedSet] = useState<string | null>(null);
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
@@ -236,6 +238,31 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
     onChange("sets", newSets);
   };
 
+  const filteredSets = useMemo(() => {
+    if (!filterText.trim()) return sets;
+    const lower = filterText.toLowerCase();
+    return sets.filter((set) => {
+      if (set.name.toLowerCase().includes(lower)) return true;
+      if (
+        set.targets?.sni_domains?.some((d) => d.toLowerCase().includes(lower))
+      )
+        return true;
+      if (
+        set.targets?.geosite_categories?.some((c) =>
+          c.toLowerCase().includes(lower)
+        )
+      )
+        return true;
+      if (
+        set.targets?.geoip_categories?.some((c) =>
+          c.toLowerCase().includes(lower)
+        )
+      )
+        return true;
+      return false;
+    });
+  }, [sets, filterText]);
+
   return (
     <Stack spacing={3}>
       {/* Info Alert */}
@@ -257,7 +284,23 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
         description="Manage multiple bypass configurations for different scenarios"
         icon={<LayersIcon />}
       >
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          justifyContent="space-between"
+          mb={2}
+        >
+          <TextField
+            size="small"
+            placeholder="Filter by name, domain, or geosite category..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                bgcolor: colors.background.default,
+              },
+            }}
+          />
           <Button
             startIcon={<AddIcon />}
             onClick={handleAddSet}
@@ -275,11 +318,12 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
           >
             Create New Set
           </Button>
-        </Box>
+        </Stack>
 
         <List sx={{ p: 0 }}>
           <Stack spacing={2}>
-            {sets.map((set, index) => {
+            {filteredSets.map((set) => {
+              const index = sets.findIndex((s) => s.id === set.id);
               const isMain = set.id === MAIN_SET_ID;
               const isExpanded = expandedSet === set.id;
               const domainCount = getDomainCount(set, index);
@@ -820,6 +864,22 @@ export const SetsManager: React.FC<SetsManagerProps> = ({
                 </Paper>
               );
             })}
+
+            {filteredSets.length === 0 && filterText && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  textAlign: "center",
+                  border: `1px dashed ${colors.border.default}`,
+                  borderRadius: radius.md,
+                }}
+              >
+                <Typography color="text.secondary">
+                  No sets match "{filterText}"
+                </Typography>
+              </Paper>
+            )}
           </Stack>
         </List>
       </B4Section>

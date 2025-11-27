@@ -1,7 +1,8 @@
 # B4 - Bye Bye Big Bro
 
-## [1.19.0] - 2025-1\*-\*\*
+## [1.1x.x] - 2025-1x-xx
 
+- ADDED: Filter for configuration sets - search by `name`, `SNI` domains, `geosite` categories, or `geoip` categories.
 - FIXED: Settings tab navigation losing selected tab on page refresh.
 
 ## [1.18.5] - 2025-11-27
