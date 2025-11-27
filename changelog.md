@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.18.5] - 2025-11-27
+
+- FIXED: revert back the Fake SNI payload for improved compatibility.
+
 ## [1.18.4] - 2025-11-25
 
 - CHANGED: update set default `desync` mode to 'off'.
