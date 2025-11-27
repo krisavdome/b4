@@ -191,9 +191,9 @@ EOF
 
         fi
 
-        chmod +x "${INIT_FULL_PATH}"
         sed "s|PROG_PLACEHOLDER|${INSTALL_DIR}/${BINARY_NAME}|g; s|CONFIG_PLACEHOLDER|${CONFIG_FILE}|g" "${INIT_FULL_PATH}" >"${INIT_FULL_PATH}.tmp"
         mv "${INIT_FULL_PATH}.tmp" "${INIT_FULL_PATH}"
+        chmod +x "${INIT_FULL_PATH}"
 
         print_success "Init script created at ${INIT_FULL_PATH}"
         print_info "You can manage it with:"
