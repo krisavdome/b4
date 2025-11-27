@@ -238,7 +238,23 @@ remove_b4() {
 # Detect system type and set appropriate paths
 detect_system_type() {
     # Check for Entware
-    if [ -d "/opt/etc/init.d" ] && [ -f "/opt/etc/entware_release" ]; then
+    # Some systems like Keenetic don't have entware_release file
+    if [ -d "/opt/etc/init.d" ]; then
+        # Has Entware init structure
+        if [ -f "/opt/etc/entware_release" ] || [ -f "/opt/bin/opkg" ] || [ -d "/opt/lib/opkg" ]; then
+            echo "entware"
+            return
+        fi
+    fi
+
+    # Check for Keenetic specifically
+    if [ -f "/proc/device-tree/model" ] && grep -qi "keenetic" /proc/device-tree/model 2>/dev/null; then
+        echo "entware"
+        return
+    fi
+
+    # Fallback: if /opt/sbin exists and is writable but /etc is read-only, assume Entware-like
+    if [ -d "/opt/sbin" ] && [ -w "/opt/sbin" ] && ! [ -w "/etc" ]; then
         echo "entware"
         return
     fi
@@ -613,10 +629,26 @@ setup_directories() {
 
     # Create config directory
     if [ ! -d "$CONFIG_DIR" ]; then
-        mkdir -p "$CONFIG_DIR" || {
-            print_error "Failed to create config directory: $CONFIG_DIR"
-            exit 1
-        }
+        if ! mkdir -p "$CONFIG_DIR" 2>/dev/null; then
+            # Config dir creation failed - likely read-only filesystem
+            # Try Entware fallback
+            if [ -d "/opt/etc" ] && [ -w "/opt/etc" ]; then
+                print_warning "Cannot write to $CONFIG_DIR (read-only?), falling back to /opt/etc/b4"
+                CONFIG_DIR="/opt/etc/b4"
+                CONFIG_FILE="${CONFIG_DIR}/b4.json"
+                INSTALL_DIR="/opt/sbin"
+                SERVICE_DIR="/opt/etc/init.d"
+                SERVICE_NAME="S99b4"
+                mkdir -p "$CONFIG_DIR" || {
+                    print_error "Failed to create config directory: $CONFIG_DIR"
+                    exit 1
+                }
+            else
+                print_error "Failed to create config directory: $CONFIG_DIR"
+                print_error "Filesystem may be read-only. Try installing Entware first."
+                exit 1
+            fi
+        fi
     fi
 
     # Create temp directory
@@ -1003,6 +1035,15 @@ download_geodat() {
     geoip_url="$1/geoip.dat"
 
     save_dir="$2"
+
+    # Verify save_dir is writable, fallback if needed
+    if [ ! -w "$(dirname "$save_dir")" ] && [ ! -d "$save_dir" ]; then
+        if [ -d "/opt/etc" ] && [ -w "/opt/etc" ]; then
+            save_dir="/opt/etc/b4"
+            print_warning "Original path not writable, using: $save_dir"
+        fi
+    fi
+
     geosite_file="${save_dir}/geosite.dat"
     geoip_file="${save_dir}/geoip.dat"
 
@@ -1519,10 +1560,13 @@ perform_update() {
     sleep 2
 
     # Verify service is running
-    if case "$SERVICE_MANAGER" in
-        systemd) systemctl is-active --quiet b4 ;;
-        entware | init) ps | grep -v grep | grep -q "b4$\|b4[[:space:]]" ;;
-        esac then
+    service_running=0
+    case "$SERVICE_MANAGER" in
+    systemd) systemctl is-active --quiet b4 && service_running=1 ;;
+    entware | init) ps | grep -v grep | grep -q "b4$\|b4[[:space:]]" && service_running=1 ;;
+    esac
+
+    if [ "$service_running" = "1" ]; then
         print_success "Service started successfully"
         echo ""
         echo "======================================="
