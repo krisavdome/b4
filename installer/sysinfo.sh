@@ -190,10 +190,10 @@ show_system_info() {
 
     # Check for geosite data
     if [ -f "$CONFIG_FILE" ] && command_exists jq; then
-        geosite_path=$(jq -r '.system.geo.geosite_path // empty' "$CONFIG_FILE" 2>/dev/null)
-        if [ -n "$geosite_path" ] && [ "$geosite_path" != "null" ] && [ -f "$geosite_path" ]; then
-            geosite_size=$(du -h "$geosite_path" 2>/dev/null | cut -f1)
-            print_detail "Geosite Data" "$geosite_path ($geosite_size)"
+        sitedat_path=$(jq -r '.system.geo.sitedat_path // empty' "$CONFIG_FILE" 2>/dev/null)
+        if [ -n "$sitedat_path" ] && [ "$sitedat_path" != "null" ] && [ -f "$sitedat_path" ]; then
+            geosite_size=$(du -h "$sitedat_path" 2>/dev/null | cut -f1)
+            print_detail "Geosite Data" "$sitedat_path ($geosite_size)"
         fi
     fi
 

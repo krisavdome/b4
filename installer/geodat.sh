@@ -1,11 +1,11 @@
 #!/bin/sh
 # Get geosite path from config using jq if available
-get_geosite_path_from_config() {
+get_geodat_from_config() {
     if [ -f "$CONFIG_FILE" ] && command_exists jq; then
-        geosite_path=$(jq -r '.system.geo.geosite_path // empty' "$CONFIG_FILE" 2>/dev/null)
-        if [ -n "$geosite_path" ] && [ "$geosite_path" != "null" ]; then
+        sitedat_path=$(jq -r '.system.geo.sitedat_path // empty' "$CONFIG_FILE" 2>/dev/null)
+        if [ -n "$sitedat_path" ] && [ "$sitedat_path" != "null" ]; then
             # Extract directory from path
-            echo "$(dirname "$geosite_path")"
+            echo "$(dirname "$sitedat_path")"
             return 0
         fi
     fi
@@ -113,8 +113,8 @@ download_geodat() {
 
 # Update config file with geodat paths
 update_config_geodat_path() {
-    geosite_file="$1"
-    geoip_file="$2"
+    sitedat_path="$1"
+    ipdat_path="$2"
     local site_url="$3/geosite.dat"
     local ip_url="$3/geoip.dat"
 
@@ -124,16 +124,16 @@ update_config_geodat_path() {
 
         if [ ! -f "$CONFIG_FILE" ]; then
             jq -n \
-                --arg geosite_path "$geosite_file" \
+                --arg sitedat_path "$sitedat_path" \
                 --arg geosite_url "$site_url" \
-                --arg geoip_path "$geoip_file" \
+                --arg ipdat_path "$ipdat_path" \
                 --arg geoip_url "$ip_url" \
                 '{
                     system: {
                         geo: {
-                            sitedat_path: $geosite_path,
+                            sitedat_path: $sitedat_path,
                             sitedat_url: $geosite_url,
-                            ipdat_path: $geoip_path,
+                            ipdat_path: $ipdat_path,
                             ipdat_url: $geoip_url
                         }
                     }
@@ -147,14 +147,14 @@ update_config_geodat_path() {
 
         # Merge into existing geo object instead of replacing
         if jq \
-            --arg geosite_path "$geosite_file" \
+            --arg sitedat_path "$sitedat_path" \
             --arg geosite_url "$site_url" \
-            --arg geoip_path "$geoip_file" \
+            --arg ipdat_path "$ipdat_path" \
             --arg geoip_url "$ip_url" \
             '.system.geo = (.system.geo // {}) + {
-                 sitedat_path: $geosite_path,
+                 sitedat_path: $sitedat_path,
                  sitedat_url: $geosite_url,
-                 ipdat_path: $geoip_path,
+                 ipdat_path: $ipdat_path,
                  ipdat_url: $geoip_url
              }' \
             "$CONFIG_FILE" >"$temp_file" 2>/dev/null; then
@@ -237,7 +237,7 @@ setup_geodat() {
         default_dir="$CONFIG_DIR"
 
         # Try to get existing path from config
-        existing_dir=$(get_geosite_path_from_config || true)
+        existing_dir=$(get_geodat_from_config || true)
         if [ -n "$existing_dir" ]; then
             default_dir="$existing_dir"
             print_info "Found existing geosite path in config: $default_dir"
