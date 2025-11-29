@@ -18,6 +18,10 @@
   }
 }
 
+.heroBanner {
+  color: white;
+}
+
 .buttons {
   display: flex;
   align-items: center;
@@ -31,8 +35,5 @@
 .description {
   max-width: 600px;
   margin: 1rem auto 2rem;
-}
-
-.heroBanner {
-  color: white;
+  color: #f8d7e9;
 }
