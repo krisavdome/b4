@@ -133,6 +133,10 @@ export const DiscoveryRunner: React.FC = () => {
     domain: string;
     result: DomainPresetResult | null;
   }>({ open: false, domain: "", result: null });
+  const progress = suite
+    ? (suite.completed_checks / suite.total_checks) * 100
+    : 0;
+  const isReconnecting = suiteId && running && !suite;
 
   const handleAddStrategy = (domain: string, result: DomainPresetResult) => {
     const domainVariants = generateDomainVariants(domain);
@@ -153,6 +157,20 @@ export const DiscoveryRunner: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    const savedSuiteId = localStorage.getItem("discovery_suiteId");
+    if (savedSuiteId) {
+      setSuiteId(savedSuiteId);
+      setRunning(true); // Will trigger polling, which will update status
+    }
+  }, []);
+
+  useEffect(() => {
+    if (suiteId) {
+      localStorage.setItem("discovery_suiteId", suiteId);
+    }
+  }, [suiteId]);
+
   // Poll for discovery status
   useEffect(() => {
     if (!suiteId || !running) return;
@@ -167,6 +185,7 @@ export const DiscoveryRunner: React.FC = () => {
 
         if (["complete", "failed", "canceled"].includes(data.status)) {
           setRunning(false);
+          localStorage.removeItem("discovery_suiteId");
         }
       } catch (err) {
         console.error("Failed to fetch discovery status:", err);
@@ -229,6 +248,7 @@ export const DiscoveryRunner: React.FC = () => {
   };
 
   const resetDiscovery = () => {
+    localStorage.removeItem("discovery_suiteId");
     setSuiteId(null);
     setSuite(null);
     setError(null);
@@ -280,10 +300,6 @@ export const DiscoveryRunner: React.FC = () => {
       setAddingPreset(null);
     }
   };
-
-  const progress = suite
-    ? (suite.completed_checks / suite.total_checks) * 100
-    : 0;
 
   // Group results by phase for display
   const groupResultsByPhase = (results: Record<string, DomainPresetResult>) => {
@@ -356,7 +372,7 @@ export const DiscoveryRunner: React.FC = () => {
                   Start Discovery
                 </Button>
               )}
-              {running && (
+              {(running || isReconnecting) && (
                 <Button
                   variant="outlined"
                   startIcon={<StopIcon />}
@@ -397,11 +413,19 @@ export const DiscoveryRunner: React.FC = () => {
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="youtube.com"
-              disabled={running}
+              disabled={running || !!isReconnecting}
               helperText="Enter a  domain to discover optimal bypass configuration"
             />
           </Box>
 
+          {isReconnecting && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <CircularProgress size={20} sx={{ color: colors.secondary }} />
+              <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                Reconnecting to running discovery...
+              </Typography>
+            </Box>
+          )}
           {/* Progress indicator */}
           {running && suite && (
             <Box>
