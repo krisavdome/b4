@@ -1,6 +1,6 @@
 # B4 - Bye Bye Big Bro
 
-## [1.19.x] - 2025-1x-xx
+## [1.19.0] - 2025-11-29
 
 - ADDED: Filter for configuration sets - search by `name`, `SNI` domains, `geosite` categories, or `geoip` categories.
 - ADDED: Compare sets feature - side-by-side diff view showing differences between two configuration sets, grouped by section (TCP, UDP, Fragmentation, Faking, Targets).
