@@ -25,6 +25,15 @@
       ]
     }
   ],
+  "go.coverOnSave": true,
+  "go.coverageDecorator": {
+    "type": "highlight",
+    "coveredHighlightColor": "rgba(64,128,64,0.4)",
+    "uncoveredHighlightColor": "rgba(128,64,64,0.4)",
+    "coveredGutterStyle": "blockgreen",
+    "uncoveredGutterStyle": "blockred"
+  },
+  "go.coverOnSingleTest": true,
   "explorer.fileNesting.patterns": {
     ".clang-tidy": ".clang-format, .clangd, compile_commands.json",
     ".env": "*.env, .env.*, .envrc, env.d.ts",

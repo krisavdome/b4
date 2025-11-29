@@ -142,9 +142,29 @@ var DefaultConfig = Config{
 }
 
 func NewSetConfig() SetConfig {
-	return DefaultSetConfig
+	cfg := DefaultSetConfig
+
+	// Deep copy only the slices
+	cfg.TCP.WinValues = append([]int(nil), DefaultSetConfig.TCP.WinValues...)
+	cfg.Faking.SNIMutation.FakeSNIs = append([]string(nil), DefaultSetConfig.Faking.SNIMutation.FakeSNIs...)
+	cfg.Targets.SNIDomains = append([]string(nil), DefaultSetConfig.Targets.SNIDomains...)
+	cfg.Targets.IPs = append([]string(nil), DefaultSetConfig.Targets.IPs...)
+	cfg.Targets.GeoSiteCategories = append([]string(nil), DefaultSetConfig.Targets.GeoSiteCategories...)
+	cfg.Targets.GeoIpCategories = append([]string(nil), DefaultSetConfig.Targets.GeoIpCategories...)
+
+	return cfg
 }
 
 func NewConfig() Config {
-	return DefaultConfig
+	cfg := DefaultConfig // shallow copy
+
+	// Fresh MainSet
+	mainSet := NewSetConfig()
+	cfg.MainSet = &mainSet
+
+	// Deep copy slices
+	cfg.Sets = []*SetConfig{}
+	cfg.System.Checker.Domains = append([]string(nil), DefaultConfig.System.Checker.Domains...)
+
+	return cfg
 }

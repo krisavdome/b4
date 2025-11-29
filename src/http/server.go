@@ -1,4 +1,3 @@
-// src/http/server.go
 package http
 
 import (

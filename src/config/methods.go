@@ -18,7 +18,8 @@ func (c *Config) SaveToFile(path string) error {
 
 	c.Version = CurrentConfigVersion
 	if len(c.Sets) == 0 {
-		c.Sets = []*SetConfig{&DefaultSetConfig}
+		defaultCopy := NewSetConfig()
+		c.Sets = []*SetConfig{&defaultCopy}
 	}
 
 	data, err := json.MarshalIndent(c, "", "  ")
@@ -95,7 +96,8 @@ func (c *Config) Validate() error {
 			}
 		}
 		if c.MainSet == nil {
-			c.MainSet = &DefaultSetConfig
+			defaultCopy := NewSetConfig()
+			c.MainSet = &defaultCopy
 		}
 	}
 
@@ -119,7 +121,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("queue-num must be between 0 and 65535")
 	}
 
-	if len(c.Sets) > 1 {
+	if len(c.Sets) >= 1 {
 		for _, set := range c.Sets {
 			if set.Id == "" {
 				return fmt.Errorf("each set must have a unique non-empty ID")
