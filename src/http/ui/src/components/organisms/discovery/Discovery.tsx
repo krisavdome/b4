@@ -25,6 +25,8 @@ import {
   ExpandLess as CollapseIcon,
   TrendingUp as ImprovementIcon,
   Science as ScienceIcon,
+  Fingerprint as FingerprintIcon,
+  Security as SecurityIcon,
 } from "@mui/icons-material";
 import { colors, button_yellow_outline } from "@design";
 import { B4SetConfig } from "@/models/Config";
@@ -44,11 +46,44 @@ type StrategyFamily =
   | "syn_fake";
 
 type DiscoveryPhase =
+  | "fingerprint"
   | "baseline"
   | "strategy_detection"
   | "optimization"
   | "combination";
 
+type DPIType =
+  | "unknown"
+  | "tspu"
+  | "sandvine"
+  | "huawei"
+  | "allot"
+  | "fortigate"
+  | "none";
+
+type BlockingMethod =
+  | "rst_inject"
+  | "timeout"
+  | "redirect"
+  | "content_inject"
+  | "tls_alert"
+  | "none";
+
+interface DPIFingerprint {
+  type: DPIType;
+  blocking_method: BlockingMethod;
+  inspection_depth: string;
+  rst_latency_ms: number;
+  dpi_hop_count: number;
+  is_inline: boolean;
+  confidence: number;
+  optimal_ttl: number;
+  vulnerable_to_ttl: boolean;
+  vulnerable_to_frag: boolean;
+  vulnerable_to_desync: boolean;
+  vulnerable_to_oob: boolean;
+  recommended_families: StrategyFamily[];
+}
 interface DomainPresetResult {
   preset_name: string;
   family?: StrategyFamily;
@@ -70,6 +105,7 @@ interface DiscoveryResult {
   results: Record<string, DomainPresetResult>;
   baseline_speed?: number;
   improvement?: number;
+  fingerprint?: DPIFingerprint;
 }
 
 interface DiscoverySuite {
@@ -81,6 +117,7 @@ interface DiscoverySuite {
   completed_checks: number;
   current_phase?: DiscoveryPhase;
   domain_discovery_results?: Record<string, DiscoveryResult>;
+  fingerprint?: DPIFingerprint;
 }
 
 interface DiscoveryResponse {
@@ -103,6 +140,7 @@ const familyNames: Record<StrategyFamily, string> = {
 
 // Friendly names for phases
 const phaseNames: Record<DiscoveryPhase, string> = {
+  fingerprint: "DPI Fingerprinting",
   baseline: "Baseline Test",
   strategy_detection: "Strategy Detection",
   optimization: "Optimization",
@@ -339,6 +377,7 @@ export const DiscoveryRunner: React.FC = () => {
       strategy_detection: [],
       optimization: [],
       combination: [],
+      fingerprint: [],
     };
 
     Object.values(results).forEach((result) => {
@@ -347,6 +386,201 @@ export const DiscoveryRunner: React.FC = () => {
     });
 
     return grouped;
+  };
+
+  const FingerprintDisplay: React.FC<{ fingerprint: DPIFingerprint }> = ({
+    fingerprint,
+  }) => {
+    const dpiTypeLabels: Record<DPIType, string> = {
+      unknown: "Unknown DPI",
+      tspu: "TSPU (Russia)",
+      sandvine: "Sandvine",
+      huawei: "Huawei",
+      allot: "Allot",
+      fortigate: "FortiGate",
+      none: "No DPI Detected",
+    };
+
+    const blockingLabels: Record<BlockingMethod, string> = {
+      rst_inject: "RST Injection",
+      timeout: "Silent Drop",
+      redirect: "HTTP Redirect",
+      content_inject: "Content Injection",
+      tls_alert: "TLS Alert",
+      none: "None",
+    };
+
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 2,
+          bgcolor: colors.accent.primary,
+          border: `1px solid ${colors.border.default}`,
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <FingerprintIcon sx={{ color: colors.secondary }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            DPI Fingerprint
+          </Typography>
+          <Chip
+            label={`${fingerprint.confidence}% confidence`}
+            size="small"
+            sx={{
+              bgcolor:
+                fingerprint.confidence > 70
+                  ? colors.secondary
+                  : colors.accent.secondary,
+              color:
+                fingerprint.confidence > 70
+                  ? colors.background.default
+                  : colors.text.primary,
+            }}
+          />
+        </Box>
+
+        {/* Main Info Row */}
+        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+          <Chip
+            icon={<SecurityIcon />}
+            label={dpiTypeLabels[fingerprint.type]}
+            sx={{
+              bgcolor:
+                fingerprint.type === "none"
+                  ? colors.secondary
+                  : colors.quaternary,
+              color: colors.background.default,
+            }}
+          />
+          <Chip
+            label={`Method: ${blockingLabels[fingerprint.blocking_method]}`}
+            variant="outlined"
+            size="small"
+          />
+          {fingerprint.dpi_hop_count > 0 && (
+            <Chip
+              label={`${fingerprint.dpi_hop_count} hops away`}
+              variant="outlined"
+              size="small"
+            />
+          )}
+          {fingerprint.is_inline && (
+            <Chip label="Inline DPI" size="small" color="warning" />
+          )}
+          {fingerprint.optimal_ttl > 0 && (
+            <Chip
+              label={`Optimal TTL: ${fingerprint.optimal_ttl}`}
+              size="small"
+              sx={{
+                bgcolor: colors.secondary,
+                color: colors.background.default,
+              }}
+            />
+          )}
+        </Stack>
+
+        {/* Vulnerabilities */}
+        <Typography
+          variant="caption"
+          sx={{ color: colors.text.secondary, display: "block", mb: 1 }}
+        >
+          Vulnerabilities Detected:
+        </Typography>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          flexWrap="wrap"
+          gap={0.5}
+          sx={{ mb: 2 }}
+        >
+          <Chip
+            label="TTL"
+            size="small"
+            sx={{
+              bgcolor: fingerprint.vulnerable_to_ttl
+                ? colors.secondary
+                : colors.background.dark,
+              color: fingerprint.vulnerable_to_ttl
+                ? colors.background.default
+                : colors.text.secondary,
+              opacity: fingerprint.vulnerable_to_ttl ? 1 : 0.5,
+            }}
+          />
+          <Chip
+            label="Fragmentation"
+            size="small"
+            sx={{
+              bgcolor: fingerprint.vulnerable_to_frag
+                ? colors.secondary
+                : colors.background.dark,
+              color: fingerprint.vulnerable_to_frag
+                ? colors.background.default
+                : colors.text.secondary,
+              opacity: fingerprint.vulnerable_to_frag ? 1 : 0.5,
+            }}
+          />
+          <Chip
+            label="Desync"
+            size="small"
+            sx={{
+              bgcolor: fingerprint.vulnerable_to_desync
+                ? colors.secondary
+                : colors.background.dark,
+              color: fingerprint.vulnerable_to_desync
+                ? colors.background.default
+                : colors.text.secondary,
+              opacity: fingerprint.vulnerable_to_desync ? 1 : 0.5,
+            }}
+          />
+          <Chip
+            label="OOB"
+            size="small"
+            sx={{
+              bgcolor: fingerprint.vulnerable_to_oob
+                ? colors.secondary
+                : colors.background.dark,
+              color: fingerprint.vulnerable_to_oob
+                ? colors.background.default
+                : colors.text.secondary,
+              opacity: fingerprint.vulnerable_to_oob ? 1 : 0.5,
+            }}
+          />
+        </Stack>
+
+        {/* Recommended Strategies */}
+        {fingerprint.recommended_families &&
+          fingerprint.recommended_families.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ color: colors.text.secondary, display: "block", mb: 1 }}
+              >
+                Recommended Strategies (priority order):
+              </Typography>
+              <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                {fingerprint.recommended_families.map((family, idx) => (
+                  <Chip
+                    key={family}
+                    label={`${idx + 1}. ${familyNames[family] || family}`}
+                    size="small"
+                    sx={{
+                      bgcolor:
+                        idx === 0
+                          ? colors.accent.secondary
+                          : colors.background.dark,
+                      border:
+                        idx === 0 ? `1px solid ${colors.secondary}` : "none",
+                    }}
+                  />
+                ))}
+              </Stack>
+            </>
+          )}
+      </Paper>
+    );
   };
 
   return (
@@ -430,35 +664,50 @@ export const DiscoveryRunner: React.FC = () => {
         {running && suite && (
           <Box>
             <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                mb: 1,
-              }}
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   {suite.current_phase && (
                     <Chip
+                      icon={
+                        suite.current_phase === "fingerprint" ? (
+                          <FingerprintIcon />
+                        ) : undefined
+                      }
                       label={phaseNames[suite.current_phase]}
                       size="small"
                       sx={{
                         mr: 1,
-                        bgcolor: colors.accent.secondary,
-                        color: colors.secondary,
+                        bgcolor:
+                          suite.current_phase === "fingerprint"
+                            ? colors.accent.primary
+                            : colors.accent.secondary,
+                        color:
+                          suite.current_phase === "fingerprint"
+                            ? colors.text.primary
+                            : colors.secondary,
                         fontWeight: 600,
                       }}
                     />
                   )}
-                  {suite.completed_checks} of {suite.total_checks} checks
+                  {suite.current_phase === "fingerprint"
+                    ? "Analyzing DPI system..."
+                    : `${suite.completed_checks} of ${suite.total_checks} checks`}
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                {progress.toFixed(0)}%
-              </Typography>
+              {suite.current_phase !== "fingerprint" && (
+                <Typography variant="body2" color="text.secondary">
+                  {progress.toFixed(0)}%
+                </Typography>
+              )}
             </Box>
             <LinearProgress
-              variant="determinate"
+              variant={
+                suite.current_phase === "fingerprint"
+                  ? "indeterminate"
+                  : "determinate"
+              }
               value={progress}
               sx={{
                 height: 8,
@@ -475,6 +724,23 @@ export const DiscoveryRunner: React.FC = () => {
       </B4Section>
 
       {/* Results */}
+      {/* Fingerprint Results - Show as soon as available */}
+      {suite?.fingerprint && suite.fingerprint.type !== "none" && (
+        <FingerprintDisplay fingerprint={suite.fingerprint} />
+      )}
+
+      {/* No DPI Alert */}
+      {suite?.fingerprint && suite.fingerprint.type === "none" && (
+        <Alert
+          severity="success"
+          icon={<FingerprintIcon />}
+          sx={{ bgcolor: colors.accent.secondary }}
+        >
+          <strong>No DPI Detected!</strong> The domain appears to be accessible
+          without any bypass techniques.
+        </Alert>
+      )}
+
       {suite?.domain_discovery_results &&
         Object.keys(suite.domain_discovery_results).length > 0 && (
           <Stack spacing={2}>
@@ -706,6 +972,12 @@ export const DiscoveryRunner: React.FC = () => {
                     {/* Expanded Details */}
                     <Collapse in={isExpanded}>
                       <Box sx={{ p: 3 }}>
+                        {domainResult.fingerprint && (
+                          <FingerprintDisplay
+                            fingerprint={domainResult.fingerprint}
+                          />
+                        )}
+
                         <Divider
                           sx={{ my: 2, borderColor: colors.border.default }}
                         />

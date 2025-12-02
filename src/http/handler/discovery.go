@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,6 +21,8 @@ func (api *API) RegisterDiscoveryApi() {
 	api.mux.HandleFunc("/api/discovery/add", api.handleAddPresetAsSet)
 	api.mux.HandleFunc("/api/discovery/similar", api.handleFindSimilarSets)
 	api.mux.HandleFunc("/api/config/sets/", api.handleSetDomains)
+	api.mux.HandleFunc("/api/discovery/fingerprint", api.handleFingerprint)
+
 }
 
 func (api *API) handleCheckStatus(w http.ResponseWriter, r *http.Request) {
@@ -289,4 +292,35 @@ func setsHaveSimilarConfig(a, b *config.SetConfig) bool {
 		a.Faking.TTL == b.Faking.TTL &&
 		a.Faking.SNI == b.Faking.SNI &&
 		a.TCP.DropSACK == b.TCP.DropSACK
+}
+
+func (api *API) handleFingerprint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Domain string `json:"domain"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.Domain == "" {
+		http.Error(w, "Domain required", http.StatusBadRequest)
+		return
+	}
+
+	timeout := time.Duration(api.cfg.System.Checker.DiscoveryTimeoutSec) * time.Second
+	prober := discovery.NewDPIProber(req.Domain, timeout)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	fingerprint := prober.Fingerprint(ctx)
+
+	setJsonHeader(w)
+	json.NewEncoder(w).Encode(fingerprint.ToJSON())
 }

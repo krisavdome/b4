@@ -24,6 +24,7 @@ const (
 	PhaseStrategy    DiscoveryPhase = "strategy_detection"
 	PhaseOptimize    DiscoveryPhase = "optimization"
 	PhaseCombination DiscoveryPhase = "combination"
+	PhaseFingerprint DiscoveryPhase = "fingerprint"
 )
 
 type StrategyFamily string
@@ -69,6 +70,7 @@ type CheckSuite struct {
 	CurrentPhase           DiscoveryPhase                    `json:"current_phase,omitempty"`
 	mu                     sync.RWMutex                      `json:"-"`
 	cancel                 chan struct{}                     `json:"-"`
+	Fingerprint            *DPIFingerprint                   `json:"fingerprint,omitempty"`
 }
 
 type CheckConfig struct {
@@ -98,6 +100,7 @@ type DomainDiscoveryResult struct {
 	Results       map[string]*DomainPresetResult `json:"results"`
 	BaselineSpeed float64                        `json:"baseline_speed,omitempty"`
 	Improvement   float64                        `json:"improvement,omitempty"`
+	Fingerprint   *DPIFingerprint                `json:"fingerprint,omitempty"`
 }
 
 type ConfigPreset struct {

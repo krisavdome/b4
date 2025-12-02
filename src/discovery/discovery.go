@@ -63,6 +63,19 @@ func (ds *DiscoverySuite) RunDiscovery() {
 
 	log.Infof("Starting discovery for domain: %s", ds.domain)
 
+	ds.setPhase(PhaseFingerprint)
+	fingerprint := ds.runFingerprinting()
+	ds.domainResult.Fingerprint = fingerprint
+
+	if fingerprint != nil && fingerprint.Type == DPITypeNone {
+		log.Infof("No DPI detected for %s - skipping bypass discovery", ds.domain)
+		ds.domainResult.BestPreset = "no-bypass"
+		ds.domainResult.BestSuccess = true
+		ds.restoreConfig()
+		ds.finalize()
+		return
+	}
+
 	phase1Presets := GetPhase1Presets()
 	ds.CheckSuite.mu.Lock()
 	ds.TotalChecks = len(phase1Presets)
@@ -124,6 +137,23 @@ func (ds *DiscoverySuite) RunDiscovery() {
 	ds.restoreConfig()
 	ds.finalize()
 	ds.logDiscoverySummary()
+}
+
+func (ds *DiscoverySuite) runFingerprinting() *DPIFingerprint {
+	log.Infof("Phase 0: DPI Fingerprinting for %s", ds.domain)
+
+	prober := NewDPIProber(ds.domain, ds.Config.Timeout)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fingerprint := prober.Fingerprint(ctx)
+
+	ds.CheckSuite.mu.Lock()
+	ds.Fingerprint = fingerprint
+	ds.CheckSuite.mu.Unlock()
+
+	return fingerprint
 }
 
 func (ds *DiscoverySuite) runPhase1() ([]StrategyFamily, float64, bool) {
