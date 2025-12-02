@@ -680,7 +680,7 @@ func (p *DPIProber) probeEvasionVulnerabilities(ctx context.Context, fp *DPIFing
 	fp.VulnerableToDesync = fp.TracksState && fp.BlockingMethod == BlockingRSTInject
 
 	// OOB works against DPI that doesn't handle urgent data
-	fp.VulnerableToOOB = true // Most DPI doesn't handle OOB properly
+	fp.VulnerableToOOB = fp.BlockingMethod == BlockingTimeout && !fp.TracksState
 
 	// Calculate optimal TTL if vulnerable
 	if fp.VulnerableToTTL && fp.DPIHopCount > 0 {

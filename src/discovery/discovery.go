@@ -7,6 +7,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/daniellavrushin/b4/config"
@@ -14,8 +16,17 @@ import (
 	"github.com/daniellavrushin/b4/nfq"
 )
 
+type FailureMode string
+
 const (
 	QUICK_FAIL_TIMEOUT = 1500 * time.Millisecond
+)
+
+const (
+	FailureRSTImmediate FailureMode = "rst_immediate"
+	FailureTimeout      FailureMode = "timeout"
+	FailureTLSError     FailureMode = "tls_error"
+	FailureUnknown      FailureMode = "unknown"
 )
 
 type DiscoverySuite struct {
@@ -77,13 +88,21 @@ func (ds *DiscoverySuite) RunDiscovery() {
 	}
 
 	phase1Presets := GetPhase1Presets()
+	if fingerprint != nil && len(fingerprint.RecommendedFamilies) > 0 {
+		phase1Presets = FilterPresetsByFingerprint(phase1Presets, fingerprint)
+		// Apply optimal TTL to all presets
+		for i := range phase1Presets {
+			ApplyFingerprintToPreset(&phase1Presets[i], fingerprint)
+		}
+	}
+
 	ds.CheckSuite.mu.Lock()
 	ds.TotalChecks = len(phase1Presets)
 	ds.CheckSuite.mu.Unlock()
 
 	// Phase 1: Strategy Detection
 	ds.setPhase(PhaseStrategy)
-	workingFamilies, baselineSpeed, baselineWorks := ds.runPhase1()
+	workingFamilies, baselineSpeed, baselineWorks := ds.runPhase1(phase1Presets)
 	ds.determineBest(baselineSpeed)
 
 	if baselineWorks {
@@ -156,14 +175,13 @@ func (ds *DiscoverySuite) runFingerprinting() *DPIFingerprint {
 	return fingerprint
 }
 
-func (ds *DiscoverySuite) runPhase1() ([]StrategyFamily, float64, bool) {
-	presets := GetPhase1Presets()
+func (ds *DiscoverySuite) runPhase1(presets []ConfigPreset) ([]StrategyFamily, float64, bool) {
 	var workingFamilies []StrategyFamily
 	var baselineSpeed float64
 
 	log.Infof("Phase 1: Testing %d strategy families", len(presets))
 
-	// Test baseline first (index 0) - this is "no-bypass" preset
+	// Test baseline first (index 0)
 	baselineResult := ds.testPreset(presets[0])
 	ds.storeResult(presets[0], baselineResult)
 
@@ -176,8 +194,19 @@ func (ds *DiscoverySuite) runPhase1() ([]StrategyFamily, float64, bool) {
 
 	log.Infof("  Baseline: FAILED - DPI bypass needed, testing strategies")
 
-	// Test each strategy family
-	for _, preset := range presets[1:] {
+	// Get non-baseline presets
+	strategyPresets := presets[1:]
+
+	baselineFailureMode := analyzeFailure(baselineResult)
+	suggestedFamilies := suggestFamiliesForFailure(baselineFailureMode)
+
+	if len(suggestedFamilies) > 0 {
+		strategyPresets = reorderByFamilies(strategyPresets, suggestedFamilies)
+		log.Infof("  Failure mode: %s - prioritizing: %v", baselineFailureMode, suggestedFamilies)
+	}
+
+	// Test each strategy - no more [1:] here!
+	for _, preset := range strategyPresets {
 		select {
 		case <-ds.cancel:
 			return workingFamilies, baselineSpeed, false
@@ -188,7 +217,7 @@ func (ds *DiscoverySuite) runPhase1() ([]StrategyFamily, float64, bool) {
 		ds.storeResult(preset, result)
 
 		if result.Status == CheckStatusComplete {
-			if !baselineWorks || result.Speed > baselineSpeed*0.8 {
+			if result.Speed > baselineSpeed*0.8 {
 				workingFamilies = append(workingFamilies, preset.Family)
 				log.Infof("  %s: SUCCESS (%.2f KB/s)", preset.Name, result.Speed/1024)
 			} else {
@@ -563,4 +592,60 @@ func (ds *DiscoverySuite) runExtendedSearch() []StrategyFamily {
 	}
 
 	return workingFamilies
+}
+
+func analyzeFailure(result CheckResult) FailureMode {
+	if result.Error == "" {
+		return FailureUnknown
+	}
+	err := strings.ToLower(result.Error)
+
+	if strings.Contains(err, "reset") || strings.Contains(err, "rst") {
+		if result.Duration < 100*time.Millisecond {
+			return FailureRSTImmediate
+		}
+	}
+	if strings.Contains(err, "timeout") || strings.Contains(err, "deadline") {
+		return FailureTimeout
+	}
+	if strings.Contains(err, "tls") || strings.Contains(err, "certificate") {
+		return FailureTLSError
+	}
+	return FailureUnknown
+}
+
+func suggestFamiliesForFailure(mode FailureMode) []StrategyFamily {
+	switch mode {
+	case FailureRSTImmediate:
+		// DPI inline, stateful - need desync/fake
+		return []StrategyFamily{FamilyDesync, FamilyFakeSNI, FamilySynFake}
+	case FailureTimeout:
+		// Packets dropped - fragmentation helps
+		return []StrategyFamily{FamilyTCPFrag, FamilyTLSRec, FamilyOOB}
+	default:
+		return nil
+	}
+}
+
+func reorderByFamilies(presets []ConfigPreset, priority []StrategyFamily) []ConfigPreset {
+	priorityMap := make(map[StrategyFamily]int)
+	for i, f := range priority {
+		priorityMap[f] = i
+	}
+
+	sort.SliceStable(presets, func(i, j int) bool {
+		pi, oki := priorityMap[presets[i].Family]
+		pj, okj := priorityMap[presets[j].Family]
+		if oki && !okj {
+			return true
+		}
+		if !oki && okj {
+			return false
+		}
+		if oki && okj {
+			return pi < pj
+		}
+		return false
+	})
+	return presets
 }
