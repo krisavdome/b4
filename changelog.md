@@ -1,6 +1,6 @@
 # B4 - Bye Bye Big Bro
 
-## [1.20.2] - 2025-12-03
+## [1.20.3] - 2025-12-03
 
 - FIXED: `Discovery` false positives - now detects mid-transfer DPI blocking (throttling, stalls, resource blocking) instead of trusting initial HTTP 200.
 - ADDED: `Discovery` network baseline - measures reference domain speed first, requires target to achieve 4KB+ downloaded at 30%+ of baseline speed. Configurable reference domain in `Settings` → `Discovery` (default: yandex.ru).
