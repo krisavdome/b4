@@ -8,5 +8,5 @@ type LogHub struct {
 	in      chan []byte
 	reg     chan *logClient
 	unreg   chan *logClient
-	stop    chan struct{} // Add this field
+	stop    chan struct{}
 }

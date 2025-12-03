@@ -40,23 +40,21 @@ type DiscoverySuite struct {
 	*CheckSuite
 	networkBaseline float64
 
-	pool           *nfq.Pool
-	originalConfig *config.Config
-	domain         string
-	domainResult   *DomainDiscoveryResult
-	settings       *config.DiscoveryConfig
+	pool         *nfq.Pool
+	cfg          *config.Config
+	domain       string
+	domainResult *DomainDiscoveryResult
 
 	// Detected working payload(s)
 	workingPayloads []PayloadTestResult
 	bestPayload     int
 }
 
-func NewDiscoverySuite(checkURL string, settings *config.DiscoveryConfig, pool *nfq.Pool, domain string) *DiscoverySuite {
+func NewDiscoverySuite(checkURL string, pool *nfq.Pool, domain string) *DiscoverySuite {
 	return &DiscoverySuite{
 		CheckSuite: NewCheckSuite(checkURL),
 		pool:       pool,
 		domain:     domain,
-		settings:   settings,
 		domainResult: &DomainDiscoveryResult{
 			Domain:  domain,
 			Results: make(map[string]*DomainPresetResult),
@@ -82,8 +80,8 @@ func (ds *DiscoverySuite) RunDiscovery() {
 
 	ds.setStatus(CheckStatusRunning)
 
-	ds.originalConfig = ds.pool.GetFirstWorkerConfig()
-	if ds.originalConfig == nil {
+	ds.cfg = ds.pool.GetFirstWorkerConfig()
+	if ds.cfg == nil {
 		log.Errorf("Failed to get original configuration")
 		ds.setStatus(CheckStatusFailed)
 		return
@@ -197,7 +195,7 @@ func (ds *DiscoverySuite) RunDiscovery() {
 func (ds *DiscoverySuite) runFingerprinting() *DPIFingerprint {
 	log.Infof("Phase 0: DPI Fingerprinting for %s", ds.domain)
 
-	prober := NewDPIProber(ds.domain, time.Duration(ds.settings.DiscoveryTimeoutSec)*time.Second)
+	prober := NewDPIProber(ds.domain, time.Duration(ds.cfg.System.Checker.DiscoveryTimeoutSec)*time.Second)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -560,9 +558,9 @@ func (ds *DiscoverySuite) testPresetInternal(preset ConfigPreset) CheckResult {
 		}
 	}
 
-	time.Sleep(time.Duration(ds.settings.ConfigPropagateMs) * time.Millisecond)
+	time.Sleep(time.Duration(ds.cfg.System.Checker.ConfigPropagateMs) * time.Millisecond)
 
-	result := ds.fetchWithTimeout(time.Duration(ds.settings.DiscoveryTimeoutSec) * time.Second)
+	result := ds.fetchWithTimeout(time.Duration(ds.cfg.System.Checker.DiscoveryTimeoutSec) * time.Second)
 	result.Set = testConfig.MainSet
 
 	return result
@@ -697,6 +695,17 @@ func (ds *DiscoverySuite) fetchWithTimeout(timeout time.Duration) CheckResult {
 		return result
 	}
 
+	// Relative speed check against network baseline
+	if ds.networkBaseline > 0 {
+		minRelativeSpeed := ds.networkBaseline * 0.3 // 30% of baseline
+		if result.Speed < minRelativeSpeed && result.Speed < ds.networkBaseline {
+			result.Status = CheckStatusFailed
+			result.Error = fmt.Sprintf("too slow relative to baseline: %.0f B/s (baseline %.0f B/s, need 30%%)",
+				result.Speed, ds.networkBaseline)
+			return result
+		}
+	}
+
 	result.Status = CheckStatusComplete
 	return result
 }
@@ -758,7 +767,7 @@ func (ds *DiscoverySuite) determineBest(baselineSpeed float64) {
 
 func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 	mainSet := config.NewSetConfig()
-	mainSet.Id = ds.originalConfig.MainSet.Id
+	mainSet.Id = ds.cfg.MainSet.Id
 	mainSet.Name = preset.Name
 	mainSet.TCP = preset.Config.TCP
 	mainSet.UDP = preset.Config.UDP
@@ -772,9 +781,9 @@ func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 	}
 
 	return &config.Config{
-		ConfigPath: ds.originalConfig.ConfigPath,
-		Queue:      ds.originalConfig.Queue,
-		System:     ds.originalConfig.System,
+		ConfigPath: ds.cfg.ConfigPath,
+		Queue:      ds.cfg.Queue,
+		System:     ds.cfg.System,
 		MainSet:    &mainSet,
 		Sets:       []*config.SetConfig{&mainSet},
 	}
@@ -801,7 +810,7 @@ func (ds *DiscoverySuite) finalize() {
 
 func (ds *DiscoverySuite) restoreConfig() {
 	log.Infof("Restoring original configuration")
-	if err := ds.pool.UpdateConfig(ds.originalConfig); err != nil {
+	if err := ds.pool.UpdateConfig(ds.cfg); err != nil {
 		log.Errorf("Failed to restore original configuration: %v", err)
 	}
 }
@@ -947,8 +956,8 @@ func reorderByFamilies(presets []ConfigPreset, priority []StrategyFamily) []Conf
 
 func (ds *DiscoverySuite) measureNetworkBaseline() float64 {
 	// Test a known-good domain to establish actual network speed
-	timeout := time.Duration(ds.originalConfig.System.Checker.DiscoveryTimeoutSec) * time.Second
-	referenceDomain := ds.originalConfig.System.Checker.ReferenceDomain
+	timeout := time.Duration(ds.cfg.System.Checker.DiscoveryTimeoutSec) * time.Second
+	referenceDomain := ds.cfg.System.Checker.ReferenceDomain
 	if referenceDomain == "" {
 		referenceDomain = "max.ru"
 	}

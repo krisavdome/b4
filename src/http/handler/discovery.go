@@ -93,7 +93,7 @@ func (api *API) handleStartDiscovery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	suite := discovery.NewDiscoverySuite(req.CheckURL, &api.cfg.System.Checker, globalPool, req.Domain)
+	suite := discovery.NewDiscoverySuite(req.CheckURL, globalPool, req.Domain)
 
 	phase1Count := len(discovery.GetPhase1Presets())
 

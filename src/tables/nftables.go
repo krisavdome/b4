@@ -166,7 +166,6 @@ func (n *NFTablesManager) Apply() error {
 	return nil
 }
 
-// Add this helper method
 func (n *NFTablesManager) addRuleArgs(chain string, args ...string) error {
 	cmd := append([]string{"add", "rule", "inet", nftTableName, chain}, args...)
 	_, err := n.runNft(cmd...)
