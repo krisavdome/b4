@@ -48,6 +48,7 @@ type DiscoverySuite struct {
 	// Detected working payload(s)
 	workingPayloads []PayloadTestResult
 	bestPayload     int
+	baselineFailed  bool
 }
 
 func NewDiscoverySuite(checkURL string, pool *nfq.Pool, domain string) *DiscoverySuite {
@@ -227,6 +228,7 @@ func (ds *DiscoverySuite) runPhase1(presets []ConfigPreset) ([]StrategyFamily, f
 	}
 
 	log.Infof("  Baseline: FAILED - DPI bypass needed, testing strategies")
+	ds.baselineFailed = true
 
 	// Test payload variants early (proven-combo and proven-combo-alt)
 	ds.detectWorkingPayloads(presets)
@@ -865,21 +867,21 @@ func (ds *DiscoverySuite) fetchWithTimeout(timeout time.Duration) CheckResult {
 		result.Speed = float64(bytesRead) / duration.Seconds()
 	}
 
-	// Speed check - if too slow, DPI might be throttling
-	if result.Speed < MIN_SPEED_FOR_SUCCESS {
-		result.Status = CheckStatusFailed
-		result.Error = fmt.Sprintf("too slow: %.0f B/s (need %d B/s)", result.Speed, MIN_SPEED_FOR_SUCCESS)
-		return result
-	}
-
-	// Relative speed check against network baseline
-	if ds.networkBaseline > 0 {
-		minRelativeSpeed := ds.networkBaseline * 0.3 // 30% of baseline
-		if result.Speed < minRelativeSpeed && result.Speed < ds.networkBaseline {
+	if !ds.baselineFailed {
+		// Strict checks for baseline/unblocked sites
+		if result.Speed < MIN_SPEED_FOR_SUCCESS {
 			result.Status = CheckStatusFailed
-			result.Error = fmt.Sprintf("too slow relative to baseline: %.0f B/s (baseline %.0f B/s, need 30%%)",
-				result.Speed, ds.networkBaseline)
+			result.Error = fmt.Sprintf("too slow: %.0f B/s (need %d B/s)", result.Speed, MIN_SPEED_FOR_SUCCESS)
 			return result
+		}
+		if ds.networkBaseline > 0 {
+			minRelativeSpeed := ds.networkBaseline * 0.3
+			if result.Speed < minRelativeSpeed {
+				result.Status = CheckStatusFailed
+				result.Error = fmt.Sprintf("too slow relative to baseline: %.0f B/s (need 30%% of %.0f B/s)",
+					result.Speed, ds.networkBaseline)
+				return result
+			}
 		}
 	}
 
@@ -950,13 +952,28 @@ func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 	mainSet.UDP = preset.Config.UDP
 	mainSet.Fragmentation = preset.Config.Fragmentation
 	mainSet.Faking = preset.Config.Faking
-	mainSet.Enabled = preset.Config.Enabled
 
-	if preset.Config.Enabled {
+	if mainSet.TCP.WinMode == "" {
+		mainSet.TCP.WinMode = "off"
+	}
+	if mainSet.TCP.DesyncMode == "" {
+		mainSet.TCP.DesyncMode = "off"
+	}
+
+	if mainSet.Faking.SNIMutation.Mode == "" {
+		mainSet.Faking.SNIMutation.Mode = "off"
+	}
+	if mainSet.Faking.SNIMutation.FakeSNIs == nil {
+		mainSet.Faking.SNIMutation.FakeSNIs = []string{}
+	}
+
+	if preset.Name == "no-bypass" {
+		mainSet.Enabled = false
+	} else {
+		mainSet.Enabled = true
 		mainSet.Targets.SNIDomains = []string{ds.domain}
 		mainSet.Targets.DomainsToMatch = []string{ds.domain}
 	}
-
 	return &config.Config{
 		ConfigPath: ds.cfg.ConfigPath,
 		Queue:      ds.cfg.Queue,
