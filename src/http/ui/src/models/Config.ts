@@ -37,7 +37,17 @@ export interface FakingConfig {
   custom_payload: string;
   sni_mutation: SNIMutationConfig;
 }
-export type FragmentationStrategy = "tcp" | "ip" | "tls" | "oob" | "none";
+export type FragmentationStrategy =
+  | "tcp"
+  | "ip"
+  | "tls"
+  | "oob"
+  | "disorder"
+  | "overlap"
+  | "extsplit"
+  | "firstbyte"
+  | "combo"
+  | "none";
 export interface FragmentationConfig {
   strategy: FragmentationStrategy;
   sni_position: number;

@@ -2,6 +2,14 @@
 
 ## [1.2x.x] - 2025-12-xx
 
+- ADDED: New `FRAG` strategies designed for modern DPI (TSPU):
+
+  - `Combo` (recommended) - multi-technique: first-byte delay + extension split + SNI split + disorder
+  - `Disorder` - sends real segments out-of-order with timing jitter, no fake packets
+  - `Overlap` - overlapping TCP segments where second overwrites first (RFC 793 behavior)
+  - `Extension Split` - splits TLS ClientHello within extensions array before SNI
+  - `First-Byte Desync` - sends 1 byte, delays, sends rest (exploits DPI timeouts)
+
 - IMPROVED: Skip private destination IP packets processing.
 
 ## [1.20.3] - 2025-12-03

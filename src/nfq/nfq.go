@@ -508,10 +508,20 @@ func (w *Worker) dropAndInjectTCP(cfg *config.SetConfig, raw []byte, dst net.IP)
 		w.sendOOBFragments(cfg, raw, dst)
 	case "tls":
 		w.sendTLSFragments(cfg, raw, dst)
+	case "disorder":
+		w.sendDisorderFragments(cfg, raw, dst)
+	case "overlap":
+		w.sendOverlapFragments(cfg, raw, dst)
+	case "extsplit":
+		w.sendExtSplitFragments(cfg, raw, dst)
+	case "firstbyte":
+		w.sendFirstByteDesync(cfg, raw, dst)
 	case "none":
 		_ = w.sock.SendIPv4(raw, dst)
+	case "combo":
+		w.sendComboFragments(cfg, raw, dst)
 	default:
-		w.sendTCPFragments(cfg, raw, dst)
+		w.sendDisorderFragments(cfg, raw, dst)
 	}
 }
 

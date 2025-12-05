@@ -34,7 +34,7 @@ func (c *Config) BindFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&c.MainSet.UDP.Seg2Delay, "udp-seg2delay", c.MainSet.UDP.Seg2Delay, "Delay between segments in ms (default 0)")
 
 	// Fragmentation configuration
-	cmd.Flags().StringVar(&c.MainSet.Fragmentation.Strategy, "frag", c.MainSet.Fragmentation.Strategy, "Fragmentation strategy (tcp|ip|tls|oob|none)")
+	cmd.Flags().StringVar(&c.MainSet.Fragmentation.Strategy, "frag", c.MainSet.Fragmentation.Strategy, "Fragmentation strategy (tcp|ip|oob|tls|disorder|overlap|extsplit|firstbyte|none)")
 	cmd.Flags().BoolVar(&c.MainSet.Fragmentation.ReverseOrder, "frag-reverse", c.MainSet.Fragmentation.ReverseOrder, "Reverse fragment order")
 	cmd.Flags().BoolVar(&c.MainSet.Fragmentation.MiddleSNI, "frag-middle-sni", c.MainSet.Fragmentation.MiddleSNI, "Fragment in middle of SNI")
 	cmd.Flags().IntVar(&c.MainSet.Fragmentation.SNIPosition, "frag-sni-pos", c.MainSet.Fragmentation.SNIPosition, "SNI fragment position")
