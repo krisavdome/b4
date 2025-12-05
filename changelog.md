@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.2x.x] - 2025-12-xx
+
+- IMPROVED: Skip private destination IP packets processing.
+
 ## [1.20.3] - 2025-12-03
 
 - FIXED: `Discovery` false positives - now detects mid-transfer DPI blocking (throttling, stalls, resource blocking) instead of trusting initial HTTP 200.

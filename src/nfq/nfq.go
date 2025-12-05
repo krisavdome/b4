@@ -19,6 +19,7 @@ import (
 	"github.com/daniellavrushin/b4/sni"
 	"github.com/daniellavrushin/b4/sock"
 	"github.com/daniellavrushin/b4/stun"
+	"github.com/daniellavrushin/b4/utils"
 	"github.com/florianl/go-nfqueue"
 )
 
@@ -98,6 +99,12 @@ func (w *Worker) Start() error {
 				proto = raw[9]
 				src = net.IP(raw[12:16])
 				dst = net.IP(raw[16:20])
+
+				if utils.IsPrivateIP(dst) {
+					_ = q.SetVerdict(id, nfqueue.NfAccept)
+					return 0
+				}
+
 			} else {
 				if len(raw) < IPv6HeaderLen {
 					_ = q.SetVerdict(id, nfqueue.NfAccept)
