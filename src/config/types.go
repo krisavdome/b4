@@ -50,7 +50,7 @@ type UDPConfig struct {
 }
 
 type FragmentationConfig struct {
-	Strategy     string `json:"strategy" bson:"strategy"` // Values: "tcp", "ip", "oob", "tls", "disorder", "overlap", "extsplit", "firstbyte", "none"
+	Strategy     string `json:"strategy" bson:"strategy"` // Values: "tcp", "ip", "oob", "tls", "disorder", "overlap", "extsplit", "firstbyte", "combo", "none"
 	ReverseOrder bool   `json:"reverse_order" bson:"reverse_order"`
 
 	TLSRecordPosition int `json:"tlsrec_pos" bson:"tlsrec_pos"` // where to split TLS record

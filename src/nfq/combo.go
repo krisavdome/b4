@@ -110,18 +110,18 @@ func (w *Worker) sendComboFragments(cfg *config.SetConfig, packet []byte, dst ne
 		}
 	}
 
+	maxSeqIdx := 0
 	for i := range segments {
 		segIpHdrLen := int((segments[i].data[0] & 0x0F) * 4)
 		segments[i].data[segIpHdrLen+13] &^= 0x08
 		sock.FixTCPChecksum(segments[i].data)
+		if segments[i].seq > segments[maxSeqIdx].seq {
+			maxSeqIdx = i
+		}
 	}
-	if len(segments) > 0 {
-		lastIdx := len(segments) - 1
-		segIpHdrLen := int((segments[lastIdx].data[0] & 0x0F) * 4)
-		segments[lastIdx].data[segIpHdrLen+13] |= 0x08
-		sock.FixTCPChecksum(segments[lastIdx].data)
-	}
-
+	segIpHdrLen := int((segments[maxSeqIdx].data[0] & 0x0F) * 4)
+	segments[maxSeqIdx].data[segIpHdrLen+13] |= 0x08
+	sock.FixTCPChecksum(segments[maxSeqIdx].data)
 	for i, seg := range segments {
 		_ = w.sock.SendIPv4(seg.data, dst)
 
