@@ -1,6 +1,7 @@
 package nfq
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"net"
 	"time"
@@ -10,8 +11,6 @@ import (
 )
 
 // sendOverlapFragments exploits TCP segment overlap behavior
-// First segment contains fake SNI, second segment overlaps and overwrites with real SNI
-// Server uses the SECOND segment's data in overlap region (RFC 793 behavior varies, but most use later data)
 func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst net.IP) {
 	ipHdrLen := int((packet[0] & 0x0F) * 4)
 	tcpHdrLen := int((packet[ipHdrLen+12] >> 4) * 4)
@@ -48,17 +47,8 @@ func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst 
 
 	sniLen := sniEnd - sniStart
 	garbageSNI := make([]byte, sniLen)
-	for i := 0; i < sniLen; i++ {
-		// Mix of null bytes and high bytes that break ASCII hostname parsing
-		switch i % 3 {
-		case 0:
-			garbageSNI[i] = 0x00
-		case 1:
-			garbageSNI[i] = 0xFF
-		default:
-			garbageSNI[i] = 0x01
-		}
-	}
+	rand.Read(garbageSNI)
+
 	copy(seg1[payloadStart+sniStart:payloadStart+sniEnd], garbageSNI)
 	binary.BigEndian.PutUint16(seg1[2:4], uint16(seg1Len))
 	seg1[ipHdrLen+13] &^= 0x08 // Clear PSH

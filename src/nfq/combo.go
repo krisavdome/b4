@@ -102,9 +102,11 @@ func (w *Worker) sendComboFragments(cfg *config.SetConfig, packet []byte, dst ne
 
 	if len(segments) > 3 {
 		middle := segments[1 : len(segments)-1]
-		rand.Shuffle(len(middle), func(i, j int) {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		for i := len(middle) - 1; i > 0; i-- {
+			j := r.Intn(i + 1)
 			middle[i], middle[j] = middle[j], middle[i]
-		})
+		}
 	} else if len(segments) > 1 {
 		for i, j := 0, len(segments)-1; i < j; i, j = i+1, j-1 {
 			segments[i], segments[j] = segments[j], segments[i]

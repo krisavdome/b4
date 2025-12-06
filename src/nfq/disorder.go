@@ -96,7 +96,7 @@ func (w *Worker) sendDisorderFragments(cfg *config.SetConfig, packet []byte, dst
 		_ = w.sock.SendIPv4(seg.data, dst)
 		if i < len(segments)-1 {
 			if seg2d > 0 {
-				jitter := rand.Intn(seg2d / 2)
+				jitter := rand.Intn(seg2d/2 + 1)
 				time.Sleep(time.Duration(seg2d+jitter) * time.Millisecond)
 			} else {
 				time.Sleep(time.Duration(1000+rand.Intn(2000)) * time.Microsecond)
