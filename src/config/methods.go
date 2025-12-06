@@ -260,6 +260,10 @@ func (set *SetConfig) ResetToDefaults() {
 
 	set.Faking.SNIMutation.FakeSNIs = make([]string, len(defaultSet.Faking.SNIMutation.FakeSNIs))
 	copy(set.Faking.SNIMutation.FakeSNIs, defaultSet.Faking.SNIMutation.FakeSNIs)
+
+	set.Fragmentation.Overlap.FakeSNIs = make([]string, len(defaultSet.Faking.SNIMutation.FakeSNIs))
+	copy(set.Faking.SNIMutation.FakeSNIs, defaultSet.Faking.SNIMutation.FakeSNIs)
+
 }
 
 func (t *TargetsConfig) AppendIP(ip []string) error {

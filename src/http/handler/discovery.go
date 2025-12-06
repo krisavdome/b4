@@ -120,7 +120,7 @@ func (api *API) handleAddPresetAsSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var set config.SetConfig
+	var set = config.NewSetConfig()
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&set); err != nil {
