@@ -1,5 +1,12 @@
 # B4 - Bye Bye Big Bro
 
+## [1.21.1] - 2025-12-07
+
+- ADDED: TCP `SYN Fake TTL` slider option.
+- FIXED: SYN fake packets sent with full TTL when using non-TTL faking strategies (randseq/pastseq), causing fake packets to reach servers and break handshakes.
+- FIXED: Config validation incorrectly comparing set ConnBytesLimit against stale MainSet defaults instead of loaded JSON values.
+- FIXED: UI bug when ui crashes on creating a set with `Overlap` fragmentation option.
+
 ## [1.21.0] - 2025-12-07
 
 - FIXED: Slow set save operations - improve performance.

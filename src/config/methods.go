@@ -92,17 +92,16 @@ func (cfg *Config) ApplyLogLevel(level string) {
 func (c *Config) Validate() error {
 	c.System.WebServer.IsEnabled = c.System.WebServer.Port > 0 && c.System.WebServer.Port <= 65535
 
+	c.MainSet = nil
+	for _, set := range c.Sets {
+		if set.Id == MAIN_SET_ID {
+			c.MainSet = set
+			break
+		}
+	}
 	if c.MainSet == nil {
-		for _, set := range c.Sets {
-			if set.Id == MAIN_SET_ID {
-				c.MainSet = set
-				break
-			}
-		}
-		if c.MainSet == nil {
-			defaultCopy := NewSetConfig()
-			c.MainSet = &defaultCopy
-		}
+		defaultCopy := NewSetConfig()
+		c.MainSet = &defaultCopy
 	}
 
 	if c.MainSet == nil {

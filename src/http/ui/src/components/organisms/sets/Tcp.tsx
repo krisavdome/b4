@@ -166,18 +166,34 @@ export const TcpSettings = ({ config, onChange }: TcpSettingsProps) => {
         </Grid>
 
         {config.tcp.syn_fake && (
-          <Grid size={{ xs: 12, md: 6 }}>
-            <B4Slider
-              label="SYN Fake Payload Length"
-              value={config.tcp.syn_fake_len || 0}
-              onChange={(value: number) => onChange("tcp.syn_fake_len", value)}
-              min={0}
-              max={1200}
-              step={64}
-              valueSuffix=" bytes"
-              helperText="0 = header only, >0 = add fake TLS payload"
-            />
-          </Grid>
+          <>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <B4Slider
+                label="SYN Fake Payload Length"
+                value={config.tcp.syn_fake_len || 0}
+                onChange={(value: number) =>
+                  onChange("tcp.syn_fake_len", value)
+                }
+                min={0}
+                max={1200}
+                step={64}
+                valueSuffix=" bytes"
+                helperText="0 = header only, >0 = add fake TLS payload"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <B4Slider
+                label="SYN Fake TTL"
+                value={config.tcp.syn_ttl || 0}
+                onChange={(value: number) => onChange("tcp.syn_ttl", value)}
+                min={1}
+                max={100}
+                step={1}
+                valueSuffix=" ms"
+                helperText="TTL value for SYN fake packets (default 3 if unset)"
+              />
+            </Grid>
+          </>
         )}
       </Grid>
 

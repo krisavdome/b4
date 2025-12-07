@@ -41,7 +41,9 @@ var DefaultSetConfig = SetConfig{
 		Seg2Delay:      0,
 		SynFake:        false,
 		SynFakeLen:     0,
-		DropSACK:       false,
+		SynTTL:         3,
+
+		DropSACK: false,
 
 		WinMode:   "off",
 		WinValues: []int{0, 1460, 8192, 65535},

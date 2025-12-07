@@ -135,6 +135,7 @@ export interface TcpConfig {
   seg2delay: number;
   syn_fake: boolean;
   syn_fake_len: number;
+  syn_ttl: number;
   drop_sack: boolean;
 
   win_mode: WindowMode;

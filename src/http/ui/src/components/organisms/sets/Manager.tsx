@@ -181,6 +181,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
         seg2delay: 0,
         syn_fake: false,
         syn_fake_len: 0,
+        syn_ttl: 3,
         drop_sack: false,
         win_mode: "off",
         win_values: [0, 1460, 8192, 65535],
@@ -218,6 +219,9 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
           shuffle_mode: "full",
           min_jitter_us: 1000,
           max_jitter_us: 3000,
+        },
+        overlap: {
+          fake_snis: [],
         },
       } as B4SetConfig["fragmentation"],
       faking: {

@@ -334,7 +334,8 @@ func GetPhase1Presets() []ConfigPreset {
 				TCP: config.TCPConfig{
 					ConnBytesLimit: 19,
 					SynFake:        true,
-					SynFakeLen:     256,
+					SynFakeLen:     0,
+					SynTTL:         3,
 				},
 				UDP: defaultUDP(),
 				Fragmentation: config.FragmentationConfig{

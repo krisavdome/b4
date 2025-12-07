@@ -167,6 +167,10 @@ func (w *Worker) Start() error {
 				tcpFlags := tcp[13]
 				isSyn := (tcpFlags & 0x02) != 0 // SYN flag
 				isAck := (tcpFlags & 0x10) != 0 // ACK flag
+				isRst := (tcpFlags & 0x04) != 0
+				if isRst && dport == HTTPSPort {
+					log.Tracef("RST received from %s:%d", dstStr, dport)
+				}
 
 				if set.TCP.SynFake && isSyn && !isAck && dport == HTTPSPort {
 
@@ -199,6 +203,11 @@ func (w *Worker) Start() error {
 				sniTarget := ""
 
 				if dport == HTTPSPort && len(payload) > 0 {
+					log.Tracef("TCP payload to %s: len=%d, first5=%x", dstStr, len(payload), payload[:min(5, len(payload))])
+					if len(payload) >= 5 && payload[0] == 0x16 {
+						log.Tracef("TLS record: type=%x ver=%x%x len=%d", payload[0], payload[1], payload[2],
+							int(payload[3])<<8|int(payload[4]))
+					}
 					connKey := fmt.Sprintf("%s:%d->%s:%d", srcStr, sport, dstStr, dport)
 
 					host, _ = sni.ParseTLSClientHelloSNI(payload)

@@ -22,6 +22,17 @@ var migrationRegistry = map[int]MigrationFunc{
 	3: migrateV3to4,
 	4: migrateV4to5,
 	5: migrateV5to6,
+	6: migrateV6to7,
+}
+
+// Migration: v6 -> v7 (add TCP syn TTL and drop SACK settings)
+func migrateV6to7(c *Config) error {
+	log.Tracef("Migration v6->v7: Adding TCP syn TTL and drop SACK settings")
+
+	for _, set := range c.Sets {
+		set.TCP.SynTTL = DefaultSetConfig.TCP.SynTTL
+	}
+	return nil
 }
 
 // Migration: v5 -> v6 (add reference domain to discovery config)

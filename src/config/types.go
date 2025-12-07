@@ -22,11 +22,12 @@ type QueueConfig struct {
 }
 
 type TCPConfig struct {
-	ConnBytesLimit int  `json:"conn_bytes_limit" bson:"conn_bytes_limit"`
-	Seg2Delay      int  `json:"seg2delay" bson:"seg2delay"`
-	SynFake        bool `json:"syn_fake" bson:"syn_fake"`
-	SynFakeLen     int  `json:"syn_fake_len" bson:"syn_fake_len"`
-	DropSACK       bool `json:"drop_sack" bson:"drop_sack"`
+	ConnBytesLimit int   `json:"conn_bytes_limit" bson:"conn_bytes_limit"`
+	Seg2Delay      int   `json:"seg2delay" bson:"seg2delay"`
+	SynFake        bool  `json:"syn_fake" bson:"syn_fake"`
+	SynFakeLen     int   `json:"syn_fake_len" bson:"syn_fake_len"`
+	SynTTL         uint8 `json:"syn_ttl" bson:"syn_ttl"`
+	DropSACK       bool  `json:"drop_sack" bson:"drop_sack"`
 
 	WinMode   string `json:"win_mode" bson:"win_mode"`     // "off", "oscillate", "zero", "random", "escalate"
 	WinValues []int  `json:"win_values" bson:"win_values"` // Custom window values
