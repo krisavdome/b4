@@ -457,6 +457,11 @@ func GetPhase1Presets() []ConfigPreset {
 				UDP: defaultUDP(),
 				Fragmentation: config.FragmentationConfig{
 					Strategy: "disorder",
+					Disorder: config.DisorderFragConfig{
+						ShuffleMode: "full",
+						MinJitterUs: 1000,
+						MaxJitterUs: 3000,
+					},
 				},
 				Faking: config.FakingConfig{
 					SNI:          true,
@@ -484,6 +489,9 @@ func GetPhase1Presets() []ConfigPreset {
 				UDP: defaultUDP(),
 				Fragmentation: config.FragmentationConfig{
 					Strategy: "overlap",
+					Overlap: config.OverlapFragConfig{
+						FakeSNIs: []string{"ya.ru", "vk.com", "mail.ru"},
+					},
 				},
 				Faking: config.FakingConfig{
 					SNI:          true,
@@ -565,18 +573,78 @@ func GetPhase1Presets() []ConfigPreset {
 				},
 				UDP: defaultUDP(),
 				Fragmentation: config.FragmentationConfig{
-					Strategy: "combo",
+					Strategy:     "combo",
+					ReverseOrder: true,
+					MiddleSNI:    true,
+					SNIPosition:  1,
+					Combo: config.ComboFragConfig{
+						FirstByteSplit: true,
+						ExtensionSplit: true,
+						ShuffleMode:    "full",
+						FirstDelayMs:   30,
+						JitterMaxUs:    1000,
+					},
 				},
 				Faking: config.FakingConfig{
 					SNI:          true,
 					TTL:          8,
 					Strategy:     "pastseq",
 					SeqOffset:    10000,
-					SNISeqLength: 1,
+					SNISeqLength: 5,
 					SNIType:      config.FakePayloadDefault1,
 				},
 			},
 		},
+
+		// 18.1 Combo + Desync
+		{
+			Name:        "combo-desync",
+			Description: "Combo fragmentation with desync attack",
+			Family:      FamilyCombo,
+			Phase:       PhaseStrategy,
+			Priority:    19,
+			Config: config.SetConfig{
+				TCP: config.TCPConfig{
+					ConnBytesLimit: 19,
+					Seg2Delay:      10,
+					DesyncMode:     "ack",
+					DesyncTTL:      3,
+					DesyncCount:    3,
+				},
+				UDP: config.UDPConfig{
+					Mode:           "fake",
+					FakeSeqLength:  6,
+					FakeLen:        64,
+					FakingStrategy: "none",
+					FilterQUIC:     "parse",
+					FilterSTUN:     true,
+					ConnBytesLimit: 8,
+				},
+				Fragmentation: config.FragmentationConfig{
+					Strategy:     "combo",
+					ReverseOrder: true,
+					MiddleSNI:    true,
+					SNIPosition:  1,
+					Combo: config.ComboFragConfig{
+						FirstByteSplit: true,
+						ExtensionSplit: true,
+						ShuffleMode:    "middle",
+						FirstDelayMs:   30,
+						JitterMaxUs:    1000,
+					},
+				},
+				Faking: config.FakingConfig{
+					SNI:          true,
+					TTL:          8,
+					Strategy:     "pastseq",
+					SeqOffset:    10000,
+					SNISeqLength: 5,
+					SNIType:      config.FakePayloadDefault1,
+				},
+			},
+		},
+
+		// 19. Hybrid Adaptive - auto-select best techniques
 		{
 			Name:        "hybrid-adaptive",
 			Description: "Adaptive evasion: auto-selects combo/disorder/extsplit/firstbyte",
@@ -625,38 +693,138 @@ func GetPhase2Presets(family StrategyFamily) []ConfigPreset {
 	presets := []ConfigPreset{}
 
 	switch family {
+
+	case FamilyCombo:
+		shuffleModes := []string{"middle", "full", "edges"}
+		delays := []int{50, 100, 150, 200}
+		for _, mode := range shuffleModes {
+			for _, d := range delays {
+				presets = append(presets, ConfigPreset{
+					Name:     formatName("combo-%s-delay%d", mode, d),
+					Family:   FamilyCombo,
+					Phase:    PhaseOptimize,
+					Priority: d,
+					Config: withTCP(withFragmentation(base, config.FragmentationConfig{
+						Strategy:     "combo",
+						ReverseOrder: true,
+						MiddleSNI:    true,
+						SNIPosition:  1,
+						Combo: config.ComboFragConfig{
+							FirstByteSplit: true,
+							ExtensionSplit: true,
+							ShuffleMode:    mode,
+							FirstDelayMs:   d,
+							JitterMaxUs:    2000,
+						},
+					}), config.TCPConfig{
+						ConnBytesLimit: 19,
+						Seg2Delay:      d,
+					}),
+				})
+			}
+		}
+
+	case FamilyTCPFrag:
+		positions := []int{1, 2, 3, 5, 10}
+		for _, pos := range positions {
+			for _, reverse := range []bool{false, true} {
+				name := formatName("tcp-pos%d", pos)
+				if reverse {
+					name += "-rev"
+				}
+				presets = append(presets, ConfigPreset{
+					Name:     name,
+					Family:   FamilyTCPFrag,
+					Phase:    PhaseOptimize,
+					Priority: pos,
+					Config: withFragmentation(base, config.FragmentationConfig{
+						Strategy:     "tcp",
+						SNIPosition:  pos,
+						ReverseOrder: reverse,
+					}),
+				})
+			}
+		}
+		// Add middle SNI variant
+		presets = append(presets, ConfigPreset{
+			Name:     "tcp-middle-sni",
+			Family:   FamilyTCPFrag,
+			Phase:    PhaseOptimize,
+			Priority: 10,
+			Config: withFragmentation(base, config.FragmentationConfig{
+				Strategy:    "tcp",
+				SNIPosition: 1,
+				MiddleSNI:   true,
+			}),
+		})
+
 	case FamilyDisorder:
-		delays := []int{0, 5, 10, 20, 50}
-		for _, d := range delays {
+		shuffleModes := []string{"full", "middle", "edges"}
+		for _, mode := range shuffleModes {
+			for _, d := range []int{0, 5, 10, 20} {
+				presets = append(presets, ConfigPreset{
+					Name:     formatName("disorder-%s-delay%d", mode, d),
+					Family:   FamilyDisorder,
+					Phase:    PhaseOptimize,
+					Priority: d,
+					Config: withTCP(withFragmentation(base, config.FragmentationConfig{
+						Strategy: "disorder",
+						Disorder: config.DisorderFragConfig{
+							ShuffleMode: mode,
+							MinJitterUs: 1000,
+							MaxJitterUs: 3000,
+						},
+					}), config.TCPConfig{
+						ConnBytesLimit: 19,
+						Seg2Delay:      d,
+					}),
+				})
+			}
+		}
+		// Jitter variations
+		jitters := []struct{ min, max int }{{500, 1500}, {1000, 3000}, {2000, 5000}}
+		for _, j := range jitters {
 			presets = append(presets, ConfigPreset{
-				Name:     formatName("disorder-delay%d", d),
+				Name:     formatName("disorder-jitter%d-%d", j.min, j.max),
 				Family:   FamilyDisorder,
 				Phase:    PhaseOptimize,
-				Priority: d,
-				Config: withTCP(withFragmentation(base, config.FragmentationConfig{
+				Priority: j.max,
+				Config: withFragmentation(base, config.FragmentationConfig{
 					Strategy: "disorder",
-				}), config.TCPConfig{
-					ConnBytesLimit: 19,
-					Seg2Delay:      d,
+					Disorder: config.DisorderFragConfig{
+						ShuffleMode: "full",
+						MinJitterUs: j.min,
+						MaxJitterUs: j.max,
+					},
 				}),
 			})
 		}
 
 	case FamilyOverlap:
+		fakeSNISets := [][]string{
+			{"ya.ru", "vk.com", "mail.ru"},
+			{"google.ru", "yandex.ru"},
+			{"ok.ru", "rambler.ru", "ria.ru"},
+		}
 		delays := []int{5, 10, 20, 50}
-		for _, d := range delays {
-			presets = append(presets, ConfigPreset{
-				Name:     formatName("overlap-delay%d", d),
-				Family:   FamilyOverlap,
-				Phase:    PhaseOptimize,
-				Priority: d,
-				Config: withTCP(withFragmentation(base, config.FragmentationConfig{
-					Strategy: "overlap",
-				}), config.TCPConfig{
-					ConnBytesLimit: 19,
-					Seg2Delay:      d,
-				}),
-			})
+		for i, snis := range fakeSNISets {
+			for _, d := range delays {
+				presets = append(presets, ConfigPreset{
+					Name:     formatName("overlap-set%d-delay%d", i+1, d),
+					Family:   FamilyOverlap,
+					Phase:    PhaseOptimize,
+					Priority: d + i*100,
+					Config: withTCP(withFragmentation(base, config.FragmentationConfig{
+						Strategy: "overlap",
+						Overlap: config.OverlapFragConfig{
+							FakeSNIs: snis,
+						},
+					}), config.TCPConfig{
+						ConnBytesLimit: 19,
+						Seg2Delay:      d,
+					}),
+				})
+			}
 		}
 
 	case FamilyExtSplit:
@@ -709,56 +877,6 @@ func GetPhase2Presets(family StrategyFamily) []ConfigPreset {
 				}),
 			})
 		}
-
-	case FamilyCombo:
-		delays := []int{50, 100, 150, 200}
-		for _, d := range delays {
-			presets = append(presets, ConfigPreset{
-				Name:     formatName("combo-delay%d", d),
-				Family:   FamilyCombo,
-				Phase:    PhaseOptimize,
-				Priority: d,
-				Config: withTCP(withFragmentation(base, config.FragmentationConfig{
-					Strategy: "combo",
-				}), config.TCPConfig{
-					ConnBytesLimit: 19,
-					Seg2Delay:      d,
-				}),
-			})
-		}
-	case FamilyTCPFrag:
-		positions := []int{1, 2, 3, 5, 10}
-		for _, pos := range positions {
-			for _, reverse := range []bool{false, true} {
-				name := formatName("tcp-pos%d", pos)
-				if reverse {
-					name += "-rev"
-				}
-				presets = append(presets, ConfigPreset{
-					Name:     name,
-					Family:   FamilyTCPFrag,
-					Phase:    PhaseOptimize,
-					Priority: pos,
-					Config: withFragmentation(base, config.FragmentationConfig{
-						Strategy:     "tcp",
-						SNIPosition:  pos,
-						ReverseOrder: reverse,
-					}),
-				})
-			}
-		}
-		// Add middle SNI variant
-		presets = append(presets, ConfigPreset{
-			Name:     "tcp-middle-sni",
-			Family:   FamilyTCPFrag,
-			Phase:    PhaseOptimize,
-			Priority: 10,
-			Config: withFragmentation(base, config.FragmentationConfig{
-				Strategy:    "tcp",
-				SNIPosition: 1,
-				MiddleSNI:   true,
-			}),
-		})
 
 	case FamilyTLSRec:
 		positions := []int{1, 5, 10, 20, 50}

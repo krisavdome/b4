@@ -1,10 +1,11 @@
 # B4 - Bye Bye Big Bro
 
-## [1.22.0] - 2025-12-xx
+## [1.22.0] - 2025-12-08
 
 - ADDED: `DNS Redirect` - bypass ISP DNS poisoning by transparently rewriting queries to clean resolvers. Available at set level, allowing per-domain DNS redirect control.
 - ADDED: DNS discovery and configuration management with support for custom DNS servers.
 - ADDED: `Enter` hotkey to start discovery.
+- IMPROVED: enhanc `Discovery` fragmentation configurations and add new presets for combo and disorder strategies.
 
 ## [1.21.1] - 2025-12-07
 
