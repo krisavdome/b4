@@ -4,7 +4,6 @@ import { ImportExportIcon, RefreshIcon } from "@b4.icons";
 import { B4Section, B4TextField } from "@b4.elements";
 
 import { B4SetConfig } from "@models/Config";
-import { button_secondary, button_primary } from "@design";
 
 interface ImportExportSettingsProps {
   config: B4SetConfig;
@@ -105,23 +104,17 @@ export const ImportExportSettings = ({
             startIcon={<RefreshIcon />}
             onClick={handleReset}
             disabled={!hasChanges}
-            sx={{ ...button_secondary }}
           >
             Reset
           </Button>
           <Box sx={{ flex: 1 }} />
-          <Button
-            variant="outlined"
-            onClick={handleValidate}
-            sx={{ ...button_secondary }}
-          >
+          <Button variant="outlined" onClick={handleValidate}>
             Validate
           </Button>
           <Button
             variant="contained"
             onClick={handleApply}
             disabled={!hasChanges}
-            sx={{ ...button_primary }}
           >
             Apply Changes
           </Button>

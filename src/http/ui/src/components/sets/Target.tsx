@@ -27,7 +27,7 @@ import {
 
 import { B4TextField, B4Section, B4Dialog } from "@b4.elements";
 import SettingAutocomplete from "@common/B4Autocomplete";
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4SetConfig, GeoConfig } from "@models/Config";
 import { SetStats } from "./Manager";
 
@@ -551,7 +551,6 @@ export const TargetSettings = ({
                         <Button
                           size="small"
                           onClick={handleClearAllBypassIPs}
-                          sx={{ ...button_secondary, textTransform: "none" }}
                           startIcon={<ClearIcon />}
                         >
                           Clear All
@@ -713,9 +712,6 @@ export const TargetSettings = ({
             onClick={() =>
               setPreviewDialog({ open: false, category: "", loading: false })
             }
-            sx={{
-              ...button_primary,
-            }}
           >
             Close
           </Button>

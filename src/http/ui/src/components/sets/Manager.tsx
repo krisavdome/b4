@@ -10,7 +10,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  IconButton,
   Collapse,
   Divider,
   Paper,
@@ -57,11 +56,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { v4 as uuidv4 } from "uuid";
 
-import { B4Section, B4Dialog } from "@b4.elements";
+import { B4Section, B4Dialog, B4TooltipButton } from "@b4.elements";
 
 import { SetEditor } from "./Editor";
 
-import { colors, radius, button_secondary } from "@design";
+import { colors, radius } from "@design";
 import { B4Config, B4SetConfig, MAIN_SET_ID } from "@models/Config";
 import { SetCompare } from "./Compare";
 import { useSets } from "@hooks/useSets";
@@ -456,17 +455,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
           <Button
             startIcon={<AddIcon />}
             onClick={handleAddSet}
-            size="small"
             variant="contained"
-            sx={{
-              bgcolor: colors.secondary,
-              color: colors.background.default,
-              "&:hover": { bgcolor: colors.primary },
-              "&:disabled": {
-                bgcolor: colors.accent.secondary,
-                color: colors.text.secondary,
-              },
-            }}
           >
             Create New Set
           </Button>
@@ -662,80 +651,50 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                             </Stack>
 
                             <Stack direction="row" spacing={0.5}>
-                              <Tooltip
+                              <B4TooltipButton
                                 title={isExpanded ? "Collapse" : "View details"}
-                              >
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    setExpandedSet(isExpanded ? null : set.id)
-                                  }
-                                  sx={{ "&:hover": { color: colors.primary } }}
-                                >
-                                  {isExpanded ? (
-                                    <CollapseIcon />
-                                  ) : (
-                                    <ExpandIcon />
-                                  )}
-                                </IconButton>
-                              </Tooltip>
+                                onClick={() =>
+                                  setExpandedSet(isExpanded ? null : set.id)
+                                }
+                                icon={
+                                  isExpanded ? <CollapseIcon /> : <ExpandIcon />
+                                }
+                              />
+
                               <Divider orientation="vertical" flexItem />
-                              <Tooltip title="Duplicate set">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDuplicateSet(set)}
-                                  sx={{ "&:hover": { color: colors.tertiary } }}
-                                >
-                                  <CopyIcon />
-                                </IconButton>
-                              </Tooltip>
-
-                              <Tooltip title="Compare with another set">
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    setCompareDialog({
-                                      open: true,
-                                      setA: set,
-                                      setB: null,
-                                    })
-                                  }
-                                  disabled={sets.length < 2}
-                                  sx={{ "&:hover": { color: colors.primary } }}
-                                >
-                                  <CompareIcon />
-                                </IconButton>
-                              </Tooltip>
-
-                              <Tooltip title="Edit set">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleEditSet(set)}
-                                  sx={{
-                                    "&:hover": { color: colors.secondary },
-                                  }}
-                                >
-                                  <EditIcon />
-                                </IconButton>
-                              </Tooltip>
+                              <B4TooltipButton
+                                title="Duplicate set"
+                                icon={<CopyIcon />}
+                                onClick={() => handleDuplicateSet(set)}
+                              />
+                              <B4TooltipButton
+                                title="Compare with another set"
+                                icon={<CompareIcon />}
+                                onClick={() =>
+                                  setCompareDialog({
+                                    open: true,
+                                    setA: set,
+                                    setB: null,
+                                  })
+                                }
+                              />
+                              <B4TooltipButton
+                                title="Edit set"
+                                icon={<EditIcon />}
+                                onClick={() => handleEditSet(set)}
+                              />
 
                               {!isMain && (
-                                <Tooltip title="Delete set">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      setDeleteDialog({
-                                        open: true,
-                                        setId: set.id,
-                                      })
-                                    }
-                                    sx={{
-                                      "&:hover": { color: colors.quaternary },
-                                    }}
-                                  >
-                                    <ClearIcon />
-                                  </IconButton>
-                                </Tooltip>
+                                <B4TooltipButton
+                                  title="Delete set"
+                                  icon={<ClearIcon />}
+                                  onClick={() =>
+                                    setDeleteDialog({
+                                      open: true,
+                                      setId: set.id,
+                                    })
+                                  }
+                                />
                               )}
                             </Stack>
                           </Stack>
@@ -1123,28 +1082,20 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
           <>
             <Button
               onClick={() => setDeleteDialog({ open: false, setId: null })}
-              sx={{ ...button_secondary }}
             >
               Cancel
             </Button>
             <Box sx={{ flex: 1 }} />
-            <Button
-              onClick={handleDeleteSet}
-              variant="contained"
-              sx={{
-                bgcolor: colors.quaternary,
-                "&:hover": { bgcolor: "#d32f2f" },
-              }}
-            >
+            <Button onClick={handleDeleteSet} variant="contained">
               Delete Set
             </Button>
           </>
         }
       >
-        <Alert severity="warning" sx={{ mb: 2 }}>
+        <Box sx={{ mb: 2 }}>
           Are you sure you want to delete this configuration set? All settings
           and domain assignments for this set will be permanently removed.
-        </Alert>
+        </Box>
         <Typography variant="body2" color="text.secondary">
           {deleteDialog.setId &&
             `Set: ${sets.find((s) => s.id === deleteDialog.setId)?.name}`}

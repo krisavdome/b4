@@ -61,23 +61,3 @@ export const typography = {
     bold: 700,
   },
 } as const;
-
-export const button_primary = {
-  bgcolor: colors.primary,
-  "&:hover": { bgcolor: colors.secondary },
-} as const;
-
-export const button_secondary = {
-  color: colors.text.secondary,
-  "&:hover": {
-    bgcolor: colors.accent.primaryHover,
-  },
-} as const;
-
-export const button_yellow_outline = {
-  border: `1px solid ${colors.secondary}`,
-  color: colors.secondary,
-  "&:hover": {
-    bgcolor: colors.accent.secondaryHover,
-  },
-} as const;

@@ -20,7 +20,7 @@ import {
 } from "@b4.icons";
 import ReactMarkdown from "react-markdown";
 import { useSystemUpdate } from "@hooks/useSystemUpdate";
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 
 interface UpdateModalProps {
@@ -346,28 +346,13 @@ export const UpdateModal = ({
           onClick={onDismiss}
           startIcon={<CloseIcon />}
           disabled={isUpdating}
-          sx={{
-            ...button_secondary,
-          }}
         >
           Don't Show Again for This Version
         </Button>
         <Box sx={{ flex: 1 }} />
         {updateStatus === "idle" && (
           <>
-            <Button
-              onClick={onClose}
-              variant="outlined"
-              disabled={isUpdating}
-              sx={{
-                borderColor: colors.border.default,
-                color: colors.text.primary,
-                "&:hover": {
-                  borderColor: colors.secondary,
-                  bgcolor: colors.accent.secondaryHover,
-                },
-              }}
-            >
+            <Button onClick={onClose} variant="outlined" disabled={isUpdating}>
               Remind Me Later
             </Button>
             <Button
@@ -377,9 +362,6 @@ export const UpdateModal = ({
               variant="contained"
               startIcon={<CloudDownloadIcon />}
               disabled={isUpdating}
-              sx={{
-                ...button_primary,
-              }}
             >
               Update Now
             </Button>
@@ -389,9 +371,6 @@ export const UpdateModal = ({
           <Button
             variant="contained"
             onClick={() => globalThis.window.location.reload()}
-            sx={{
-              ...button_primary,
-            }}
           >
             Reload Page
           </Button>

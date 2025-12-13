@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { InfoIcon, RestartIcon, CheckIcon, ErrorIcon } from "@b4.icons";
 import { useSystemRestart } from "@hooks/useSystemRestart";
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 
 interface RestartDialogProps {
@@ -244,14 +244,7 @@ export const RestartDialog = ({ open, onClose }: RestartDialogProps) => {
       case "confirm":
         return (
           <>
-            <Button
-              onClick={handleClose}
-              sx={{
-                ...button_secondary,
-              }}
-            >
-              Cancel
-            </Button>
+            <Button onClick={handleClose}>Cancel</Button>
             <Box sx={{ flex: 1 }} />
             <Button
               onClick={() => {
@@ -259,9 +252,6 @@ export const RestartDialog = ({ open, onClose }: RestartDialogProps) => {
               }}
               variant="contained"
               startIcon={<RestartIcon />}
-              sx={{
-                ...button_primary,
-              }}
             >
               Restart Service
             </Button>

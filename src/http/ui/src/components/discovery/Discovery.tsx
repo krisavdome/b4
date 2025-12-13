@@ -28,7 +28,7 @@ import {
   FingerprintIcon,
   SecurityIcon,
 } from "@b4.icons";
-import { colors, button_yellow_outline } from "@design";
+import { colors } from "@design";
 import { B4SetConfig } from "@models/Config";
 import { DiscoveryAddDialog } from "./AddDialog";
 import { B4Section, B4TextField } from "@b4.elements";
@@ -633,14 +633,13 @@ export const DiscoveryRunner = () => {
           {!running && !suite && (
             <Button
               startIcon={<StartIcon />}
+              variant="contained"
               onClick={() => {
                 void startDiscovery();
               }}
               disabled={!domain.trim()}
               sx={{
-                px: 3,
                 whiteSpace: "nowrap",
-                ...button_yellow_outline,
               }}
             >
               Start Discovery
@@ -649,15 +648,13 @@ export const DiscoveryRunner = () => {
           {(running || isReconnecting) && (
             <Button
               variant="outlined"
+              color="secondary"
               startIcon={<StopIcon />}
               onClick={() => {
                 void cancelDiscovery();
               }}
               sx={{
-                minWidth: 120,
                 whiteSpace: "nowrap",
-                borderColor: colors.quaternary,
-                color: colors.quaternary,
               }}
             >
               Cancel
@@ -669,10 +666,7 @@ export const DiscoveryRunner = () => {
               startIcon={<RefreshIcon />}
               onClick={resetDiscovery}
               sx={{
-                minWidth: 150,
                 whiteSpace: "nowrap",
-                borderColor: colors.secondary,
-                color: colors.secondary,
               }}
             >
               New Discovery

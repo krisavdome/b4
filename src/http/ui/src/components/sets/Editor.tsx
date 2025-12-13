@@ -21,7 +21,7 @@ import {
 
 import { B4Dialog, B4TextField } from "@b4.elements";
 
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4Config, B4SetConfig, SystemConfig } from "@models/Config";
 
 import { TargetSettings } from "./Target";
@@ -236,11 +236,7 @@ export const SetEditor = ({
       maxWidth="lg"
       actions={
         <>
-          <Button
-            onClick={onClose}
-            disabled={saving}
-            sx={{ ...button_secondary }}
-          >
+          <Button onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Box sx={{ flex: 1 }} />
@@ -248,7 +244,7 @@ export const SetEditor = ({
             variant="contained"
             onClick={handleSave}
             disabled={!editedSet.name.trim() || saving}
-            sx={{ ...button_primary, minWidth: 140 }}
+            sx={{ minWidth: 140 }}
           >
             {saving ? (
               <>

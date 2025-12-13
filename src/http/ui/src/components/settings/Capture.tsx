@@ -25,7 +25,7 @@ import {
 import B4Section from "@common/B4Section";
 import B4TextField from "@common/B4TextField";
 import { B4Dialog } from "@common/B4Dialog";
-import { colors, button_primary, radius } from "@design";
+import { colors, radius } from "@design";
 
 interface Capture {
   protocol: string;
@@ -286,7 +286,6 @@ export const CaptureSettings = () => {
               }
               onClick={() => void probeCapture()}
               disabled={loading || !probeForm.domain}
-              sx={{ ...button_primary }}
             >
               {loading ? "Capturing..." : "Capture"}
             </Button>
@@ -490,7 +489,6 @@ export const CaptureSettings = () => {
               }
               setHexDialog({ open: false, capture: null });
             }}
-            sx={{ ...button_primary }}
           >
             Copy & Close
           </Button>

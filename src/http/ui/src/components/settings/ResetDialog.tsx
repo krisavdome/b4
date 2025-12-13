@@ -20,7 +20,7 @@ import {
   RestoreIcon,
 } from "@b4.icons";
 import { useConfigReset } from "@hooks/useConfig";
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 
 interface ResetDialogProps {
@@ -110,14 +110,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
       case "confirm":
         return (
           <>
-            <Button
-              onClick={handleClose}
-              sx={{
-                ...button_secondary,
-              }}
-            >
-              Cancel
-            </Button>
+            <Button onClick={handleClose}>Cancel</Button>
             <Box sx={{ flex: 1 }} />
             <Button
               onClick={() => {
@@ -125,9 +118,6 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
               }}
               variant="contained"
               startIcon={<RestoreIcon />}
-              sx={{
-                ...button_primary,
-              }}
             >
               Reset to Defaults
             </Button>

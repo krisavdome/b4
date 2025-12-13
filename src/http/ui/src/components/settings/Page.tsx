@@ -40,7 +40,7 @@ import { GeoSettings } from "./Geo";
 import { ApiSettings } from "./Api";
 
 import { B4Config, B4SetConfig } from "@models/Config";
-import { colors, spacing, button_primary, button_secondary } from "@design";
+import { colors, spacing } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 
 interface TabPanelProps {
@@ -383,10 +383,6 @@ export function SettingsPage() {
                 variant="text"
                 onClick={() => setShowResetDialog(true)}
                 disabled={!hasChanges || saving}
-                sx={{
-                  color: colors.text.secondary,
-                  "&:hover": { bgcolor: colors.accent.primaryHover },
-                }}
               >
                 Discard Changes
               </Button>
@@ -398,14 +394,6 @@ export function SettingsPage() {
                   void loadConfig();
                 }}
                 disabled={saving}
-                sx={{
-                  borderColor: colors.border.default,
-                  color: colors.text.primary,
-                  "&:hover": {
-                    borderColor: colors.secondary,
-                    bgcolor: colors.accent.secondaryHover,
-                  },
-                }}
               >
                 Reload
               </Button>
@@ -420,15 +408,6 @@ export function SettingsPage() {
                   void saveConfig();
                 }}
                 disabled={!hasChanges || saving}
-                sx={{
-                  bgcolor: colors.secondary,
-                  color: colors.background.default,
-                  "&:hover": { bgcolor: colors.primary },
-                  "&:disabled": {
-                    bgcolor: colors.accent.secondary,
-                    color: colors.text.secondary,
-                  },
-                }}
               >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
@@ -539,19 +518,9 @@ export function SettingsPage() {
         onClose={() => setShowResetDialog(false)}
         actions={
           <>
-            <Button
-              variant="outlined"
-              onClick={() => setShowResetDialog(false)}
-              sx={{ ...button_secondary }}
-            >
-              Cancel
-            </Button>
+            <Button onClick={() => setShowResetDialog(false)}>Cancel</Button>
             <Box sx={{ flex: 1 }} />
-            <Button
-              onClick={resetChanges}
-              variant="contained"
-              sx={{ ...button_primary }}
-            >
+            <Button onClick={resetChanges} variant="contained">
               Discard Changes
             </Button>
           </>

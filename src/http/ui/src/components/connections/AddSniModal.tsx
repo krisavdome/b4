@@ -12,7 +12,7 @@ import {
   Box,
 } from "@mui/material";
 import { AddIcon, DomainIcon } from "@b4.icons";
-import { colors, button_primary, button_secondary } from "@design";
+import { colors } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4Badge } from "@common/B4Badge";
 import { B4SetConfig, MAIN_SET_ID, NEW_SET_ID } from "@models/Config";
@@ -66,11 +66,7 @@ export const AddSniModal = ({
       onClose={onClose}
       actions={
         <>
-          <Button
-            onClick={onClose}
-            variant="outlined"
-            sx={{ ...button_secondary }}
-          >
+          <Button onClick={onClose} variant="outlined">
             Cancel
           </Button>
           <Box sx={{ flex: 1 }} />
@@ -79,9 +75,6 @@ export const AddSniModal = ({
             variant="contained"
             startIcon={<AddIcon />}
             disabled={!selected || !selectedSetId}
-            sx={{
-              ...button_primary,
-            }}
           >
             Add Domain
           </Button>

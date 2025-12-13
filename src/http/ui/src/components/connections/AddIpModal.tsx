@@ -14,12 +14,7 @@ import {
   Chip,
 } from "@mui/material";
 import { AddIcon, DomainIcon } from "@b4.icons";
-import {
-  colors,
-  button_primary,
-  button_secondary,
-  button_yellow_outline,
-} from "@design";
+import { colors } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4Badge } from "@common/B4Badge";
 import { B4SetConfig, MAIN_SET_ID } from "@models/Config";
@@ -209,20 +204,13 @@ export const AddIpModal = ({
       maxWidth="md"
       actions={
         <>
-          <Button
-            onClick={onClose}
-            variant="outlined"
-            sx={{ ...button_secondary }}
-          >
-            Cancel
-          </Button>
+          <Button onClick={onClose}>Cancel</Button>
           <Box sx={{ flex: 1 }} />
           <Button
             onClick={handleAdd}
             variant="contained"
             startIcon={<AddIcon />}
             disabled={!selected && prefixes.length === 0}
-            sx={{ ...button_primary }}
           >
             {addMode === "all" && prefixes.length > 0
               ? `Add All ${prefixes.length} Prefixes`
@@ -250,7 +238,6 @@ export const AddIpModal = ({
                   size="small"
                   onClick={() => void loadIpInfo()}
                   disabled={loadingInfo}
-                  sx={{ ...button_yellow_outline }}
                 >
                   {loadingInfo ? "Loading..." : "Enrich with IPInfo"}
                 </Button>
@@ -260,7 +247,6 @@ export const AddIpModal = ({
                 size="small"
                 onClick={() => void loadRipeNetworkInfo()}
                 disabled={loadingInfo}
-                sx={{ ...button_yellow_outline }}
               >
                 {loadingInfo ? "Loading..." : "Load Network Info"}
               </Button>
@@ -309,11 +295,7 @@ export const AddIpModal = ({
                     )}
                   </Box>
                   {ipInfo.hostname && onAddHostname && (
-                    <Button
-                      size="small"
-                      onClick={handleAddHostname}
-                      sx={{ ...button_yellow_outline }}
-                    >
+                    <Button size="small" onClick={handleAddHostname}>
                       Add Hostname
                     </Button>
                   )}

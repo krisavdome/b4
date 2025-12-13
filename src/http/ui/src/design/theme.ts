@@ -56,6 +56,81 @@ export const theme = createTheme({
         },
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          backgroundColor: colors.accent.secondaryHover,
+          color: colors.text.primary,
+        },
+        outlined: {
+          borderColor: colors.border.default,
+          backgroundColor: colors.background.paper,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          backgroundColor: colors.secondary,
+          borderRadius: 4,
+          "&:disabled": {
+            color: colors.text.disabled,
+          },
+        },
+        textPrimary: {
+          color: colors.text.primary,
+          backgroundColor: "unset",
+          "&:hover": {
+            backgroundColor: colors.accent.primaryHover,
+          },
+          "&:disabled": {
+            color: colors.text.disabled,
+          },
+        },
+        containedPrimary: {
+          backgroundColor: colors.secondary,
+          color: colors.background.default,
+          "&:hover": {
+            backgroundColor: colors.primary,
+            color: colors.text.primary,
+          },
+          "&:disabled": {
+            borderColor: colors.secondary,
+            backgroundColor: colors.accent.secondary,
+          },
+        },
+        containedSizeSmall: {
+          padding: 16,
+          height: 16,
+        },
+        outlinedPrimary: {
+          borderColor: colors.secondary,
+          backgroundColor: colors.accent.secondaryHover,
+          color: colors.text.primary,
+          "&:hover": {
+            borderColor: colors.primary,
+            backgroundColor: colors.accent.primaryHover,
+            color: colors.text.primary,
+          },
+          "&:disabled": {
+            borderColor: colors.accent.secondary,
+          },
+        },
+        outlinedSecondary: {
+          borderColor: colors.primary,
+          backgroundColor: colors.accent.primaryHover,
+          color: colors.text.secondary,
+          "&:hover": {
+            borderColor: colors.secondary,
+            backgroundColor: colors.accent.secondaryHover,
+            color: colors.text.secondary,
+          },
+          "&:disabled": {
+            borderColor: colors.accent.secondary,
+          },
+        },
+      },
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {
@@ -78,9 +153,6 @@ export const theme = createTheme({
           borderRight: `1px solid ${colors.border.default}`,
         },
       },
-    },
-    MuiSvgIcon: {
-      styleOverrides: {},
     },
   },
   typography: {

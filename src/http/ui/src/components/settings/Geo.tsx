@@ -14,7 +14,7 @@ import {
 import { InfoIcon, DomainIcon, DownloadIcon, SuccessIcon } from "@b4.icons";
 import { B4Section, B4TextField } from "@b4.elements";
 import { useState, useEffect, useCallback } from "react";
-import { button_primary, colors } from "@design";
+import { colors } from "@design";
 
 export interface GeoSettingsProps {
   config: B4Config;
@@ -473,7 +473,6 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
                 }
                 onClick={() => void handleDownload()}
                 disabled={downloading}
-                sx={{ ...button_primary }}
               >
                 {downloading ? "Downloading..." : "Download Files"}
               </Button>

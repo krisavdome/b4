@@ -3,7 +3,7 @@ import { Button, Grid } from "@mui/material";
 import SettingSection from "@common/B4Section";
 import { ControlIcon, RestartIcon, RestoreIcon } from "@b4.icons";
 import { RestartDialog } from "./RestartDialog";
-import { colors, spacing } from "@design";
+import { spacing } from "@design";
 import { ResetDialog } from "./ResetDialog";
 
 interface ControlSettingsProps {
@@ -32,14 +32,6 @@ export const ControlSettings = ({ loadConfig }: ControlSettingsProps) => {
           startIcon={<RestartIcon />}
           onClick={() => setShowRestartDialog(true)}
           disabled={saving}
-          sx={{
-            borderColor: colors.secondary,
-            color: colors.secondary,
-            "&:hover": {
-              borderColor: colors.primary,
-              bgcolor: colors.accent.primaryHover,
-            },
-          }}
         >
           Restart B4 System Service
         </Button>
@@ -49,14 +41,6 @@ export const ControlSettings = ({ loadConfig }: ControlSettingsProps) => {
           startIcon={<RestoreIcon />}
           onClick={() => setShowResetDialog(true)}
           disabled={saving}
-          sx={{
-            borderColor: colors.primary,
-            color: colors.primary,
-            "&:hover": {
-              borderColor: "#d32f2f",
-              bgcolor: `${colors.primary}22`,
-            },
-          }}
         >
           Reset the configuration to default settings
         </Button>
