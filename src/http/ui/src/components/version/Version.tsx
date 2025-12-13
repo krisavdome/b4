@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Link, Stack, Divider } from "@mui/material";
 import { colors } from "@design";
 import GitHubIcon from "@mui/icons-material/GitHub";

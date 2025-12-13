@@ -1,4 +1,4 @@
-import React from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Alert,
@@ -55,7 +55,7 @@ interface AddIpModalProps {
   onAddHostname?: (hostname: string) => void;
 }
 
-export const AddIpModal: React.FC<AddIpModalProps> = ({
+export const AddIpModal = ({
   open,
   ip,
   sets,
@@ -66,18 +66,18 @@ export const AddIpModal: React.FC<AddIpModalProps> = ({
   onSelectVariant,
   onAdd,
   onAddHostname,
-}) => {
-  const [selectedSetId, setSelectedSetId] = React.useState<string>("");
-  const [ipInfo, setIpInfo] = React.useState<IpInfo | null>(null);
-  const [loadingInfo, setLoadingInfo] = React.useState(false);
-  const [loadingPrefixes, setLoadingPrefixes] = React.useState(false);
-  const [variants, setVariants] = React.useState<string[]>(initialVariants);
-  const [asn, setAsn] = React.useState<string>("");
-  const [prefixes, setPrefixes] = React.useState<string[]>([]);
-  const [addMode, setAddMode] = React.useState<"single" | "all">("single");
-  const [newSetName, setNewSetName] = React.useState<string>("");
+}: AddIpModalProps) => {
+  const [selectedSetId, setSelectedSetId] = useState<string>("");
+  const [ipInfo, setIpInfo] = useState<IpInfo | null>(null);
+  const [loadingInfo, setLoadingInfo] = useState(false);
+  const [loadingPrefixes, setLoadingPrefixes] = useState(false);
+  const [variants, setVariants] = useState<string[]>(initialVariants);
+  const [asn, setAsn] = useState<string>("");
+  const [prefixes, setPrefixes] = useState<string[]>([]);
+  const [addMode, setAddMode] = useState<"single" | "all">("single");
+  const [newSetName, setNewSetName] = useState<string>("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setIpInfo(null);
       setAsn("");
@@ -93,7 +93,7 @@ export const AddIpModal: React.FC<AddIpModalProps> = ({
     }
   }, [open, sets, initialVariants, ip]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setIpInfo(null);
       setAsn("");
@@ -158,7 +158,7 @@ export const AddIpModal: React.FC<AddIpModalProps> = ({
     }
   };
 
-  const loadRipePrefixes = React.useCallback(async () => {
+  const loadRipePrefixes = useCallback(async () => {
     if (!asn) return;
 
     setLoadingPrefixes(true);
@@ -188,7 +188,7 @@ export const AddIpModal: React.FC<AddIpModalProps> = ({
     onAdd(selectedSetId, newSetName);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (asn && open) {
       void loadRipePrefixes();
     }

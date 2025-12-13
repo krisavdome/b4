@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Box,
   Button,
@@ -160,7 +160,7 @@ const phaseNames: Record<DiscoveryPhase, string> = {
   dns_detection: "DNS Detection",
 };
 
-export const DiscoveryRunner: React.FC = () => {
+export const DiscoveryRunner = () => {
   const [running, setRunning] = useState(false);
   const [suiteId, setSuiteId] = useState<string | null>(null);
   const [suite, setSuite] = useState<DiscoverySuite | null>(null);
@@ -413,8 +413,10 @@ export const DiscoveryRunner: React.FC = () => {
     return grouped;
   };
 
-  const FingerprintDisplay: React.FC<{ fingerprint: DPIFingerprint }> = ({
+  const FingerprintDisplay = ({
     fingerprint,
+  }: {
+    fingerprint: DPIFingerprint;
   }) => {
     const dpiTypeLabels: Record<DPIType, string> = {
       unknown: "Unknown DPI",

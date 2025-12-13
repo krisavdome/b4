@@ -1,6 +1,6 @@
+import { Children } from "react";
 import { Box, Grid, Typography } from "@mui/material";
 import { colors, spacing } from "@design";
-import React from "react";
 
 interface B4FormGroupProps {
   label: string;
@@ -10,13 +10,13 @@ interface B4FormGroupProps {
   columns?: 1 | 2;
 }
 
-export const B4FormGroup: React.FC<B4FormGroupProps> = ({
+export const B4FormGroup = ({
   label,
   description,
   icon,
   children,
   columns = 2,
-}) => (
+}: B4FormGroupProps) => (
   <Box sx={{ mb: spacing.md }}>
     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: spacing.md }}>
       {icon}
@@ -33,7 +33,7 @@ export const B4FormGroup: React.FC<B4FormGroupProps> = ({
     </Box>
 
     <Grid container spacing={spacing.md}>
-      {React.Children.map(children, (child) => (
+      {Children.map(children, (child) => (
         <Grid size={{ xs: 12, md: 12 / columns }}>{child}</Grid>
       ))}
     </Grid>

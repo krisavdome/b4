@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Dialog,
   DialogTitle,
@@ -20,7 +19,7 @@ interface B4DialogProps extends Omit<DialogProps, "title"> {
   onClose: () => void;
 }
 
-export const B4Dialog: React.FC<B4DialogProps> = ({
+export const B4Dialog = ({
   title,
   subtitle,
   icon,
@@ -28,7 +27,7 @@ export const B4Dialog: React.FC<B4DialogProps> = ({
   actions,
   onClose,
   ...props
-}) => (
+}: B4DialogProps) => (
   <Dialog
     onClose={onClose}
     slotProps={{

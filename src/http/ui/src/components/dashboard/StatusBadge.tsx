@@ -1,4 +1,3 @@
-import React from "react";
 import { Chip } from "@mui/material";
 import {
   CheckCircle as CheckCircleIcon,
@@ -12,7 +11,7 @@ interface StatusBadgeProps {
   status: "active" | "inactive" | "warning" | "error";
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ label, status }) => {
+export const StatusBadge = ({ label, status }: StatusBadgeProps) => {
   const statusConfig = {
     active: {
       color: "#4caf50",

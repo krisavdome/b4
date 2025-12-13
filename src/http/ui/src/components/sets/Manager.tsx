@@ -64,7 +64,6 @@ import { colors, radius, button_secondary } from "@design";
 import { B4Config, B4SetConfig, MAIN_SET_ID } from "@models/Config";
 import { SetCompare } from "./Compare";
 import { useSets } from "@hooks/useSets";
-import React from "react";
 
 export interface SetStats {
   manual_domains: number;
@@ -389,10 +388,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
     children: React.ReactNode;
   }
 
-  const SortableSetCard: React.FC<SortableSetCardProps> = ({
-    set,
-    children,
-  }) => {
+  const SortableSetCard = ({ set, children }: SortableSetCardProps) => {
     const {
       attributes,
       listeners,

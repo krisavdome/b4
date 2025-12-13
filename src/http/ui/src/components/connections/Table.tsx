@@ -1,10 +1,4 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import { useRef, useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
   Table,
   TableBody,
@@ -46,7 +40,7 @@ const ROW_HEIGHT = 41;
 const OVERSCAN = 5;
 
 // Memoized row component to prevent unnecessary re-renders
-const TableRowMemo = React.memo<{
+const TableRowMemo = memo<{
   log: ParsedLog;
   onDomainClick: (domain: string) => void;
   onIpClick: (ip: string) => void;

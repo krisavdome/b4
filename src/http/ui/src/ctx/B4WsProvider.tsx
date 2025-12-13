@@ -64,8 +64,10 @@ function isTargetedLine(line: string): boolean {
   return !!(hostSet || ipSet);
 }
 
-export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
+export const WebSocketProvider = ({
   children,
+}: {
+  children: React.ReactNode;
 }) => {
   const [logs, setLogs] = useState<string[]>([]);
   const [domains, setDomains] = useState<string[]>([]);

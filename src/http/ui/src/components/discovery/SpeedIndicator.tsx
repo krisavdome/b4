@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Typography } from "@mui/material";
 import {
   Speed as SpeedIcon,
@@ -20,11 +19,11 @@ const formatSpeed = (bytesPerSecond: number): string => {
   return `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
 };
 
-export const SpeedIndicator: React.FC<SpeedIndicatorProps> = ({
+export const SpeedIndicator = ({
   speed,
   improvement,
   compact = false,
-}) => {
+}: SpeedIndicatorProps) => {
   const speedText = formatSpeed(speed);
 
   if (compact) {

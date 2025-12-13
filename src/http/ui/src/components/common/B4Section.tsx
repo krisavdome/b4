@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Paper, Typography, Divider } from "@mui/material";
 import { colors } from "@design";
 

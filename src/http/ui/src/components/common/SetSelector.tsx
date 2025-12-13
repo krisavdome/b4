@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   FormControl,
   InputLabel,
@@ -19,13 +19,13 @@ interface SetSelectorProps {
   disabled?: boolean;
 }
 
-export const SetSelector: React.FC<SetSelectorProps> = ({
+export const SetSelector = ({
   sets,
   value,
   onChange,
   label = "Target Set",
   disabled = false,
-}) => {
+}: SetSelectorProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newSetName, setNewSetName] = useState("");
 

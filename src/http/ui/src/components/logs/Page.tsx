@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Container,
@@ -15,14 +15,14 @@ import RefreshIcon from "@mui/icons-material/DeleteForever";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useWebSocket } from "@ctx/B4WsProvider";
 
-export  function LogsPage() {
-  const [filter, setFilter] = React.useState("");
-  const [autoScroll, setAutoScroll] = React.useState(true);
-  const [showScrollBtn, setShowScrollBtn] = React.useState(false);
-  const logRef = React.useRef<HTMLDivElement | null>(null);
+export function LogsPage() {
+  const [filter, setFilter] = useState("");
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const logRef = useRef<HTMLDivElement | null>(null);
   const { logs, pauseLogs, setPauseLogs, clearLogs } = useWebSocket();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const el = logRef.current;
     if (el && autoScroll) {
       el.scrollTop = el.scrollHeight;
@@ -47,12 +47,12 @@ export  function LogsPage() {
     }
   };
 
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     const f = filter.trim().toLowerCase();
     return f ? logs.filter((l) => l.toLowerCase().includes(f)) : logs;
   }, [logs, filter]);
 
-  const handleHotkeysDown = React.useCallback(
+  const handleHotkeysDown = useCallback(
     (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (

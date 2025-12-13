@@ -1,7 +1,7 @@
 import { Alert, AlertProps } from "@mui/material";
 import { colors } from "@design";
 
-export const B4Alert: React.FC<AlertProps> = ({ sx, ...props }) => (
+export const B4Alert = ({ sx, ...props }: AlertProps) => (
   <Alert
     sx={{
       bgcolor: colors.background.default,

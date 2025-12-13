@@ -6,9 +6,7 @@ interface FirstByteSettingsProps {
   config: B4SetConfig;
 }
 
-export const FirstByteSettings: React.FC<FirstByteSettingsProps> = ({
-  config,
-}) => {
+export const FirstByteSettings = ({ config }: FirstByteSettingsProps) => {
   return (
     <>
       <Grid size={{ xs: 12 }}>

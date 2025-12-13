@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Box, Typography } from "@mui/material";
 import { colors } from "@design";
 
@@ -30,11 +30,11 @@ const createSmoothPath = (points: { x: number; y: number }[]): string => {
   return path;
 };
 
-export const SimpleLineChart: React.FC<SimpleChartProps> = ({
+export const SimpleLineChart = ({
   data,
   height = 200,
   color = colors.secondary,
-}) => {
+}: SimpleChartProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const prevDataLengthRef = useRef(data.length);
 

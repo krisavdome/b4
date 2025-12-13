@@ -1,4 +1,3 @@
-import React from "react";
 import { Chip } from "@mui/material";
 import {
   HourglassEmpty as PendingIcon,
@@ -52,10 +51,10 @@ const statusConfig: Record<
   },
 };
 
-export const TestStatusBadge: React.FC<TestStatusBadgeProps> = ({
+export const TestStatusBadge = ({
   status,
   size = "small",
-}) => {
+}: TestStatusBadgeProps) => {
   const config = statusConfig[status];
 
   return (

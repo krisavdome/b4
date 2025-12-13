@@ -14,10 +14,10 @@ interface ImportExportSettingsProps {
   onImport: (importedConfig: B4SetConfig) => void;
 }
 
-export const ImportExportSettings: React.FC<ImportExportSettingsProps> = ({
+export const ImportExportSettings = ({
   config,
   onImport,
-}) => {
+}: ImportExportSettingsProps) => {
   const [jsonValue, setJsonValue] = useState("");
   const [originalJson, setOriginalJson] = useState("");
   const [validationError, setValidationError] = useState("");

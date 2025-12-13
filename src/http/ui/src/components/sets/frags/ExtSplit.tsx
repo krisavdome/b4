@@ -1,7 +1,7 @@
 import { Grid, Divider, Chip, Alert, Box, Typography } from "@mui/material";
 import { colors } from "@design";
 
-export const ExtSplitSettings: React.FC = () => {
+export const ExtSplitSettings = () => {
   return (
     <>
       <Grid size={{ xs: 12 }}>

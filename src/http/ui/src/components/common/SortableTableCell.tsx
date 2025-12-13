@@ -1,4 +1,3 @@
-import React from "react";
 import { TableCell, TableSortLabel } from "@mui/material";
 import { colors } from "@design";
 
@@ -12,13 +11,13 @@ interface SortableTableCellProps {
   align?: "left" | "center" | "right";
 }
 
-export const SortableTableCell: React.FC<SortableTableCellProps> = ({
+export const SortableTableCell = ({
   label,
   active,
   direction,
   onSort,
   align = "left",
-}) => {
+}: SortableTableCellProps) => {
   return (
     <TableCell
       sx={{

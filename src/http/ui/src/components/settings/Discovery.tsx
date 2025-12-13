@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import {
   Box,
   Chip,
@@ -21,7 +21,7 @@ interface CheckerSettingsProps {
 }
 
 export const CheckerSettings = ({ config, onChange }: CheckerSettingsProps) => {
-  const [newDns, setNewDns] = React.useState("");
+  const [newDns, setNewDns] = useState("");
 
   const handleAddDns = () => {
     if (newDns.trim()) {

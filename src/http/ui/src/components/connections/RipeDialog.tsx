@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Alert,
@@ -38,13 +38,13 @@ interface Prefix {
   prefix: string;
 }
 
-export const RipeDialog: React.FC<RipeDialogProps> = ({
+export const RipeDialog = ({
   open,
   ip,
   sets,
   onClose,
   onAdd,
-}) => {
+}: RipeDialogProps) => {
   const [selectedSetId, setSelectedSetId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

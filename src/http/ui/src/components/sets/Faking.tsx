@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Grid,
   Divider,
@@ -62,10 +62,7 @@ const mutationModeDescriptions: Record<MutationMode, string> = {
   advanced: "Combine multiple mutation techniques",
 };
 
-export const FakingSettings: React.FC<FakingSettingsProps> = ({
-  config,
-  onChange,
-}) => {
+export const FakingSettings = ({ config, onChange }: FakingSettingsProps) => {
   const [newFakeSni, setNewFakeSni] = useState("");
 
   const mutation = config.faking.sni_mutation || {

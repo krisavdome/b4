@@ -1,4 +1,3 @@
-import React from "react";
 import { Paper, Stack, Typography } from "@mui/material";
 import { StatusBadge } from "./StatusBadge";
 import { formatNumber } from "@utils";
@@ -14,9 +13,7 @@ interface DashboardStatusBarProps {
   };
 }
 
-export const DashboardStatusBar: React.FC<DashboardStatusBarProps> = ({
-  metrics,
-}) => {
+export const DashboardStatusBar = ({ metrics }: DashboardStatusBarProps) => {
   return (
     <Paper
       sx={{

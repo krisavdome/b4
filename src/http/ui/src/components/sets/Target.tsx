@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Grid,
   Box,
@@ -67,12 +67,12 @@ function TabPanel(props: Readonly<TabPanelProps>) {
   );
 }
 
-export const TargetSettings: React.FC<TargetSettingsProps> = ({
+export const TargetSettings = ({
   config,
   onChange,
   geo,
   stats,
-}) => {
+}: TargetSettingsProps) => {
   const [tabValue, setTabValue] = useState(0);
   const [newBypassDomain, setNewBypassDomain] = useState("");
   const [newBypassIP, setNewBypassIP] = useState("");

@@ -1,4 +1,3 @@
-import React from "react";
 import { Grid, Alert, Divider, Chip } from "@mui/material";
 import {
   Dns as DnsIcon,
@@ -60,10 +59,7 @@ const UDP_FAKING_STRATEGIES = [
   { value: "checksum", label: "Checksum", description: "Corrupt UDP checksum" },
 ];
 
-export const UdpSettings: React.FC<UdpSettingsProps> = ({
-  config,
-  onChange,
-}) => {
+export const UdpSettings = ({ config, onChange }: UdpSettingsProps) => {
   // Detect configuration state
   const isQuicEnabled = config.udp.filter_quic !== "disabled";
   const hasPortFilter =

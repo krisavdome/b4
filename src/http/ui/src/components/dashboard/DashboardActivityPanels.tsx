@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Grid,
   Paper,
@@ -28,9 +27,10 @@ interface DashboardActivityPanelsProps {
   recentConnections: Connection[];
 }
 
-export const DashboardActivityPanels: React.FC<
-  DashboardActivityPanelsProps
-> = ({ topDomains, recentConnections }) => {
+export const DashboardActivityPanels = ({
+  topDomains,
+  recentConnections,
+}: DashboardActivityPanelsProps) => {
   const topDomainsData = Object.entries(topDomains)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);

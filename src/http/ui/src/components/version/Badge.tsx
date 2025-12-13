@@ -9,12 +9,12 @@ interface VersionBadgeProps {
   onClick?: () => void;
 }
 
-export const VersionBadge: React.FC<VersionBadgeProps> = ({
+export const VersionBadge = ({
   version,
   hasUpdate = false,
   isLoading = false,
   onClick,
-}) => {
+}: VersionBadgeProps) => {
   if (isLoading) {
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2 }}>

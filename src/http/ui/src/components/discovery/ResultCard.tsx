@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardContent,
@@ -26,7 +25,7 @@ interface TestResultCardProps {
   status_code: number;
 }
 
-export const TestResultCard: React.FC<TestResultCardProps> = ({
+export const TestResultCard = ({
   domain,
   status,
   duration,
@@ -34,7 +33,7 @@ export const TestResultCard: React.FC<TestResultCardProps> = ({
   improvement,
   error,
   status_code,
-}) => {
+}: TestResultCardProps) => {
   return (
     <Card
       elevation={0}

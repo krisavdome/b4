@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Button,
   Alert,
@@ -25,10 +25,7 @@ interface RestartDialogProps {
 
 type RestartState = "confirm" | "restarting" | "waiting" | "success" | "error";
 
-export const RestartDialog: React.FC<RestartDialogProps> = ({
-  open,
-  onClose,
-}) => {
+export const RestartDialog = ({ open, onClose }: RestartDialogProps) => {
   const [state, setState] = useState<RestartState>("confirm");
   const [message, setMessage] = useState("");
   const { restart, waitForReconnection, error } = useSystemRestart();

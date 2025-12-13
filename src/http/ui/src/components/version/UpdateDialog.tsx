@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, forwardRef } from "react";
 import {
   Button,
   Typography,
@@ -33,7 +33,7 @@ interface UpdateModalProps {
   publishedAt: string;
 }
 
-const H2Typography = React.forwardRef<
+const H2Typography = forwardRef<
   HTMLHeadingElement,
   React.ComponentProps<typeof Typography>
 >(function H2Typography(props, ref) {
@@ -51,7 +51,7 @@ const H2Typography = React.forwardRef<
   );
 });
 
-export const UpdateModal: React.FC<UpdateModalProps> = ({
+export const UpdateModal = ({
   open,
   onClose,
   onDismiss,
@@ -60,7 +60,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   releaseNotes,
   releaseUrl,
   publishedAt,
-}) => {
+}: UpdateModalProps) => {
   const { performUpdate, waitForReconnection, error } = useSystemUpdate();
   const [updateStatus, setUpdateStatus] = useState<
     "idle" | "updating" | "reconnecting" | "success" | "error"

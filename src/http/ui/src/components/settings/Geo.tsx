@@ -39,10 +39,7 @@ interface FileInfo {
   last_modified?: string;
 }
 
-export const GeoSettings: React.FC<GeoSettingsProps> = ({
-  config,
-  loadConfig,
-}) => {
+export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
   const [sources, setSources] = useState<GeodatSource[]>([]);
   const [selectedSource, setSelectedSource] = useState<string>("");
   const [customGeositeURL, setCustomGeositeURL] = useState<string>("");

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Alert,
@@ -33,13 +33,13 @@ interface IpInfoModalProps {
   onAddHostname?: (hostname: string) => void;
 }
 
-export const IpInfoModal: React.FC<IpInfoModalProps> = ({
+export const IpInfoModal = ({
   open,
   ip,
   token,
   onClose,
   onAddHostname,
-}) => {
+}: IpInfoModalProps) => {
   const [ipInfo, setIpInfo] = useState<IpInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

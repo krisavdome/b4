@@ -22,11 +22,11 @@ const variantStyles: Record<BadgeVariant, object> = {
   },
 };
 
-export const B4Badge: React.FC<B4BadgeProps> = ({
+export const B4Badge = ({
   badgeVariant = "primary",
   sx,
   ...props
-}) => (
+}: B4BadgeProps) => (
   <Chip
     size="small"
     sx={{

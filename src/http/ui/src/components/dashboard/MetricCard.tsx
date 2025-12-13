@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import { TrendingUp as TrendingUpIcon } from "@mui/icons-material";
 import { colors } from "@design";
@@ -12,14 +11,14 @@ interface MetricCardProps {
   trend?: number;
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({
+export const MetricCard = ({
   title,
   value,
   subtitle,
   icon,
   color = colors.primary,
   trend,
-}) => (
+}: MetricCardProps) => (
   <Card
     sx={{
       bgcolor: colors.background.paper,

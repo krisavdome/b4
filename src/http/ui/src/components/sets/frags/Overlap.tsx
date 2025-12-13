@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Grid,
   Alert,
@@ -21,10 +21,7 @@ interface OverlapSettingsProps {
   ) => void;
 }
 
-export const OverlapSettings: React.FC<OverlapSettingsProps> = ({
-  config,
-  onChange,
-}) => {
+export const OverlapSettings = ({ config, onChange }: OverlapSettingsProps) => {
   const [newDomain, setNewDomain] = useState("");
   const fakeSNIs = config.fragmentation.overlap.fake_snis || [];
 

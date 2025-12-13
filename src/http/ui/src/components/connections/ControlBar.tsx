@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Box,
   Stack,
@@ -26,7 +25,7 @@ interface DomainsControlBarProps {
   onReset: () => void;
 }
 
-export const DomainsControlBar: React.FC<DomainsControlBarProps> = ({
+export const DomainsControlBar = ({
   filter,
   onFilterChange,
   totalCount,
@@ -38,7 +37,7 @@ export const DomainsControlBar: React.FC<DomainsControlBarProps> = ({
   onPauseChange,
   onClearSort,
   onReset,
-}) => {
+}: DomainsControlBarProps) => {
   return (
     <Box
       sx={{

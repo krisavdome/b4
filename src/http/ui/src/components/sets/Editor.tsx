@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Stack,
@@ -44,7 +44,7 @@ export interface SetEditorProps {
   onSave: (set: B4SetConfig) => void;
 }
 
-export const SetEditor: React.FC<SetEditorProps> = ({
+export const SetEditor = ({
   open,
   set: initialSet,
   config,
@@ -54,7 +54,7 @@ export const SetEditor: React.FC<SetEditorProps> = ({
   saving,
   onClose,
   onSave,
-}) => {
+}: SetEditorProps) => {
   enum TABS {
     TARGETS = 0,
     TCP,
@@ -68,7 +68,7 @@ export const SetEditor: React.FC<SetEditorProps> = ({
   const [activeTab, setActiveTab] = useState<TABS>(TABS.TARGETS);
   const [editedSet, setEditedSet] = useState<B4SetConfig | null>(initialSet);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setEditedSet(initialSet);
     setActiveTab(0);
   }, [initialSet]);

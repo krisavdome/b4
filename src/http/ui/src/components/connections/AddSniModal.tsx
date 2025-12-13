@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Alert,
@@ -31,7 +31,7 @@ interface AddSniModalProps {
   onAdd: (setId: string, setName?: string) => void;
 }
 
-export const AddSniModal: React.FC<AddSniModalProps> = ({
+export const AddSniModal = ({
   open,
   domain,
   variants,
@@ -41,15 +41,15 @@ export const AddSniModal: React.FC<AddSniModalProps> = ({
   onClose,
   onSelectVariant,
   onAdd,
-}) => {
-  const [selectedSetId, setSelectedSetId] = React.useState<string>("");
-  const [setName, setSetName] = React.useState<string>("");
+}: AddSniModalProps) => {
+  const [selectedSetId, setSelectedSetId] = useState<string>("");
+  const [setName, setSetName] = useState<string>("");
 
   const handleAdd = () => {
     onAdd(selectedSetId, setName);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       if (createNewSet) {
         setSelectedSetId(NEW_SET_ID);

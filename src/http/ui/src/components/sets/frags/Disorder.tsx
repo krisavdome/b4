@@ -1,4 +1,3 @@
-import React from "react";
 import { Grid, Alert, Divider, Chip, Box, Typography } from "@mui/material";
 import { B4Slider, B4Switch, B4Select } from "@b4.fields";
 import { B4SetConfig, DisorderShuffleMode } from "@models/Config";
@@ -14,10 +13,10 @@ const shuffleModeOptions: { label: string; value: DisorderShuffleMode }[] = [
   { label: "Reverse Order", value: "reverse" },
 ];
 
-export const DisorderSettings: React.FC<DisorderSettingsProps> = ({
+export const DisorderSettings = ({
   config,
   onChange,
-}) => {
+}: DisorderSettingsProps) => {
   const disorder = config.fragmentation.disorder;
   const middleSni = config.fragmentation.middle_sni;
 

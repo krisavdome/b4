@@ -5,12 +5,12 @@ interface B4CardProps extends Omit<CardProps, "variant"> {
   variant?: "default" | "outlined" | "elevated";
 }
 
-export const B4Card: React.FC<B4CardProps> = ({
+export const B4Card = ({
   variant = "outlined",
   children,
   sx,
   ...props
-}) => {
+}: B4CardProps) => {
   const variants = {
     default: {
       bgcolor: colors.background.paper,

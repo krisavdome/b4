@@ -15,7 +15,7 @@ interface SettingAutocompleteProps {
   disabled?: boolean;
 }
 
-const SettingAutocomplete: React.FC<SettingAutocompleteProps> = ({
+const SettingAutocomplete = ({
   label,
   value,
   options,
@@ -25,7 +25,7 @@ const SettingAutocomplete: React.FC<SettingAutocompleteProps> = ({
   placeholder,
   helperText,
   disabled = false,
-}) => {
+}: SettingAutocompleteProps) => {
   const handleAdd = () => {
     if (value.trim() && onSelect) {
       onSelect(value.trim());

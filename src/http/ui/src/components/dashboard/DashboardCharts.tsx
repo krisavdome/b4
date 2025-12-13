@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Grid, Paper, Typography } from "@mui/material";
 import { SimpleLineChart } from "./SimpleLineChart";
 import { colors } from "@design";
@@ -8,9 +7,7 @@ interface DashboardChartsProps {
   protocolDist: Record<string, number>;
 }
 
-export const DashboardCharts: React.FC<DashboardChartsProps> = ({
-  connectionRate,
-}) => {
+export const DashboardCharts = ({ connectionRate }: DashboardChartsProps) => {
   return (
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, lg: 12 }}>

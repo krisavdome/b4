@@ -1,4 +1,3 @@
-import React from "react";
 import { Chip } from "@mui/material";
 import TcpIcon from "@mui/icons-material/SyncAlt";
 import UdpIcon from "@mui/icons-material/TrendingFlat";
@@ -8,7 +7,7 @@ interface ProtocolChipProps {
   protocol: "TCP" | "UDP";
 }
 
-export const ProtocolChip: React.FC<ProtocolChipProps> = ({ protocol }) => {
+export const ProtocolChip = ({ protocol }: ProtocolChipProps) => {
   return (
     <Chip
       label={protocol}

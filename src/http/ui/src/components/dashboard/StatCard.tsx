@@ -16,7 +16,7 @@ interface StatCardProps {
   };
 }
 
-export const StatCard: React.FC<StatCardProps> = ({
+export const StatCard = ({
   title,
   value,
   subtitle,
@@ -25,7 +25,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   variant = "outlined",
   onClick,
   trend,
-}) => (
+}: StatCardProps) => (
   <B4Card
     variant={variant}
     sx={{

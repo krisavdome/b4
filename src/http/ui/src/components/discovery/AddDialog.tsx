@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Stack,
   Typography,
@@ -33,7 +33,7 @@ interface DiscoveryAddDialogProps {
   loading?: boolean;
 }
 
-export const DiscoveryAddDialog: React.FC<DiscoveryAddDialogProps> = ({
+export const DiscoveryAddDialog = ({
   open,
   domain,
   presetName,
@@ -42,7 +42,7 @@ export const DiscoveryAddDialog: React.FC<DiscoveryAddDialogProps> = ({
   onAddNew,
   onAddToExisting,
   loading = false,
-}) => {
+}: DiscoveryAddDialogProps) => {
   const [name, setName] = useState(presetName);
   const [variants, setVariants] = useState<string[]>([]);
   const [selectedVariant, setSelectedVariant] = useState(domain);
@@ -184,7 +184,9 @@ export const DiscoveryAddDialog: React.FC<DiscoveryAddDialogProps> = ({
           <B4TextField
             label="Set Name"
             value={name}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
             fullWidth
           />
         )}

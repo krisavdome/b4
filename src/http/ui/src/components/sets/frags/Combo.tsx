@@ -1,4 +1,3 @@
-import React from "react";
 import { Grid, Alert, Divider, Chip, Box, Typography } from "@mui/material";
 import { B4Slider, B4Switch, B4Select } from "@b4.fields";
 import { B4SetConfig, ComboShuffleMode } from "@models/Config";
@@ -15,10 +14,7 @@ const shuffleModeOptions: { label: string; value: ComboShuffleMode }[] = [
   { label: "Reverse Order", value: "reverse" },
 ];
 
-export const ComboSettings: React.FC<ComboSettingsProps> = ({
-  config,
-  onChange,
-}) => {
+export const ComboSettings = ({ config, onChange }: ComboSettingsProps) => {
   const combo = config.fragmentation.combo;
   const middleSni = config.fragmentation.middle_sni;
 

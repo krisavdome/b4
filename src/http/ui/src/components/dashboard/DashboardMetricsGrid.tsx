@@ -1,4 +1,3 @@
-import React from "react";
 import { Grid } from "@mui/material";
 import {
   Speed as SpeedIcon,
@@ -25,9 +24,9 @@ interface DashboardMetricsGridProps {
   };
 }
 
-export const DashboardMetricsGrid: React.FC<DashboardMetricsGridProps> = ({
+export const DashboardMetricsGrid = ({
   metrics,
-}) => {
+}: DashboardMetricsGridProps) => {
   return (
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ display: "flex" }}>

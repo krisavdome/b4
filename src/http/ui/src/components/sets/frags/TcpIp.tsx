@@ -9,10 +9,7 @@ interface TcpIpSettingsProps {
   onChange: (field: string, value: string | boolean | number) => void;
 }
 
-export const TcpIpSettings: React.FC<TcpIpSettingsProps> = ({
-  config,
-  onChange,
-}) => {
+export const TcpIpSettings = ({ config, onChange }: TcpIpSettingsProps) => {
   const getSplitModeDescription = () => {
     if (config.fragmentation.middle_sni) {
       if (config.fragmentation.sni_position > 0) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Button,
   Alert,
@@ -30,11 +30,7 @@ interface ResetDialogProps {
 
 type ResetState = "confirm" | "resetting" | "success" | "error";
 
-export const ResetDialog: React.FC<ResetDialogProps> = ({
-  open,
-  onClose,
-  onSuccess,
-}) => {
+export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
   const [state, setState] = useState<ResetState>("confirm");
   const [message, setMessage] = useState("");
   const { resetConfig } = useConfigReset();
