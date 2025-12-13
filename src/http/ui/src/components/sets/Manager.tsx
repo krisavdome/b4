@@ -19,25 +19,26 @@ import {
   TextField,
   Snackbar,
 } from "@mui/material";
+
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ContentCopy as CopyIcon,
-  ExpandMore as ExpandIcon,
-  ExpandLess as CollapseIcon,
-  Layers as LayersIcon,
-  Warning as WarningIcon,
-  AirlineStops,
-  CallSplit,
-  Deblur,
-  MultipleStop,
-  Security as SecurityIcon,
-  Category as CategoryIcon,
-  Language as LanguageIcon,
-  CompareArrows as CompareIcon,
-  DragIndicator as DragIcon,
-} from "@mui/icons-material";
+  AddIcon,
+  ImportExportIcon,
+  DragIcon,
+  SecurityIcon,
+  DomainIcon,
+  CollapseIcon,
+  ExpandIcon,
+  EditIcon,
+  ClearIcon,
+  CopyIcon,
+  CompareIcon,
+  TcpIcon,
+  UdpIcon,
+  FragIcon,
+  FakingIcon,
+  WarningIcon,
+} from "@b4.icons";
+
 import {
   DndContext,
   closestCenter,
@@ -421,7 +422,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
           bgcolor: colors.accent.primary,
           border: `1px solid ${colors.secondary}44`,
         }}
-        icon={<LayersIcon />}
+        icon={<ImportExportIcon />}
       >
         <Typography variant="subtitle2" gutterBottom>
           Configuration Sets allow you to define different bypass strategies for
@@ -438,7 +439,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
       <B4Section
         title="Configuration Sets"
         description="Manage multiple bypass configurations for different scenarios"
-        icon={<LayersIcon />}
+        icon={<ImportExportIcon />}
       >
         <Stack direction="row" justifyContent="space-between" mb={0}>
           <TextField
@@ -626,7 +627,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                     }
                                   >
                                     <Chip
-                                      icon={<LanguageIcon />}
+                                      icon={<DomainIcon />}
                                       label={`${
                                         setsStats[index]?.total_domains ||
                                         domainCount
@@ -732,7 +733,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                       "&:hover": { color: colors.quaternary },
                                     }}
                                   >
-                                    <DeleteIcon />
+                                    <ClearIcon />
                                   </IconButton>
                                 </Tooltip>
                               )}
@@ -759,7 +760,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                     alignItems="center"
                                     spacing={0.5}
                                   >
-                                    <AirlineStops
+                                    <TcpIcon
                                       sx={{
                                         fontSize: 16,
                                         color: colors.text.secondary,
@@ -806,7 +807,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                     alignItems="center"
                                     spacing={0.5}
                                   >
-                                    <MultipleStop
+                                    <UdpIcon
                                       sx={{
                                         fontSize: 16,
                                         color: colors.text.secondary,
@@ -851,7 +852,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                     alignItems="center"
                                     spacing={0.5}
                                   >
-                                    <CallSplit
+                                    <FragIcon
                                       sx={{
                                         fontSize: 16,
                                         color: colors.text.secondary,
@@ -905,7 +906,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                     alignItems="center"
                                     spacing={0.5}
                                   >
-                                    <Deblur
+                                    <FakingIcon
                                       sx={{
                                         fontSize: 16,
                                         color: colors.text.secondary,
@@ -954,7 +955,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                                       key={cat}
                                       label={cat}
                                       size="small"
-                                      icon={<CategoryIcon />}
+                                      icon={<DomainIcon />}
                                       sx={{
                                         bgcolor: `${colors.tertiary}22`,
                                         color: colors.tertiary,

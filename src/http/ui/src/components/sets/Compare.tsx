@@ -8,12 +8,7 @@ import {
   Divider,
   Grid,
 } from "@mui/material";
-import {
-  CompareArrows as CompareIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  SwapHoriz as ChangeIcon,
-} from "@mui/icons-material";
+import { CompareIcon, AddIcon, ClearIcon, SwapIcon } from "@b4.icons";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4SetConfig } from "@models/Config";
 import { colors } from "@design";
@@ -238,9 +233,9 @@ export const SetCompare = ({ open, setA, setB, onClose }: SetCompareProps) => {
                             diff.type === "added" ? (
                               <AddIcon />
                             ) : diff.type === "removed" ? (
-                              <RemoveIcon />
+                              <ClearIcon />
                             ) : (
-                              <ChangeIcon />
+                              <SwapIcon />
                             )
                           }
                           label={diff.label.split(" → ").pop()}

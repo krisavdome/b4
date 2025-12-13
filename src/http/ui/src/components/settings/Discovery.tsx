@@ -7,7 +7,7 @@ import {
   IconButton,
   Typography,
 } from "@mui/material";
-import { Science as TestIcon, Add as AddIcon } from "@mui/icons-material";
+import { AddIcon, DiscoveryIcon } from "@b4.icons";
 import { B4Config } from "@models/Config";
 import { colors } from "@design";
 import { B4Slider, B4Section, B4TextField } from "@b4.elements";
@@ -45,7 +45,7 @@ export const CheckerSettings = ({ config, onChange }: CheckerSettingsProps) => {
     <B4Section
       title="Testing Configuration"
       description="Configure testing behavior and output"
-      icon={<TestIcon />}
+      icon={<DiscoveryIcon />}
     >
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 6 }}>

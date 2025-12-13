@@ -17,15 +17,14 @@ import {
   Stack,
 } from "@mui/material";
 import {
-  Language as LanguageIcon,
-  Add as AddIcon,
-  Info as InfoIcon,
-  Category as CategoryIcon,
-  Domain as DomainIcon,
-  LooksTwo as IpsIcon,
-  LooksOne as DomainsIcon,
-  Delete as ClearIcon,
-} from "@mui/icons-material";
+  DomainIcon,
+  CategoryIcon,
+  InfoIcon,
+  AddIcon,
+  ClearIcon,
+  IpIcon,
+} from "@b4.icons";
+
 import { B4TextField, B4Section, B4Dialog } from "@b4.elements";
 import SettingAutocomplete from "@common/B4Autocomplete";
 import { colors, button_primary, button_secondary } from "@design";
@@ -238,7 +237,7 @@ export const TargetSettings = ({
         <B4Section
           title="Domain Filtering Configuration"
           description="Configure domain matching for DPI bypass and blocking"
-          icon={<LanguageIcon />}
+          icon={<DomainIcon />}
         >
           <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 0 }}>
             <Tabs
@@ -260,7 +259,7 @@ export const TargetSettings = ({
               }}
             >
               <Tab
-                icon={<DomainsIcon />}
+                icon={<DomainIcon />}
                 iconPosition="start"
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
@@ -269,7 +268,7 @@ export const TargetSettings = ({
                 }
               />
               <Tab
-                icon={<IpsIcon />}
+                icon={<IpIcon />}
                 iconPosition="start"
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>

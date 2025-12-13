@@ -11,8 +11,7 @@ import {
   Radio,
   Box,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DomainIcon from "@mui/icons-material/Language";
+import { AddIcon, DomainIcon } from "@b4.icons";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4Badge } from "@common/B4Badge";

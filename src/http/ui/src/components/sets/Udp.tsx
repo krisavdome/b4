@@ -1,9 +1,5 @@
 import { Grid, Alert, Divider, Chip } from "@mui/material";
-import {
-  Dns as DnsIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-} from "@mui/icons-material";
+import { DnsIcon, WarningIcon, InfoIcon } from "@b4.icons";
 import {
   B4Slider,
   B4Switch,

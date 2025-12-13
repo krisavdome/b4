@@ -11,7 +11,7 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/DeleteForever";
+import { ClearIcon } from "@b4.icons";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useWebSocket } from "@ctx/B4WsProvider";
 
@@ -195,7 +195,7 @@ export function LogsPage() {
                 },
               }}
             >
-              <RefreshIcon />
+              <ClearIcon />
             </IconButton>
           </Stack>
         </Box>

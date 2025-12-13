@@ -11,12 +11,7 @@ import {
   Chip,
   Divider,
 } from "@mui/material";
-import {
-  Language as SettingsIcon,
-  Download as DownloadIcon,
-  CheckCircle as CheckIcon,
-  Info as InfoIcon,
-} from "@mui/icons-material";
+import { InfoIcon, DomainIcon, DownloadIcon, SuccessIcon } from "@b4.icons";
 import { B4Section, B4TextField } from "@b4.elements";
 import { useState, useEffect, useCallback } from "react";
 import { button_primary, colors } from "@design";
@@ -207,7 +202,7 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
       <B4Section
         title="Current Files"
         description="Status of currently configured geodat files"
-        icon={<SettingsIcon />}
+        icon={<DomainIcon />}
       >
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -233,7 +228,7 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
                   {geositeInfo.exists ? (
                     <Chip
                       size="small"
-                      icon={<CheckIcon />}
+                      icon={<SuccessIcon />}
                       label="Active"
                       sx={{
                         bgcolor: colors.accent.secondary,
@@ -326,7 +321,7 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
                   {geoipInfo.exists ? (
                     <Chip
                       size="small"
-                      icon={<CheckIcon />}
+                      icon={<SuccessIcon />}
                       label="Active"
                       sx={{
                         bgcolor: colors.accent.secondary,

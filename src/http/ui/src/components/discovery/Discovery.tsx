@@ -16,18 +16,18 @@ import {
   Collapse,
 } from "@mui/material";
 import {
-  PlayArrow as StartIcon,
-  Stop as StopIcon,
-  Refresh as RefreshIcon,
-  Add as AddIcon,
-  Speed as SpeedIcon,
-  ExpandMore as ExpandIcon,
-  ExpandLess as CollapseIcon,
-  TrendingUp as ImprovementIcon,
-  Science as ScienceIcon,
-  Fingerprint as FingerprintIcon,
-  Security as SecurityIcon,
-} from "@mui/icons-material";
+  StartIcon,
+  StopIcon,
+  RefreshIcon,
+  AddIcon,
+  SpeedIcon,
+  ExpandIcon,
+  CollapseIcon,
+  ImprovementIcon,
+  DiscoveryIcon,
+  FingerprintIcon,
+  SecurityIcon,
+} from "@b4.icons";
 import { colors, button_yellow_outline } from "@design";
 import { B4SetConfig } from "@models/Config";
 import { DiscoveryAddDialog } from "./AddDialog";
@@ -616,7 +616,7 @@ export const DiscoveryRunner = () => {
       <B4Section
         title="Configuration Discovery"
         description="Hierarchical testing: Strategy Detection → Optimization → Combination"
-        icon={<ScienceIcon />}
+        icon={<DiscoveryIcon />}
       >
         {/* Header with actions */}
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>

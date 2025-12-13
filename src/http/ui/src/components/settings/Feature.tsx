@@ -1,5 +1,5 @@
 import { Alert } from "@mui/material";
-import { ToggleOn as ToggleOnIcon } from "@mui/icons-material";
+import { ToggleOnIcon } from "@b4.icons";
 import { B4Config } from "@models/Config";
 import { B4Slider, B4FormGroup, B4Section, B4Switch } from "@b4.elements";
 

@@ -7,7 +7,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { Security as SecurityIcon, Add as AddIcon } from "@mui/icons-material";
+import { SecurityIcon, AddIcon } from "@b4.icons";
 import {
   B4Section,
   B4Switch,

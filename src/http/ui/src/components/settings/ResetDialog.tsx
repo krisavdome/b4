@@ -11,13 +11,14 @@ import {
   ListItemText,
   CircularProgress,
 } from "@mui/material";
+
 import {
-  RestartAlt as ResetIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Shield as ShieldIcon,
-} from "@mui/icons-material";
+  SecurityIcon,
+  WarningIcon,
+  ErrorIcon,
+  CheckIcon,
+  RestoreIcon,
+} from "@b4.icons";
 import { useConfigReset } from "@hooks/useConfig";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
@@ -65,7 +66,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
   const defaultProps = {
     title: "Reset Configuration",
     subtitle: "Restore default settings",
-    icon: <ResetIcon />,
+    icon: <RestoreIcon />,
   };
 
   // Dynamic dialog props based on state
@@ -123,7 +124,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
                 void handleReset();
               }}
               variant="contained"
-              startIcon={<ResetIcon />}
+              startIcon={<RestoreIcon />}
               sx={{
                 ...button_primary,
               }}
@@ -167,7 +168,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
             <List dense>
               <ListItem>
                 <ListItemIcon>
-                  <ShieldIcon sx={{ color: colors.secondary }} />
+                  <SecurityIcon sx={{ color: colors.secondary }} />
                 </ListItemIcon>
                 <ListItemText
                   primary="Domain Configuration"
@@ -176,7 +177,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
               </ListItem>
               <ListItem>
                 <ListItemIcon>
-                  <ShieldIcon sx={{ color: colors.secondary }} />
+                  <SecurityIcon sx={{ color: colors.secondary }} />
                 </ListItemIcon>
                 <ListItemText
                   primary="Testing Configuration"

@@ -1,9 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import {
-  Speed as SpeedIcon,
-  // TrendingUp as UpIcon,
-  // TrendingDown as DownIcon,
-} from "@mui/icons-material";
+import { SpeedIcon } from "@b4.icons";
 import { colors } from "@design";
 
 interface SpeedIndicatorProps {

@@ -9,7 +9,7 @@ import {
   Box,
   IconButton,
 } from "@mui/material";
-import { Dns as DnsIcon, Add as AddIcon } from "@mui/icons-material";
+import { DnsIcon, AddIcon } from "@b4.icons";
 import { B4SetConfig, WindowMode, DesyncMode } from "@models/Config";
 import { B4Slider, B4Select, B4TextField, B4Section } from "@b4.elements";
 import { colors } from "@design";

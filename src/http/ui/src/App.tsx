@@ -25,27 +25,27 @@ import {
 } from "@mui/material";
 
 import {
-  Menu as MenuIcon,
-  Settings as SettingsIcon,
-  Sensors as ConnectionIcon,
-  Speed as SpeedIcon,
-  Assessment as AssessmentIcon,
-  Science as ScienceIcon,
-  Layers as SetsIcon,
-} from "@mui/icons-material";
+  MenuIcon,
+  DiscoveryIcon,
+  SetsIcon,
+  DashboardIcon,
+  LogsIcon,
+  CoreIcon,
+  ConnectionIcon,
+} from "@b4.icons";
 import { theme, colors } from "@design";
 
-import {Logo} from "@common/Logo"
-import Version from "@components/version/Version"
+import { Logo } from "@common/Logo";
+import Version from "@components/version/Version";
 
 import { useWebSocket } from "@ctx/B4WsProvider";
 
-import {SetsPage} from "@b4.sets"
-import {DiscoveryPage} from "@b4.discovery"
-import {ConnectionsPage} from "@b4.connections"
-import {SettingsPage} from "@b4.settings"
-import {LogsPage} from "@b4.logs"
-import {DashboardPage} from "@b4.dashboard"
+import { SetsPage } from "@b4.sets";
+import { DiscoveryPage } from "@b4.discovery";
+import { ConnectionsPage } from "@b4.connections";
+import { SettingsPage } from "@b4.settings";
+import { LogsPage } from "@b4.logs";
+import { DashboardPage } from "@b4.dashboard";
 
 const DRAWER_WIDTH = 240;
 
@@ -56,12 +56,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: <SpeedIcon /> },
+  { path: "/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
   { path: "/sets", label: "Sets", icon: <SetsIcon /> },
-  { path: "/discovery", label: "Discovery", icon: <ScienceIcon /> },
+  { path: "/discovery", label: "Discovery", icon: <DiscoveryIcon /> },
   { path: "/connections", label: "Connections", icon: <ConnectionIcon /> },
-  { path: "/logs", label: "Logs", icon: <AssessmentIcon /> },
-  { path: "/settings", label: "Settings", icon: <SettingsIcon /> },
+  { path: "/logs", label: "Logs", icon: <LogsIcon /> },
+  { path: "/settings", label: "Settings", icon: <CoreIcon /> },
 ];
 
 export default function App() {

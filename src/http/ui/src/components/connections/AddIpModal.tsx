@@ -13,8 +13,7 @@ import {
   Stack,
   Chip,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DomainIcon from "@mui/icons-material/Language";
+import { AddIcon, DomainIcon } from "@b4.icons";
 import {
   colors,
   button_primary,

@@ -30,7 +30,8 @@
       "@b4.settings": ["./src/barrels/settings.ts"],
       "@b4.dashboard": ["./src/barrels/dashboard.ts"],
       "@b4.fields": ["./src/barrels/fields.ts"],
-      "@b4.elements": ["./src/barrels/elements.ts"]
+      "@b4.elements": ["./src/barrels/elements.ts"],
+      "@b4.icons": ["./src/barrels/icons.ts"]
     }
   },
   "include": ["src"]

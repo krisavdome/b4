@@ -1,4 +1,4 @@
-import { Domain as DomainIcon } from "@mui/icons-material";
+import { NetworkIcon } from "@b4.icons";
 import { B4FormGroup, B4Section, B4TextField, B4Slider } from "@b4.elements";
 import { B4Config } from "@models/Config";
 
@@ -11,7 +11,7 @@ export const NetworkSettings = ({ config, onChange }: NetworkSettingsProps) => (
   <B4Section
     title="Network Configuration"
     description="Configure netfilter queue and network processing parameters"
-    icon={<DomainIcon />}
+    icon={<NetworkIcon />}
   >
     <B4FormGroup label="Queue Settings" columns={2}>
       <B4TextField

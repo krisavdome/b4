@@ -6,10 +6,7 @@ import {
   Stack,
   Alert,
 } from "@mui/material";
-import {
-  Language as DomainIcon,
-  Timer as TimerIcon,
-} from "@mui/icons-material";
+import { DomainIcon, TimerIcon } from "@b4.icons";
 import { colors } from "@design";
 import { TestStatusBadge, TestStatus } from "@common/Badge";
 import { SpeedIndicator } from "./SpeedIndicator";

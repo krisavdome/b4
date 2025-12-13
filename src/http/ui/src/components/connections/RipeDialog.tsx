@@ -9,8 +9,7 @@ import {
   Stack,
   Grid,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import InfoIcon from "@mui/icons-material/Info";
+import { InfoIcon, AddIcon } from "@b4.icons";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4SetConfig, MAIN_SET_ID } from "@models/Config";

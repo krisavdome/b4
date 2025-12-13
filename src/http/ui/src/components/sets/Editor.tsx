@@ -8,15 +8,16 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
+
 import {
-  AirlineStops as TcpIcon,
-  Deblur as FakingIcon,
-  MultipleStop as UdpIcon,
-  CallSplit as FragIcon,
-  Language as DomainIcon,
-  Layers as LayersIcon,
-  Dns as DnsIcon,
-} from "@mui/icons-material";
+  DomainIcon,
+  TcpIcon,
+  UdpIcon,
+  DnsIcon,
+  FragIcon,
+  FakingIcon,
+  ImportExportIcon,
+} from "@b4.icons";
 
 import { B4Dialog, B4TextField } from "@b4.elements";
 
@@ -157,7 +158,7 @@ export const SetEditor = ({
           <Tab label="DNS" icon={<DnsIcon />} />
           <Tab label="Fragmentation" icon={<FragIcon />} />
           <Tab label="Faking" icon={<FakingIcon />} />
-          <Tab label="Import/Export" icon={<LayersIcon />} />
+          <Tab label="Import/Export" icon={<ImportExportIcon />} />
         </Tabs>
       </Paper>
       <Box>
@@ -230,7 +231,7 @@ export const SetEditor = ({
       title={isNew ? "Create New Set" : `Edit Set: ${editedSet.name}`}
       open={open}
       onClose={onClose}
-      icon={<LayersIcon />}
+      icon={<ImportExportIcon />}
       fullWidth={true}
       maxWidth="lg"
       actions={

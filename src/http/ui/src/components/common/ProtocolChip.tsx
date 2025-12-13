@@ -1,6 +1,5 @@
 import { Chip } from "@mui/material";
-import TcpIcon from "@mui/icons-material/SyncAlt";
-import UdpIcon from "@mui/icons-material/TrendingFlat";
+import { TcpIcon, UdpIcon } from "@b4.icons";
 import { colors } from "@design";
 
 interface ProtocolChipProps {

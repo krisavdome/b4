@@ -11,12 +11,12 @@ import {
   ListItemIcon,
 } from "@mui/material";
 import {
-  Dns as DnsIcon,
-  Check as CheckIcon,
-  Security as SecurityIcon,
-  Speed as SpeedIcon,
-  Block as BlockIcon,
-} from "@mui/icons-material";
+  DnsIcon,
+  SecurityIcon,
+  CheckIcon,
+  BlockIcon,
+  SpeedIcon,
+} from "@b4.icons";
 import { B4Section, B4Switch, B4TextField } from "@b4.elements";
 import { B4SetConfig } from "@models/Config";
 import { colors } from "@design";

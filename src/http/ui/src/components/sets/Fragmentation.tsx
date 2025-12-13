@@ -1,5 +1,5 @@
 import { Grid, Alert, Divider, Chip, Typography, Box } from "@mui/material";
-import { CallSplit as CallSplitIcon } from "@mui/icons-material";
+import { FragIcon } from "@b4.icons";
 import { B4Section, B4Switch, B4Select, B4Slider } from "@b4.elements";
 import { B4SetConfig, FragmentationStrategy } from "@models/Config";
 import { ComboSettings } from "./frags/Combo";
@@ -46,7 +46,7 @@ export const FragmentationSettings = ({
     <B4Section
       title="Fragmentation Strategy"
       description="Split packets to evade DPI pattern matching"
-      icon={<CallSplitIcon />}
+      icon={<FragIcon />}
     >
       <Grid container spacing={3}>
         {/* Strategy Selection */}

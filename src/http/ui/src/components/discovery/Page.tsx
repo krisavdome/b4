@@ -1,9 +1,9 @@
 import { Container, Alert, Stack } from "@mui/material";
-import { Science as ScienceIcon } from "@mui/icons-material";
+import { DiscoveryIcon } from "@b4.icons";
 import { DiscoveryRunner } from "./Discovery";
 import { colors } from "@design";
 
-export  function DiscoveryPage() {
+export function DiscoveryPage() {
   return (
     <Container
       maxWidth={false}
@@ -26,7 +26,7 @@ export  function DiscoveryPage() {
             bgcolor: colors.accent.primary,
             border: `1px solid ${colors.secondary}44`,
           }}
-          icon={<ScienceIcon />}
+          icon={<DiscoveryIcon />}
         >
           <strong>Configuration Discovery:</strong> Automatically test multiple
           configuration presets to find the most effective DPI bypass settings

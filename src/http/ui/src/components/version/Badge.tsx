@@ -1,6 +1,6 @@
 import { Box, Chip, CircularProgress, Tooltip } from "@mui/material";
-import { NewReleases as NewReleasesIcon } from "@mui/icons-material";
 import { colors } from "@design";
+import { NewReleaseIcon } from "@b4.icons";
 
 interface VersionBadgeProps {
   version: string;
@@ -42,7 +42,7 @@ export const VersionBadge = ({
           <Chip
             label={`v${version}`}
             size="small"
-            icon={<NewReleasesIcon />}
+            icon={<NewReleaseIcon />}
             sx={{
               bgcolor: colors.accent.secondary,
               color: colors.secondary,

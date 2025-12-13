@@ -8,7 +8,7 @@ import {
   Typography,
   IconButton,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/DeleteForever";
+import { ClearIcon } from "@b4.icons";
 import { colors } from "@design";
 
 interface DomainsControlBarProps {
@@ -164,7 +164,7 @@ export const DomainsControlBar = ({
             },
           }}
         >
-          <RefreshIcon />
+          <ClearIcon />
         </IconButton>
       </Stack>
     </Box>

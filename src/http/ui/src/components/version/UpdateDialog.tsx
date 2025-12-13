@@ -9,14 +9,15 @@ import {
   Alert,
   Chip,
 } from "@mui/material";
+
 import {
-  NewReleases as NewReleasesIcon,
-  Close as CloseIcon,
-  OpenInNew as OpenInNewIcon,
-  Description as DescriptionIcon,
-  CloudDownload as CloudDownloadIcon,
-  CheckCircle as CheckCircleIcon,
-} from "@mui/icons-material";
+  NewReleaseIcon,
+  DescriptionIcon,
+  OpenInNewIcon,
+  CheckCircleIcon,
+  CloseIcon,
+  CloudDownloadIcon,
+} from "@b4.icons";
 import ReactMarkdown from "react-markdown";
 import { useSystemUpdate } from "@hooks/useSystemUpdate";
 import { colors, button_primary, button_secondary } from "@design";
@@ -117,7 +118,7 @@ export const UpdateModal = ({
   const defaultDialogProps = {
     title: "New Version Available",
     subtitle: `Published on ${formatDate(publishedAt)}`,
-    icon: <NewReleasesIcon />,
+    icon: <NewReleaseIcon />,
   };
   const getDialogProps = () => {
     switch (updateStatus) {

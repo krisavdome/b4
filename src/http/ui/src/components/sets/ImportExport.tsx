@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { Alert, Box, Button, Stack } from "@mui/material";
-import {
-  Layers as LayersIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
+import { ImportExportIcon, RefreshIcon } from "@b4.icons";
 import { B4Section, B4TextField } from "@b4.elements";
 
 import { B4SetConfig } from "@models/Config";
@@ -82,7 +79,14 @@ export const ImportExportSettings = ({
   };
 
   return (
-    <B4Section title="JSON Configuration" icon={<LayersIcon />}>
+    <B4Section
+      title="Import/Export Set configuration"
+      icon={<ImportExportIcon />}
+    >
+      <Alert severity="info" sx={{ mb: 2 }}>
+        You can export the current set configuration as JSON, or import a new
+        configuration by pasting valid JSON below.
+      </Alert>
       <Stack spacing={2}>
         <B4TextField
           label="Set Configuration JSON"

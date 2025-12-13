@@ -8,7 +8,7 @@ import {
   Typography,
   IconButton,
 } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { AddIcon } from "@b4.icons";
 import { B4TextField } from "@b4.fields";
 import { B4SetConfig } from "@models/Config";
 import { colors } from "@design";

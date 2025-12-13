@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Box, Link, Stack, Divider } from "@mui/material";
 import { colors } from "@design";
-import GitHubIcon from "@mui/icons-material/GitHub";
 import { VersionBadge } from "./Badge";
 import { UpdateModal } from "./UpdateDialog";
 import { useGitHubRelease, dismissVersion } from "@hooks/useGitHubRelease";
+import { GitHubIcon } from "@b4.icons";
 
 export default function Version() {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);

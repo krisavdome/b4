@@ -8,12 +8,7 @@ import {
   LinearProgress,
   Box,
 } from "@mui/material";
-import {
-  RestartAlt as RestartIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-} from "@mui/icons-material";
+import { InfoIcon, RestartIcon, CheckIcon, ErrorIcon } from "@b4.icons";
 import { useSystemRestart } from "@hooks/useSystemRestart";
 import { colors, button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@common/B4Dialog";

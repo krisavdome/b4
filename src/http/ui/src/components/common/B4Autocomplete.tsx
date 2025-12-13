@@ -1,5 +1,5 @@
 import { Autocomplete, CircularProgress, IconButton, Box } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { AddIcon } from "@b4.icons";
 import { B4TextField } from "@b4.fields";
 import { colors } from "@design";
 

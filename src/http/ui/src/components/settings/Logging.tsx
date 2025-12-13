@@ -1,5 +1,5 @@
 import { Grid } from "@mui/material";
-import { Description as DescriptionIcon } from "@mui/icons-material";
+import { LogsIcon } from "@b4.icons";
 import { B4Section, B4Select, B4Switch } from "@b4.elements";
 import { B4Config, LogLevel } from "@models/Config";
 
@@ -20,7 +20,7 @@ export const LoggingSettings = ({ config, onChange }: LoggingSettingsProps) => {
     <B4Section
       title="Logging Configuration"
       description="Configure logging behavior and output"
-      icon={<DescriptionIcon />}
+      icon={<LogsIcon />}
     >
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>

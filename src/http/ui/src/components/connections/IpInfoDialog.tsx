@@ -7,8 +7,7 @@ import {
   CircularProgress,
   Stack,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import AddIcon from "@mui/icons-material/Add";
+import { InfoIcon, AddIcon } from "@b4.icons";
 import { button_primary, button_secondary } from "@design";
 import { B4Dialog } from "@common/B4Dialog";
 import { B4Badge } from "@common/B4Badge";

@@ -6,10 +6,10 @@ import {
   Select,
   Button,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import { AddIcon } from "@b4.icons";
+import { B4TextField } from "@b4.fields";
 import { colors } from "@design";
 import { B4SetConfig, MAIN_SET_ID, NEW_SET_ID } from "@models/Config";
-import B4TextField from "@common/B4TextField";
 
 interface SetSelectorProps {
   sets: B4SetConfig[];

@@ -10,7 +10,7 @@ import {
   Stack,
   Box,
 } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { AddIcon } from "@b4.icons";
 import { SortableTableCell, SortDirection } from "@common/SortableTableCell";
 import { ProtocolChip } from "@common/ProtocolChip";
 import { colors } from "@design";

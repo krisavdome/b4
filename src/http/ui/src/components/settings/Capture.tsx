@@ -15,14 +15,13 @@ import {
   Snackbar,
 } from "@mui/material";
 import {
-  CameraAlt as CaptureIcon,
-  Download as DownloadIcon,
-  ContentCopy as CopyIcon,
-  Delete as DeleteIcon,
-  Clear as ClearAllIcon,
-  Refresh as RefreshIcon,
-  CheckCircle as SuccessIcon,
-} from "@mui/icons-material";
+  CaptureIcon,
+  CopyIcon,
+  ClearIcon,
+  DownloadIcon,
+  RefreshIcon,
+  SuccessIcon,
+} from "@b4.icons";
 import B4Section from "@common/B4Section";
 import B4TextField from "@common/B4TextField";
 import { B4Dialog } from "@common/B4Dialog";
@@ -310,7 +309,7 @@ export const CaptureSettings = () => {
                     color="error"
                     disabled={loading}
                   >
-                    <ClearAllIcon />
+                    <ClearIcon />
                   </IconButton>
                 </Tooltip>
               )}
@@ -435,7 +434,7 @@ export const CaptureSettings = () => {
                                   onClick={() => void deleteCapture(capture)}
                                   sx={{ color: colors.quaternary }}
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <ClearIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             </Stack>

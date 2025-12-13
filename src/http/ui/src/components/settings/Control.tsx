@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { Button, Grid } from "@mui/material";
 import SettingSection from "@common/B4Section";
-import {
-  RestartAlt as RestartIcon,
-  Hub as ControlIcon,
-  Restore as RestoreIcon,
-} from "@mui/icons-material";
+import { ControlIcon, RestartIcon, RestoreIcon } from "@b4.icons";
 import { RestartDialog } from "./RestartDialog";
 import { colors, spacing } from "@design";
 import { ResetDialog } from "./ResetDialog";

@@ -19,16 +19,17 @@ import {
   DialogContentText,
   Grid,
 } from "@mui/material";
+
 import {
-  Save as SaveIcon,
-  Refresh as RefreshIcon,
-  Settings as SettingsIcon,
-  Warning as WarningIcon,
-  Science as DiscoveryIcon,
-  Language as LanguageIcon,
-  Cloud as ApiIcon,
-  CameraAlt as CaptureIcon,
-} from "@mui/icons-material";
+  CoreIcon,
+  DomainIcon,
+  ApiIcon,
+  CaptureIcon,
+  SaveIcon,
+  RefreshIcon,
+  DiscoveryIcon,
+  WarningIcon,
+} from "@b4.icons";
 import { CaptureSettings } from "./Capture";
 import { NetworkSettings } from "./Network";
 import { LoggingSettings } from "./Logging";
@@ -83,7 +84,7 @@ const SETTING_CATEGORIES = [
     id: TABS.GENERAL,
     path: "general",
     label: "Core",
-    icon: <SettingsIcon />,
+    icon: <CoreIcon />,
     description: "Global network and queue configuration",
     requiresRestart: true,
   },
@@ -91,7 +92,7 @@ const SETTING_CATEGORIES = [
     id: TABS.DOMAINS,
     path: "domains",
     label: "Geodat Settings",
-    icon: <LanguageIcon />,
+    icon: <DomainIcon />,
     description: "Global geodata configuration",
     requiresRestart: false,
   },
@@ -121,7 +122,7 @@ const SETTING_CATEGORIES = [
   },
 ];
 
-export  function SettingsPage() {
+export function SettingsPage() {
   const [config, setConfig] = useState<B4Config | null>(null);
   const [originalConfig, setOriginalConfig] = useState<B4Config | null>(null);
   const [loading, setLoading] = useState(true);
