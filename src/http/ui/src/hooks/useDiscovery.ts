@@ -36,6 +36,12 @@ export function useDiscovery() {
           localStorage.removeItem("discovery_suiteId");
         }
       } catch (e) {
+        if (e instanceof ApiError && e.status === 404) {
+          setDiscoveryRunning(false);
+          localStorage.removeItem("discovery_suiteId");
+          setSuiteId(null);
+          return;
+        }
         setError(e instanceof Error ? e.message : "Unknown error");
         setDiscoveryRunning(false);
       }

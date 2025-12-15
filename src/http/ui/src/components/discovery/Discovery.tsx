@@ -62,6 +62,7 @@ const familyNames: Record<StrategyFamily, string> = {
   window: "Window Manipulation",
   mutation: "Mutation",
 };
+
 // Friendly names for phases
 const phaseNames: Record<DiscoveryPhase, string> = {
   fingerprint: "DPI Fingerprinting",
