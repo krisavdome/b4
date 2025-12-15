@@ -11,7 +11,6 @@ import {
   Tooltip,
   IconButton,
   Chip,
-  Snackbar,
 } from "@mui/material";
 import {
   CaptureIcon,
@@ -21,6 +20,7 @@ import {
   RefreshIcon,
   SuccessIcon,
 } from "@b4.icons";
+import { useSnackbar } from "@context/SnackbarProvider";
 import { B4Dialog, B4TextField, B4Section } from "@b4.elements";
 import { colors, radius } from "@design";
 import { B4Alert } from "@components/common/B4Alert";
@@ -35,17 +35,13 @@ interface Capture {
 }
 
 export const CaptureSettings = () => {
+  const { showError, showSuccess } = useSnackbar();
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [loading, setLoading] = useState(false);
   const [probeForm, setProbeForm] = useState({
     domain: "",
     protocol: "both",
   });
-  const [notification, setNotification] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({ open: false, message: "", severity: "success" });
 
   const [hexDialog, setHexDialog] = useState<{
     open: boolean;
@@ -73,12 +69,9 @@ export const CaptureSettings = () => {
 
     const capturedDomain = probeForm.domain; // Store for notification
     setLoading(true);
-
-    setNotification({
-      open: true,
-      message: `Capturing enabled for ${capturedDomain}. Open https://${capturedDomain} in your browser to capture the payload.`,
-      severity: "success",
-    });
+    showSuccess(
+      `Capturing enabled for ${capturedDomain}. Open https://${capturedDomain} in your browser to capture the payload.`
+    );
 
     try {
       if (probeForm.protocol === "both") {
@@ -118,18 +111,14 @@ export const CaptureSettings = () => {
               setLoading(false);
 
               if (found) {
-                setNotification({
-                  open: true,
-                  message: `Successfully captured payload for ${capturedDomain}`,
-                  severity: "success",
-                });
+                showSuccess(
+                  `Successfully captured payload for ${capturedDomain}`
+                );
                 setProbeForm({ ...probeForm, domain: "" });
               } else {
-                setNotification({
-                  open: true,
-                  message: `Capture timeout for ${capturedDomain}. Please try again.`,
-                  severity: "error",
-                });
+                showError(
+                  `Capture timed out for ${capturedDomain}. Please try again.`
+                );
               }
             }
           }
@@ -138,11 +127,7 @@ export const CaptureSettings = () => {
     } catch (error) {
       console.error("Failed to probe:", error);
       setLoading(false);
-      setNotification({
-        open: true,
-        message: "Failed to initiate capture",
-        severity: "error",
-      });
+      showError("Failed to initiate capture");
     }
   };
 
@@ -153,13 +138,11 @@ export const CaptureSettings = () => {
         { method: "DELETE" }
       );
       await loadCaptures();
-      setNotification({
-        open: true,
-        message: `Deleted ${capture.protocol.toUpperCase()} payload for ${
+      showSuccess(
+        `Deleted ${capture.protocol.toUpperCase()} payload for ${
           capture.domain
-        }`,
-        severity: "success",
-      });
+        }`
+      );
     } catch (error) {
       console.error("Failed to delete:", error);
     }
@@ -171,13 +154,9 @@ export const CaptureSettings = () => {
     try {
       await fetch("/api/capture/clear", { method: "POST" });
       await loadCaptures();
-      setNotification({
-        open: true,
-        message: "All captures cleared",
-        severity: "success",
-      });
-    } catch (error) {
-      console.error("Failed to clear:", error);
+      showSuccess("All captures cleared");
+    } catch {
+      showError("Failed to clear captures");
     }
   };
 
@@ -199,11 +178,7 @@ export const CaptureSettings = () => {
 
   const copyHex = (hexData: string) => {
     void navigator.clipboard.writeText(hexData);
-    setNotification({
-      open: true,
-      message: "Hex data copied to clipboard",
-      severity: "success",
-    });
+    showSuccess("Hex data copied to clipboard");
   };
 
   const capturesByDomain = captures.reduce((acc, capture) => {
@@ -514,21 +489,6 @@ export const CaptureSettings = () => {
           </Stack>
         )}
       </B4Dialog>
-
-      {/* Notification Snackbar */}
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={4000}
-        onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert
-          onClose={() => setNotification({ ...notification, open: false })}
-          severity={notification.severity}
-        >
-          {notification.message}
-        </B4Alert>
-      </Snackbar>
     </Stack>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useSnackbar } from "@context/SnackbarProvider";
 
 interface IpModalState {
   open: boolean;
@@ -7,24 +8,13 @@ interface IpModalState {
   selected: string | string[];
 }
 
-interface SnackbarState {
-  open: boolean;
-  message: string;
-  severity: "success" | "error";
-}
-
 export function useIpActions() {
+  const { showSuccess, showError } = useSnackbar();
   const [modalState, setModalState] = useState<IpModalState>({
     open: false,
     ip: "",
     variants: [],
     selected: "",
-  });
-
-  const [snackbar, setSnackbar] = useState<SnackbarState>({
-    open: false,
-    message: "",
-    severity: "success",
   });
 
   const openModal = useCallback((ip: string, variants: string[]) => {
@@ -71,46 +61,30 @@ export function useIpActions() {
         });
 
         if (response.ok) {
-          setSnackbar({
-            open: true,
-            message: `Successfully added "${
+          showSuccess(
+            `IP ${
               Array.isArray(modalState.selected)
-                ? modalState.selected.length + " IPs"
+                ? modalState.selected.join(", ")
                 : modalState.selected
-            }" to manual ips`,
-            severity: "success",
-          });
+            } added successfully`
+          );
           closeModal();
         } else {
           const error = (await response.json()) as { message: string };
-          setSnackbar({
-            open: true,
-            message: `Failed to add ip: ${error.message}`,
-            severity: "error",
-          });
+          showError(`Failed to add ip: ${error.message}`);
         }
       } catch (error) {
-        setSnackbar({
-          open: true,
-          message: `Error adding ip: ${String(error)}`,
-          severity: "error",
-        });
+        showError(`Failed to add ip: ${String(error)}`);
       }
     },
-    [modalState.selected, closeModal]
+    [modalState.selected, closeModal, showError, showSuccess]
   );
-
-  const closeSnackbar = useCallback(() => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  }, []);
 
   return {
     modalState,
-    snackbar,
     openModal,
     closeModal,
     selectVariant,
     addIp,
-    closeSnackbar,
   };
 }

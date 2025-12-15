@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { SortDirection } from "@common/SortableTableCell";
 import { asnStorage } from "@utils";
+import { useSnackbar } from "@context/SnackbarProvider";
 
 // Types
 export type SortColumn =
@@ -27,12 +28,6 @@ interface DomainModalState {
   domain: string;
   variants: string[];
   selected: string;
-}
-
-interface SnackbarState {
-  open: boolean;
-  message: string;
-  severity: "success" | "error";
 }
 
 // Simple LRU Cache for parsed logs
@@ -130,17 +125,12 @@ function parseSniLogLine(line: string): ParsedLog | null {
 
 // Domain actions hook
 export function useDomainActions() {
+  const { showSuccess, showError } = useSnackbar();
   const [modalState, setModalState] = useState<DomainModalState>({
     open: false,
     domain: "",
     variants: [],
     selected: "",
-  });
-
-  const [snackbar, setSnackbar] = useState<SnackbarState>({
-    open: false,
-    message: "",
-    severity: "success",
   });
 
   const openModal = useCallback((domain: string, variants: string[]) => {
@@ -181,43 +171,25 @@ export function useDomainActions() {
         });
 
         if (response.ok) {
-          setSnackbar({
-            open: true,
-            message: `Successfully added "${modalState.selected}" to manual domains`,
-            severity: "success",
-          });
+          showSuccess(`Domain ${modalState.selected} added successfully`);
           closeModal();
         } else {
           const error = (await response.json()) as { message: string };
-          setSnackbar({
-            open: true,
-            message: `Failed to add domain: ${error.message}`,
-            severity: "error",
-          });
+          showError(`Failed to add domain: ${error.message}`);
         }
       } catch (error) {
-        setSnackbar({
-          open: true,
-          message: `Error adding domain: ${String(error)}`,
-          severity: "error",
-        });
+        showError(`Failed to add domain: ${String(error)}`);
       }
     },
-    [modalState.selected, closeModal]
+    [modalState.selected, closeModal, showError, showSuccess]
   );
-
-  const closeSnackbar = useCallback(() => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  }, []);
 
   return {
     modalState,
-    snackbar,
     openModal,
     closeModal,
     selectVariant,
     addDomain,
-    closeSnackbar,
   };
 }
 

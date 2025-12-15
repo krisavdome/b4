@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Container, Paper, Snackbar } from "@mui/material";
+import { Container, Paper } from "@mui/material";
 import { DomainsControlBar } from "./ControlBar";
 import { AddSniModal } from "./AddSniModal";
 import { DomainsTable, SortColumn } from "./Table";
@@ -18,10 +18,10 @@ import {
   generateIpVariants,
 } from "@utils";
 import { colors } from "@design";
-import { useWebSocket } from "@ctx/B4WsProvider";
+import { useWebSocket } from "../../context/B4WsProvider";
 import { AddIpModal } from "./AddIpModal";
 import { B4Config, B4SetConfig } from "@models/Config";
-import { B4Alert } from "@b4.elements";
+import { useSnackbar } from "@context/SnackbarProvider";
 
 const MAX_DISPLAY_ROWS = 1000;
 
@@ -46,15 +46,8 @@ export function ConnectionsPage() {
     return saved.direction;
   });
 
-  const {
-    modalState,
-    snackbar,
-    openModal,
-    closeModal,
-    selectVariant,
-    addDomain,
-    closeSnackbar,
-  } = useDomainActions();
+  const { modalState, openModal, closeModal, selectVariant, addDomain } =
+    useDomainActions();
 
   const {
     modalState: modalIpState,
@@ -63,6 +56,7 @@ export function ConnectionsPage() {
     selectVariant: selectIpVariant,
     addIp,
   } = useIpActions();
+  const { showSuccess } = useSnackbar();
 
   useEffect(() => {
     saveSortState(sortColumn, sortDirection);
@@ -164,12 +158,20 @@ export function ConnectionsPage() {
         e.preventDefault();
         clearDomains();
         resetDomainsBadge();
+        showSuccess("Cleared all domains");
       } else if (e.key === "p" || e.key === "Pause") {
         e.preventDefault();
         setPauseDomains(!pauseDomains);
+        showSuccess(`Domains ${pauseDomains ? "resumed" : "paused"}`);
       }
     },
-    [clearDomains, pauseDomains, setPauseDomains, resetDomainsBadge]
+    [
+      clearDomains,
+      pauseDomains,
+      setPauseDomains,
+      resetDomainsBadge,
+      showSuccess,
+    ]
   );
 
   useEffect(() => {
@@ -267,17 +269,6 @@ export function ConnectionsPage() {
           openModal(hostname, variants);
         }}
       />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={closeSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert onClose={closeSnackbar} severity={snackbar.severity}>
-          {snackbar.message}
-        </B4Alert>
-      </Snackbar>
     </Container>
   );
 }

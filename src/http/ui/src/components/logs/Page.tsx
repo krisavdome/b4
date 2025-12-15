@@ -10,7 +10,7 @@ import {
 import { ClearIcon } from "@b4.icons";
 import { B4Badge, B4TextField, B4Switch, B4TooltipButton } from "@b4.elements";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import { useWebSocket } from "@ctx/B4WsProvider";
+import { useWebSocket } from "../../context/B4WsProvider";
 
 export function LogsPage() {
   const [filter, setFilter] = useState("");

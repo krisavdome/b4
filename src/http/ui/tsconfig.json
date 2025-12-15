@@ -16,7 +16,7 @@
       "@hooks/*": ["./src/hooks/*"],
       "@utils": ["./src/utils/index.ts"],
       "@models/*": ["./src/models/*"],
-      "@ctx/*": ["./src/ctx/*"],
+      "@context/*": ["./src/context/*"],
       "@api/*": ["./src/api/*"],
       "@components/*": ["./src/components/*"],
       "@common/*": ["./src/components/common/*"],

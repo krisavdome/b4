@@ -14,7 +14,6 @@ import {
   Tooltip,
   Switch,
   TextField,
-  Snackbar,
 } from "@mui/material";
 
 import {
@@ -60,6 +59,7 @@ import {
   B4Badge,
   B4Alert,
 } from "@b4.elements";
+import { useSnackbar } from "@context/SnackbarProvider";
 
 import { SetEditor } from "./Editor";
 
@@ -89,6 +89,7 @@ interface SetsManagerProps {
 }
 
 export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
+  const { showSuccess, showError } = useSnackbar();
   const {
     createSet,
     updateSet,
@@ -115,15 +116,6 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
   }>({
     open: false,
     setId: null,
-  });
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
   });
 
   const setsData = config.sets || [];
@@ -286,19 +278,11 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
         : await updateSet(set);
 
       if (result.success) {
-        setSnackbar({
-          open: true,
-          message: editDialog.isNew ? "Set created" : "Set updated",
-          severity: "success",
-        });
+        showSuccess(editDialog.isNew ? "Set created" : "Set updated");
         setEditDialog({ open: false, set: null, isNew: false });
         onRefresh();
       } else {
-        setSnackbar({
-          open: true,
-          message: result.error || "Failed",
-          severity: "error",
-        });
+        showError(result.error || "Failed");
       }
     })();
   };
@@ -308,19 +292,11 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
     void (async () => {
       const result = await deleteSet(deleteDialog.setId!);
       if (result.success) {
-        setSnackbar({
-          open: true,
-          message: "Set deleted",
-          severity: "success",
-        });
+        showSuccess("Set deleted");
         setDeleteDialog({ open: false, setId: null });
         onRefresh();
       } else {
-        setSnackbar({
-          open: true,
-          message: result.error || "Failed to delete",
-          severity: "error",
-        });
+        showError(result.error || "Failed to delete");
       }
     })();
   };
@@ -329,18 +305,10 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
     void (async () => {
       const result = await duplicateSet(set);
       if (result.success) {
-        setSnackbar({
-          open: true,
-          message: "Set duplicated",
-          severity: "success",
-        });
+        showSuccess("Set duplicated");
         onRefresh();
       } else {
-        setSnackbar({
-          open: true,
-          message: result.error || "Failed",
-          severity: "error",
-        });
+        showError(result.error || "Failed to duplicate");
       }
     })();
   };
@@ -352,11 +320,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
       if (result.success) {
         onRefresh();
       } else {
-        setSnackbar({
-          open: true,
-          message: result.error || "Failed to update",
-          severity: "error",
-        });
+        showError(result.error || "Failed to update");
       }
     })();
   };
@@ -1103,21 +1067,6 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
           setCompareDialog({ open: false, setA: null, setB: null })
         }
       />
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </B4Alert>
-      </Snackbar>
     </Stack>
   );
 };

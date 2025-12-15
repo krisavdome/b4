@@ -9,7 +9,6 @@ import {
   Divider,
   IconButton,
   Tooltip,
-  Snackbar,
   CircularProgress,
   Collapse,
 } from "@mui/material";
@@ -30,6 +29,7 @@ import { colors } from "@design";
 import { B4SetConfig } from "@models/Config";
 import { DiscoveryAddDialog } from "./AddDialog";
 import { B4Alert, B4Badge, B4Section, B4TextField } from "@b4.elements";
+import { useSnackbar } from "@context/SnackbarProvider";
 import {
   useDiscovery,
   StrategyFamily,
@@ -58,6 +58,9 @@ const familyNames: Record<StrategyFamily, string> = {
   extsplit: "Extension Split",
   firstbyte: "First-Byte",
   combo: "Combo",
+  hybrid: "Hybrid",
+  window: "Window Manipulation",
+  mutation: "Mutation",
 };
 // Friendly names for phases
 const phaseNames: Record<DiscoveryPhase, string> = {
@@ -80,17 +83,13 @@ export const DiscoveryRunner = () => {
     suite,
     error,
   } = useDiscovery();
+  const { showSuccess, showError } = useSnackbar();
 
   const { addDomainToSet } = useSets();
 
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(
     new Set()
   );
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({ open: false, message: "", severity: "success" });
 
   const [domain, setDomain] = useState("");
   const [addingPreset, setAddingPreset] = useState(false);
@@ -147,11 +146,7 @@ export const DiscoveryRunner = () => {
     };
     const res = await addPresetAsSet(configToAdd);
     if (res.success) {
-      setSnackbar({
-        open: true,
-        message: `Created set "${name}"`,
-        severity: "success",
-      });
+      showSuccess(`Created set "${name}"`);
       setAddDialog({
         open: false,
         domain: "",
@@ -159,11 +154,7 @@ export const DiscoveryRunner = () => {
         setConfig: null,
       });
     } else {
-      setSnackbar({
-        open: true,
-        message: "Failed to add configuration",
-        severity: "error",
-      });
+      showError("Failed to create set");
     }
     setAddingPreset(false);
   };
@@ -172,11 +163,7 @@ export const DiscoveryRunner = () => {
     setAddingPreset(true);
     const res = await addDomainToSet(setId, domain);
     if (res.success) {
-      setSnackbar({
-        open: true,
-        message: `Added "${domain}" to existing set`,
-        severity: "success",
-      });
+      showSuccess(`Added domain to set`);
       setAddDialog({
         open: false,
         domain: "",
@@ -184,11 +171,7 @@ export const DiscoveryRunner = () => {
         setConfig: null,
       });
     } else {
-      setSnackbar({
-        open: true,
-        message: "Failed to add domain",
-        severity: "error",
-      });
+      showError("Failed to add domain to set");
     }
     setAddingPreset(false);
   };
@@ -657,19 +640,20 @@ export const DiscoveryRunner = () => {
                                 }}
                               >
                                 {domainResult.best_preset}
-                                {domainResult.results[domainResult.best_preset]
-                                  ?.family && (
-                                  <B4Badge
-                                    label={
-                                      familyNames[
-                                        domainResult.results[
-                                          domainResult.best_preset
-                                        ].family!
-                                      ]
-                                    }
-                                    color="primary"
-                                  />
-                                )}
+                                {domainResult.best_preset &&
+                                  domainResult.results[domainResult.best_preset]
+                                    ?.family && (
+                                    <B4Badge
+                                      label={
+                                        familyNames[
+                                          domainResult.results[
+                                            domainResult.best_preset
+                                          ].family!
+                                        ]
+                                      }
+                                      color="primary"
+                                    />
+                                  )}
                               </Typography>
                             </Box>
                           </Box>
@@ -894,20 +878,6 @@ export const DiscoveryRunner = () => {
         }}
         loading={addingPreset}
       />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </B4Alert>
-      </Snackbar>
     </Stack>
   );
 };

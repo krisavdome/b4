@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Container,
   Box,
@@ -6,33 +6,20 @@ import {
   CircularProgress,
   Stack,
   Typography,
-  Snackbar,
 } from "@mui/material";
-import { B4Alert } from "@b4.elements";
+import { useSnackbar } from "@context/SnackbarProvider";
 import { SetsManager, SetWithStats } from "./Manager";
 import { B4Config } from "@models/Config";
 import { colors } from "@design";
 
 export function SetsPage() {
+  const { showError } = useSnackbar();
   const [config, setConfig] = useState<
     (B4Config & { sets?: SetWithStats[] }) | null
   >(null);
   const [loading, setLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error" | "info";
-  }>({
-    open: false,
-    message: "",
-    severity: "info",
-  });
 
-  useEffect(() => {
-    void loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/config");
@@ -42,15 +29,15 @@ export function SetsPage() {
       };
       setConfig(data);
     } catch {
-      setSnackbar({
-        open: true,
-        message: "Failed to load configuration",
-        severity: "error",
-      });
+      showError("Failed to load configuration");
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError, setLoading]);
+
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
 
   if (loading || !config) {
     return (
@@ -79,20 +66,6 @@ export function SetsPage() {
       <Box sx={{ flex: 1, overflow: "auto" }}>
         <SetsManager config={config} onRefresh={() => void loadConfig()} />
       </Box>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </B4Alert>
-      </Snackbar>
     </Container>
   );
 }

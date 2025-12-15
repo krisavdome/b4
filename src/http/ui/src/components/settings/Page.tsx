@@ -1,11 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Box,
   Stack,
   Button,
-  Snackbar,
   CircularProgress,
   Typography,
   Tabs,
@@ -29,6 +28,7 @@ import {
   DiscoveryIcon,
   WarningIcon,
 } from "@b4.icons";
+import { useSnackbar } from "@context/SnackbarProvider";
 import { CaptureSettings } from "./Capture";
 import { NetworkSettings } from "./Network";
 import { LoggingSettings } from "./Logging";
@@ -122,6 +122,7 @@ const SETTING_CATEGORIES = [
 ];
 
 export function SettingsPage() {
+  const { showError, showSuccess } = useSnackbar();
   const [config, setConfig] = useState<B4Config | null>(null);
   const [originalConfig, setOriginalConfig] = useState<B4Config | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,16 +157,6 @@ export function SettingsPage() {
       navigate("/settings/general", { replace: true });
     }
   }, [location.pathname, navigate]);
-
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error" | "info";
-  }>({
-    open: false,
-    message: "",
-    severity: "info",
-  });
 
   // Check if configuration has been modified
   const hasChanges = useMemo(() => {
@@ -205,29 +196,25 @@ export function SettingsPage() {
     };
   }, [config, originalConfig, hasChanges]);
 
-  useEffect(() => {
-    void loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/config");
       if (!response.ok) throw new Error("Failed to load configuration");
-      const data = (await response.json()) as unknown as B4Config & {};
+      const data = (await response.json()) as B4Config;
       setConfig(data);
-      setOriginalConfig(structuredClone(data)); // Deep clone
+      setOriginalConfig(structuredClone(data));
     } catch (error) {
       console.error("Error loading configuration:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to load configuration",
-        severity: "error",
-      });
+      showError("Failed to load configuration");
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
 
   const saveConfig = async () => {
     if (!config) return;
@@ -247,20 +234,14 @@ export function SettingsPage() {
 
       setOriginalConfig(structuredClone(config));
 
-      const requiresRestart = categoryHasChanges[0]; // Core settings require restart
-      setSnackbar({
-        open: true,
-        message: requiresRestart
+      const requiresRestart = categoryHasChanges[0];
+      showSuccess(
+        requiresRestart
           ? "Configuration saved! Please restart B4 for core settings to take effect."
-          : "Configuration saved successfully!",
-        severity: "success",
-      });
+          : "Configuration saved successfully!"
+      );
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error instanceof Error ? error.message : "Failed to save",
-        severity: "error",
-      });
+      showError(error instanceof Error ? error.message : "Failed to save");
     } finally {
       setSaving(false);
       await loadConfig();
@@ -271,11 +252,7 @@ export function SettingsPage() {
     if (originalConfig) {
       setConfig(structuredClone(originalConfig));
       setShowResetDialog(false);
-      setSnackbar({
-        open: true,
-        message: "Changes discarded",
-        severity: "info",
-      });
+      showSuccess("Changes discarded");
     }
   };
 
@@ -532,21 +509,6 @@ export function SettingsPage() {
           </DialogContentText>
         </DialogContent>
       </B4Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <B4Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </B4Alert>
-      </Snackbar>
     </Container>
   );
 }

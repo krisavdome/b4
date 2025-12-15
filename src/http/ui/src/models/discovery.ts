@@ -14,7 +14,10 @@ export type StrategyFamily =
   | "overlap"
   | "extsplit"
   | "firstbyte"
-  | "combo";
+  | "combo"
+  | "hybrid"
+  | "window"
+  | "mutation";
 
 export type DiscoveryPhase =
   | "fingerprint"
