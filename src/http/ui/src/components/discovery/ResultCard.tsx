@@ -1,7 +1,6 @@
 import { Card, CardContent, Typography, Box, Stack } from "@mui/material";
 import { DomainIcon, TimerIcon } from "@b4.icons";
 import { colors } from "@design";
-import { TestStatusBadge, TestStatus } from "@common/Badge";
 import { SpeedIndicator } from "./SpeedIndicator";
 import { B4Alert, B4Badge } from "@b4.elements";
 
@@ -14,6 +13,12 @@ interface TestResultCardProps {
   error?: string;
   status_code: number;
 }
+export type TestStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "failed"
+  | "canceled";
 
 export const TestResultCard = ({
   domain,
@@ -63,7 +68,10 @@ export const TestResultCard = ({
                 {domain}
               </Typography>
             </Box>
-            <TestStatusBadge status={status} />
+            <B4Badge
+              color={status === "failed" ? "error" : "default"}
+              label={status}
+            />
           </Box>
 
           {/* Results */}

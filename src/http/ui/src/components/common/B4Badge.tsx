@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Chip, ChipProps } from "@mui/material";
 
 interface B4BadgeProps extends Omit<ChipProps, "color" | "variant"> {
@@ -5,13 +6,16 @@ interface B4BadgeProps extends Omit<ChipProps, "color" | "variant"> {
   variant?: "filled" | "outlined";
 }
 
-export const B4Badge = ({ sx, ...props }: B4BadgeProps) => (
-  <Chip
-    size="small"
-    sx={{
-      px: 0.5,
-      ...sx,
-    }}
-    {...props}
-  />
+export const B4Badge = forwardRef<HTMLDivElement, B4BadgeProps>(
+  ({ sx, ...props }, ref) => (
+    <Chip
+      ref={ref}
+      size="small"
+      sx={{
+        px: 0.5,
+        ...sx,
+      }}
+      {...props}
+    />
+  )
 );
