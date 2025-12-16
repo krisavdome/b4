@@ -95,13 +95,8 @@ func (c *Config) Validate() error {
 	c.MainSet = nil
 	for _, set := range c.Sets {
 		if set.Id == MAIN_SET_ID {
-			continue
-		}
-		if set.TCP.ConnBytesLimit > c.MainSet.TCP.ConnBytesLimit {
-			set.TCP.ConnBytesLimit = c.MainSet.TCP.ConnBytesLimit
-		}
-		if set.UDP.ConnBytesLimit > c.MainSet.UDP.ConnBytesLimit {
-			set.UDP.ConnBytesLimit = c.MainSet.UDP.ConnBytesLimit
+			c.MainSet = set
+			break
 		}
 	}
 
@@ -110,8 +105,16 @@ func (c *Config) Validate() error {
 		c.MainSet = &defaultCopy
 	}
 
-	if c.MainSet == nil {
-		return fmt.Errorf("main set configuration is missing")
+	for _, set := range c.Sets {
+		if set.Id == MAIN_SET_ID {
+			continue
+		}
+		if set.TCP.ConnBytesLimit > c.MainSet.TCP.ConnBytesLimit {
+			set.TCP.ConnBytesLimit = c.MainSet.TCP.ConnBytesLimit
+		}
+		if set.UDP.ConnBytesLimit > c.MainSet.UDP.ConnBytesLimit {
+			set.UDP.ConnBytesLimit = c.MainSet.UDP.ConnBytesLimit
+		}
 	}
 
 	if len(c.MainSet.Targets.GeoSiteCategories) > 0 && c.System.Geo.GeoSitePath == "" {
