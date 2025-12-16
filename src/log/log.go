@@ -10,8 +10,9 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 // Level is the minimum level that will be emitted.
@@ -136,7 +137,7 @@ func InitErrorFile(path string) error {
 	errFile = f
 	errLogger = log.New(f, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 
-	syscall.Dup2(int(f.Fd()), int(os.Stderr.Fd()))
+	unix.Dup2(int(f.Fd()), int(os.Stderr.Fd()))
 
 	return nil
 }
