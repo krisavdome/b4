@@ -351,11 +351,11 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
   }, [sets, filterText]);
 
   interface SortableSetCardProps {
-    set: B4SetConfig;
+    id: string;
     children: React.ReactNode;
   }
 
-  const SortableSetCard = ({ set, children }: SortableSetCardProps) => {
+  const SortableSetCard = ({ id, children }: SortableSetCardProps) => {
     const {
       attributes,
       listeners,
@@ -363,17 +363,20 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
       transform,
       transition,
       isDragging,
-    } = useSortable({ id: set.id });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.4 : 1,
-      zIndex: isDragging ? 1 : 0,
-    };
+    } = useSortable({ id });
 
     return (
-      <Box ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Box
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.4 : 1,
+          zIndex: isDragging ? 1 : 0,
+        }}
+        {...attributes}
+        {...listeners}
+      >
         {children}
       </Box>
     );
@@ -441,7 +444,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                   const hasTargets = domainCount > 0 || ipCount > 0;
 
                   return (
-                    <SortableSetCard key={set.id} set={set}>
+                    <SortableSetCard key={set.id} id={set.id}>
                       <Paper
                         elevation={isMain ? 2 : 1}
                         sx={{
@@ -456,7 +459,8 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                             ? `${colors.accent.primary}44`
                             : colors.background.paper,
                           cursor: "grab",
-                          transition: "all 0.2s ease",
+                          transition:
+                            "border-color 0.2s ease, box-shadow 0.2s ease",
                           "&:hover": {
                             borderColor: isMain
                               ? colors.secondary
