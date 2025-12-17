@@ -10,7 +10,8 @@ import (
 )
 
 type Pool struct {
-	Workers []*Worker
+	Workers  []*Worker
+	configMu sync.Mutex
 }
 
 type Worker struct {

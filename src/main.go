@@ -181,10 +181,6 @@ func gracefulShutdown(cfg *config.Config, pool *nfq.Pool, httpServer *http.Serve
 	var wg sync.WaitGroup
 	shutdownErrors := make(chan error, 3)
 
-	// Shutdown WebSocket connections
-	log.Infof("Shutting down WebSocket connections...")
-	b4http.Shutdown()
-
 	// Shutdown HTTP server
 	if httpServer != nil {
 		wg.Add(1)
@@ -199,6 +195,10 @@ func gracefulShutdown(cfg *config.Config, pool *nfq.Pool, httpServer *http.Serve
 			}
 		}()
 	}
+
+	// Shutdown WebSocket connections
+	log.Infof("Shutting down WebSocket connections...")
+	b4http.Shutdown()
 
 	// Stop NFQueue pool
 	wg.Add(1)

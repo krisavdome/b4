@@ -141,6 +141,12 @@ build-installer:
 watch-installer:
 	@./installer/_watch.sh
 
+.PHONY: build-ui
+build-ui:
+	@echo "Building web UI..."
+	@cd src/http/ui && pnpm build
+	@echo "Web UI build complete."
+
 # Show help
 .PHONY: help
 help:
@@ -158,6 +164,7 @@ help:
 	@printf "  %-25s %s\n" "make clean" "Remove build artifacts"
 	@printf "  %-25s %s\n" "make build-installer" "Build the installer script"
 	@printf "  %-25s %s\n" "make watch-installer" "Watch and rebuild installer on changes"
+	@printf "  %-25s %s\n" "make build-ui" "Build the web UI"
 	@printf "  %-25s %s\n" "make help" "Show this help"
 	@echo ""
 	@echo "Architecture-specific builds:"

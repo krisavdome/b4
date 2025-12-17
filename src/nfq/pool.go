@@ -109,6 +109,9 @@ func buildMatcher(cfg *config.Config) *sni.SuffixSet {
 }
 
 func (p *Pool) UpdateConfig(newCfg *config.Config) error {
+	p.configMu.Lock()
+	defer p.configMu.Unlock()
+
 	matcher := buildMatcher(newCfg)
 
 	for _, w := range p.Workers {
