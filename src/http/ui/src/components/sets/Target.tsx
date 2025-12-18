@@ -30,7 +30,7 @@ import {
   B4PlusButton,
 } from "@b4.elements";
 import SettingAutocomplete from "@common/B4Autocomplete";
-import { B4SetConfig, GeoConfig } from "@models/Config";
+import { B4SetConfig, GeoConfig } from "@models/config";
 import { SetStats } from "./Manager";
 
 interface TargetSettingsProps {

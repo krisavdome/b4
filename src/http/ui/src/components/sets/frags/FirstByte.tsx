@@ -1,6 +1,6 @@
 import { Grid, Box, Typography } from "@mui/material";
 import { colors } from "@design";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { B4Alert, B4FormHeader } from "@b4.elements";
 
 interface FirstByteSettingsProps {

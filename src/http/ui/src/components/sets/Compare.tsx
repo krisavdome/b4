@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { CompareIcon, AddIcon, ClearIcon, SwapIcon } from "@b4.icons";
 import { B4Dialog } from "@common/B4Dialog";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { colors } from "@design";
 
 interface SetCompareProps {

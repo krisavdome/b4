@@ -1,5 +1,5 @@
 import { ToggleOnIcon } from "@b4.icons";
-import { B4Config } from "@models/Config";
+import { B4Config } from "@models/config";
 import {
   B4Slider,
   B4FormGroup,

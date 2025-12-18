@@ -1,6 +1,6 @@
 import { Grid, Box, Typography } from "@mui/material";
 import { B4Slider, B4Switch, B4Select } from "@b4.fields";
-import { B4SetConfig, ComboShuffleMode } from "@models/Config";
+import { B4SetConfig, ComboShuffleMode } from "@models/config";
 import { colors } from "@design";
 import { B4Alert, B4FormHeader } from "@b4.elements";
 

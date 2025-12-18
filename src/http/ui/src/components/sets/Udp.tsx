@@ -9,7 +9,7 @@ import {
   B4Alert,
   B4FormHeader,
 } from "@b4.elements";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 
 interface UdpSettingsProps {
   config: B4SetConfig;

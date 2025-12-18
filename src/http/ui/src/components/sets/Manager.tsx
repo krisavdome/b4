@@ -49,7 +49,7 @@ import { SetCard } from "./SetCard";
 import { SetCompare } from "./Compare";
 
 import { colors, radius } from "@design";
-import { B4Config, B4SetConfig } from "@models/Config";
+import { B4Config, B4SetConfig } from "@models/config";
 import { useSets } from "@hooks/useSets";
 
 export interface SetStats {

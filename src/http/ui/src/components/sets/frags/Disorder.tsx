@@ -1,5 +1,5 @@
 import { Grid, Box, Typography } from "@mui/material";
-import { B4SetConfig, DisorderShuffleMode } from "@models/Config";
+import { B4SetConfig, DisorderShuffleMode } from "@models/config";
 import {
   B4Alert,
   B4Slider,

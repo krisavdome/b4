@@ -3,7 +3,7 @@ import { Box, Button, Stack } from "@mui/material";
 import { ImportExportIcon, RefreshIcon } from "@b4.icons";
 import { B4Alert, B4Section, B4TextField } from "@b4.elements";
 
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 
 interface ImportExportSettingsProps {
   config: B4SetConfig;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Grid, IconButton } from "@mui/material";
 import { AddIcon, DiscoveryIcon } from "@b4.icons";
-import { B4Config } from "@models/Config";
+import { B4Config } from "@models/config";
 import { colors } from "@design";
 import {
   B4Slider,

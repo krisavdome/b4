@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiDelete, apiFetch } from "./apiClient";
-import { B4Config } from "@models/Config";
+import { B4Config } from "@models/config";
 import {
   Capture,
   GeoFileInfo,

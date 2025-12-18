@@ -13,7 +13,7 @@ import {
 import { AddIcon } from "@b4.icons";
 import { B4TextField, B4Dialog } from "@b4.elements";
 import { colors } from "@design";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { generateDomainVariants } from "@utils";
 
 interface SimilarSet {

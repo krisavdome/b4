@@ -1,4 +1,4 @@
-import { B4Config } from "@models/Config";
+import { B4Config } from "@models/config";
 import { Grid, Stack } from "@mui/material";
 import { ApiIcon } from "@b4.icons";
 import { B4TextField, B4Section, B4Alert } from "@b4.elements";

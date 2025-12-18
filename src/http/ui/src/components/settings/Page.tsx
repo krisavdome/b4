@@ -36,7 +36,7 @@ import { ControlSettings } from "./Control";
 import { GeoSettings } from "./Geo";
 import { ApiSettings } from "./Api";
 
-import { B4Config, B4SetConfig } from "@models/Config";
+import { B4Config, B4SetConfig } from "@models/config";
 import { colors, spacing } from "@design";
 import { B4Alert, B4Dialog, B4Tab, B4Tabs } from "@b4.elements";
 import { configApi } from "@b4.settings";

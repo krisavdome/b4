@@ -1,6 +1,6 @@
 import { Grid, FormControlLabel, Switch, Typography, Box } from "@mui/material";
 import { DnsIcon } from "@b4.icons";
-import { B4SetConfig, WindowMode, DesyncMode } from "@models/Config";
+import { B4SetConfig, WindowMode, DesyncMode } from "@models/config";
 import {
   B4Slider,
   B4Select,

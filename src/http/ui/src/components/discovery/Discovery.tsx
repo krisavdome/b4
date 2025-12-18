@@ -26,7 +26,7 @@ import {
   SecurityIcon,
 } from "@b4.icons";
 import { colors } from "@design";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { DiscoveryAddDialog } from "./AddDialog";
 import { B4Alert, B4Badge, B4Section, B4TextField } from "@b4.elements";
 import { useSnackbar } from "@context/SnackbarProvider";

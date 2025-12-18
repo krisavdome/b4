@@ -8,7 +8,7 @@ import {
   B4Alert,
   B4FormHeader,
 } from "@b4.elements";
-import { B4SetConfig, FragmentationStrategy } from "@models/Config";
+import { B4SetConfig, FragmentationStrategy } from "@models/config";
 import { ComboSettings } from "./frags/Combo";
 import { DisorderSettings } from "./frags/Disorder";
 import { OverlapSettings } from "./frags/Overlap";

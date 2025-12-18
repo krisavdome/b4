@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Grid, Box, Typography } from "@mui/material";
 import { B4TextField } from "@b4.fields";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { colors } from "@design";
 import { B4Alert, B4ChipList, B4FormHeader, B4PlusButton } from "@b4.elements";
 

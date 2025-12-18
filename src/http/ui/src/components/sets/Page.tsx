@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "@context/SnackbarProvider";
 import { SetsManager, SetWithStats } from "./Manager";
-import { B4Config } from "@models/Config";
+import { B4Config } from "@models/config";
 import { colors } from "@design";
 
 export function SetsPage() {

@@ -1,7 +1,7 @@
 import { Grid, Box, Typography } from "@mui/material";
 
 import { B4Slider, B4Switch } from "@b4.fields";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { colors } from "@design";
 import { B4Alert } from "@components/common/B4Alert";
 import { B4FormHeader } from "@b4.elements";

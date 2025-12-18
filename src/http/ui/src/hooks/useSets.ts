@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { ApiError, ApiResponse } from "@api/apiClient";
 import { setsApi } from "@b4.sets";
 

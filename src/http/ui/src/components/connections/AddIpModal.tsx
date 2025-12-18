@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { AddIcon, DomainIcon } from "@b4.icons";
 import { colors } from "@design";
-import { B4SetConfig, MAIN_SET_ID } from "@models/Config";
+import { B4SetConfig, MAIN_SET_ID } from "@models/config";
 import { SetSelector } from "@common/SetSelector";
 import { asnStorage } from "@utils";
 import { clearAsnLookupCache } from "@hooks/useDomainActions";

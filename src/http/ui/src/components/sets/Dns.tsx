@@ -22,7 +22,7 @@ import {
   B4Switch,
   B4TextField,
 } from "@b4.elements";
-import { B4SetConfig } from "@models/Config";
+import { B4SetConfig } from "@models/config";
 import { colors } from "@design";
 import dns from "@assets/dns.json";
 

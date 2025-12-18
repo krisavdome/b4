@@ -1,7 +1,7 @@
 import { Grid } from "@mui/material";
 import { LogsIcon } from "@b4.icons";
 import { B4Section, B4Select, B4Switch, B4TextField } from "@b4.elements";
-import { B4Config, LogLevel } from "@models/Config";
+import { B4Config, LogLevel } from "@models/config";
 
 interface LoggingSettingsProps {
   config: B4Config;

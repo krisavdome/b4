@@ -32,7 +32,7 @@ import {
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { B4Badge } from "@b4.elements";
 import { colors, radius } from "@design";
-import { B4SetConfig, MAIN_SET_ID } from "@models/Config";
+import { B4SetConfig, MAIN_SET_ID } from "@models/config";
 import { SetStats } from "./Manager";
 
 interface SetCardProps {

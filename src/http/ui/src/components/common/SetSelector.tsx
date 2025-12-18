@@ -9,7 +9,7 @@ import {
 import { AddIcon } from "@b4.icons";
 import { B4TextField } from "@b4.fields";
 import { colors } from "@design";
-import { B4SetConfig, MAIN_SET_ID, NEW_SET_ID } from "@models/Config";
+import { B4SetConfig, MAIN_SET_ID, NEW_SET_ID } from "@models/config";
 
 interface SetSelectorProps {
   sets: B4SetConfig[];

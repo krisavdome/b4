@@ -20,7 +20,7 @@ import {
 import { colors } from "@design";
 import { useWebSocket } from "../../context/B4WsProvider";
 import { AddIpModal } from "./AddIpModal";
-import { B4Config, B4SetConfig } from "@models/Config";
+import { B4Config, B4SetConfig } from "@models/config";
 import { useSnackbar } from "@context/SnackbarProvider";
 
 const MAX_DISPLAY_ROWS = 1000;

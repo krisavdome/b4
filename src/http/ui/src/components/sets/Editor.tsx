@@ -19,7 +19,7 @@ import {
   B4SetConfig,
   MAIN_SET_ID,
   SystemConfig,
-} from "@models/Config";
+} from "@models/config";
 
 import { TargetSettings } from "./Target";
 import { TcpSettings } from "./Tcp";

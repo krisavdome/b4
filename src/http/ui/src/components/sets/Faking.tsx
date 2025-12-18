@@ -12,7 +12,7 @@ import {
   B4PlusButton,
 } from "@b4.elements";
 
-import { B4SetConfig, FakingPayloadType, MutationMode } from "@models/Config";
+import { B4SetConfig, FakingPayloadType, MutationMode } from "@models/config";
 
 interface FakingSettingsProps {
   config: B4SetConfig;
