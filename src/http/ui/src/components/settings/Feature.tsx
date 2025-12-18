@@ -56,16 +56,6 @@ export const FeatureSettings = ({ config, onChange }: FeatureSettingsProps) => {
           }
           description="Skip automatic IPTables/NFTables rules configuration"
         />
-        {!config.system.tables.skip_setup && (
-          <B4Switch
-            label="Skip Local Traffic"
-            checked={config.system.tables.skip_local_traffic}
-            onChange={(checked: boolean) =>
-              onChange("system.tables.skip_local_traffic", checked)
-            }
-            description="Skip router-originated traffic (enable when running alongside transparent proxies like Xray, Clash, Sing-box etc.)"
-          />
-        )}
         <B4Slider
           label="Firewall Monitor Interval in seconds (default 10s)"
           value={config.system.tables.monitor_interval}

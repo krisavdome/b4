@@ -155,7 +155,6 @@ export interface WebServerConfig {
 export interface TableConfig {
   monitor_interval: number;
   skip_setup: false;
-  skip_local_traffic: boolean;
 }
 
 export interface GeoConfig {

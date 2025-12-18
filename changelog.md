@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.24.1] - 2025-12-17
+
+- REMOVED: `--skip-local-traffic` as it did actually nothing causing connection issues and solving real problem.
+
 ## [1.24.0] - 2025-12-17
 
 - ADDED: `--skip-local-traffic` option to exclude router-originated traffic from processing, enabling compatibility with transparent proxies (Xray, Clash, Sing-Box etc.) running on the same device. By default is `on`. Can be found in `Core` settings. Requires service restart when changing.

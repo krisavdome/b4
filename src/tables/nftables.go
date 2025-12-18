@@ -128,26 +128,21 @@ func (n *NFTablesManager) Apply() error {
 		return err
 	}
 
-	markAccept := n.cfg.Queue.Mark
+	markAccept := fmt.Sprintf("0x%x", n.cfg.Queue.Mark)
 
 	// Add rules
 	if err := n.addRuleArgs("postrouting", "jump", nftChainName); err != nil {
 		return err
 	}
 
-	if err := n.addRuleArgs("output", "meta", "mark", fmt.Sprintf("%d", markAccept), "accept"); err != nil {
+	if err := n.addRuleArgs("output", "meta", "mark", markAccept, "accept"); err != nil {
 		return err
 	}
 
-	if err := n.addRuleArgs(nftChainName, "meta", "mark", fmt.Sprintf("%d", markAccept), "return"); err != nil {
+	if err := n.addRuleArgs(nftChainName, "meta", "mark", markAccept, "return"); err != nil {
 		return err
 	}
 
-	if cfg.System.Tables.SkipLocalTraffic {
-		if err := n.addRuleArgs(nftChainName, "fib", "saddr", "type", "local", "return"); err != nil {
-			return err
-		}
-	}
 	tcpLimit := fmt.Sprintf("%d", cfg.MainSet.TCP.ConnBytesLimit+1)
 	udpLimit := fmt.Sprintf("%d", cfg.MainSet.UDP.ConnBytesLimit+1)
 
@@ -163,12 +158,7 @@ func (n *NFTablesManager) Apply() error {
 		return err
 	}
 
-	var dnsResponseArgs []string
-	if cfg.System.Tables.SkipLocalTraffic {
-		dnsResponseArgs = []string{"fib", "saddr", "type", "!=", "local", "udp", "sport", "53", "counter"}
-	} else {
-		dnsResponseArgs = []string{"udp", "sport", "53", "counter"}
-	}
+	dnsResponseArgs := []string{"udp", "sport", "53", "counter"}
 	dnsResponseArgs = append(dnsResponseArgs, strings.Fields(n.buildNFQueueAction())...)
 	if err := n.addRuleArgs("prerouting", dnsResponseArgs...); err != nil {
 		return err

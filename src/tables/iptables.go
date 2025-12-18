@@ -197,7 +197,10 @@ func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 	queueNum := cfg.Queue.StartNum
 	threads := cfg.Queue.Threads
 	chainName := "B4"
-	markAccept := "32768/32768"
+	markAccept := fmt.Sprintf("0x%x/0x%x", cfg.Queue.Mark, cfg.Queue.Mark)
+	if cfg.Queue.Mark == 0 {
+		markAccept = "0x8000/0x8000"
+	}
 
 	var chains []Chain
 	var rules []Rule
@@ -227,19 +230,10 @@ func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 			manager.buildNFQSpec(queueNum, threads)...,
 		)
 
-		var dnsResponseSpec []string
-
-		if cfg.System.Tables.SkipLocalTraffic {
-			dnsResponseSpec = append(
-				[]string{"-m", "addrtype", "!", "--src-type", "LOCAL", "-p", "udp", "--sport", "53"},
-				manager.buildNFQSpec(queueNum, threads)...,
-			)
-		} else {
-			dnsResponseSpec = append(
-				[]string{"-p", "udp", "--sport", "53"},
-				manager.buildNFQSpec(queueNum, threads)...,
-			)
-		}
+		dnsResponseSpec := append(
+			[]string{"-p", "udp", "--sport", "53"},
+			manager.buildNFQSpec(queueNum, threads)...,
+		)
 
 		rules = append(rules,
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: chainName, Action: "A", Spec: tcpSpec},
@@ -248,14 +242,8 @@ func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "POSTROUTING", Action: "I", Spec: []string{"-j", chainName}},
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "PREROUTING", Action: "I", Spec: dnsResponseSpec},
 
-			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: chainName, Action: "I", Spec: []string{"-m", "mark", "--mark", markAccept, "-j", "RETURN"}},
+			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "OUTPUT", Action: "I", Spec: []string{"-m", "mark", "--mark", markAccept, "-j", "ACCEPT"}},
 		)
-
-		if cfg.System.Tables.SkipLocalTraffic {
-			rules = append(rules,
-				Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: chainName, Action: "I", Spec: []string{"-m", "addrtype", "--src-type", "LOCAL", "-j", "RETURN"}},
-			)
-		}
 
 	}
 
