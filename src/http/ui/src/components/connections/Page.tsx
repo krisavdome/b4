@@ -23,6 +23,7 @@ import { useWebSocket } from "../../context/B4WsProvider";
 import { AddIpModal } from "./AddIpModal";
 import { B4Config, B4SetConfig } from "@models/config";
 import { useSnackbar } from "@context/SnackbarProvider";
+import { devicesApi } from "@b4.devices";
 
 const MAX_DISPLAY_ROWS = 1000;
 
@@ -79,20 +80,16 @@ export function ConnectionsPage() {
   const sortedData = useSortedLogs(filteredLogs, sortColumn, sortDirection);
 
   useEffect(() => {
-    fetch("/api/devices")
-      .then((r) => r.json())
-      .then(
-        (data: {
-          devices?: Array<{ mac: string; alias?: string; vendor?: string }>;
-        }) => {
-          const map: Record<string, string> = {};
-          for (const d of data.devices || []) {
-            const normalized = d.mac.toUpperCase().replace(/-/g, ":");
-            map[normalized] = d.alias || d.vendor || "";
-          }
-          setDeviceMap(map);
+    devicesApi
+      .list()
+      .then((data) => {
+        const map: Record<string, string> = {};
+        for (const d of data.devices || []) {
+          const normalized = d.mac.toUpperCase().replace(/-/g, ":");
+          map[normalized] = d.alias || d.vendor || "";
         }
-      )
+        setDeviceMap(map);
+      })
       .catch(() => {});
   }, []);
 

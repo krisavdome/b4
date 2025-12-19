@@ -19,7 +19,6 @@ import {
 import { DeviceUnknowIcon, RefreshIcon } from "@b4.icons";
 import EditIcon from "@mui/icons-material/Edit";
 import RestoreIcon from "@mui/icons-material/Restore";
-import { B4Config } from "@models/config";
 import { colors } from "@design";
 import {
   B4Section,
@@ -29,26 +28,7 @@ import {
   B4Badge,
   B4InlineEdit,
 } from "@b4.elements";
-
-interface DeviceInfo {
-  mac: string;
-  ip: string;
-  hostname: string;
-  vendor: string;
-  alias?: string;
-  country: string;
-}
-
-interface DevicesResponse {
-  available: boolean;
-  source?: string;
-  devices: DeviceInfo[];
-}
-
-interface DevicesSettingsProps {
-  config: B4Config;
-  onChange: (field: string, value: boolean | string | string[]) => void;
-}
+import { useDevices, DeviceInfo, DevicesSettingsProps } from "@b4.devices";
 
 // Extract device name cell to reduce noise
 const DeviceNameCell = ({
@@ -118,34 +98,24 @@ const DeviceNameCell = ({
 };
 
 export const DevicesSettings = ({ config, onChange }: DevicesSettingsProps) => {
-  const [devices, setDevices] = useState<DeviceInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [available, setAvailable] = useState(false);
-  const [source, setSource] = useState<string>("");
   const [editingMac, setEditingMac] = useState<string | null>(null);
 
   const selectedMacs = config.queue.devices?.mac || [];
   const enabled = config.queue.devices?.enabled || false;
   const wisb = config.queue.devices?.wisb || false;
-
-  const loadDevices = async () => {
-    setLoading(true);
-    try {
-      const resp = await fetch("/api/devices");
-      const data = (await resp.json()) as DevicesResponse;
-      setAvailable(data.available);
-      setSource(data.source || "");
-      setDevices(data.devices || []);
-    } catch (err) {
-      console.error("Failed to load devices:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    devices,
+    loading,
+    available,
+    source,
+    loadDevices,
+    setAlias,
+    resetAlias,
+  } = useDevices();
 
   useEffect(() => {
     void loadDevices();
-  }, []);
+  }, [loadDevices]);
 
   const handleMacToggle = (mac: string) => {
     const current = [...selectedMacs];
@@ -156,31 +126,6 @@ export const DevicesSettings = ({ config, onChange }: DevicesSettingsProps) => {
       current.splice(index, 1);
     }
     onChange("queue.devices.mac", current);
-  };
-
-  const saveAlias = async (mac: string, alias: string) => {
-    const resp = await fetch(`/api/devices/${encodeURIComponent(mac)}/alias`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alias }),
-    });
-    if (resp.ok) {
-      setDevices((prev) =>
-        prev.map((d) => (d.mac === mac ? { ...d, alias } : d))
-      );
-      setEditingMac(null);
-    }
-  };
-
-  const resetAlias = async (mac: string) => {
-    const resp = await fetch(`/api/devices/${encodeURIComponent(mac)}/alias`, {
-      method: "DELETE",
-    });
-    if (resp.ok) {
-      setDevices((prev) =>
-        prev.map((d) => (d.mac === mac ? { ...d, alias: undefined } : d))
-      );
-    }
   };
 
   const isSelected = (mac: string) => selectedMacs.includes(mac);
@@ -348,10 +293,17 @@ export const DevicesSettings = ({ config, onChange }: DevicesSettingsProps) => {
                                 isSelected={isSelected(device.mac)}
                                 isEditing={editingMac === device.mac}
                                 onStartEdit={() => setEditingMac(device.mac)}
-                                onSaveAlias={(alias) =>
-                                  saveAlias(device.mac, alias)
-                                }
-                                onResetAlias={() => resetAlias(device.mac)}
+                                onSaveAlias={async (alias) => {
+                                  const result = await setAlias(
+                                    device.mac,
+                                    alias
+                                  );
+                                  if (result.success) setEditingMac(null);
+                                }}
+                                onResetAlias={async () => {
+                                  const result = await resetAlias(device.mac);
+                                  if (result.success) setEditingMac(null);
+                                }}
                                 onCancelEdit={() => setEditingMac(null)}
                               />
                             </TableCell>
