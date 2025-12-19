@@ -1,5 +1,9 @@
 # B4 - Bye Bye Big Bro
 
+## [1.25.1] - 2025-12-19
+
+- BUG: add validation for fake SNI bounds and fallback to TCP fragments in `overlap` handling.
+
 ## [1.25.0] - 2025-12-19
 
 - REMOVED: `--skip-local-traffic` as it did actually nothing causing connection issues and solving real problem.

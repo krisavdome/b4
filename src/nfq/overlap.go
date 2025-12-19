@@ -65,11 +65,23 @@ func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst 
 	if len(fakeDomains) == 0 {
 		fakeDomains = config.DefaultSetConfig.Fragmentation.Overlap.FakeSNIs
 	}
+	if len(fakeDomains) == 0 {
+		w.sendTCPFragments(cfg, packet, dst)
+		return
+	}
 	fakeSNI := []byte(fakeDomains[int(seq0)%len(fakeDomains)])
 	if len(fakeSNI) < sniLen {
 		fakeSNI = append(fakeSNI, bytes.Repeat([]byte{'.'}, sniLen-len(fakeSNI))...)
 	}
-	copy(seg2[payloadStart+sniStart:payloadStart+sniEnd], fakeSNI[:sniLen])
+
+	// Validate bounds before copy to prevent panic
+	destStart := payloadStart + sniStart
+	destEnd := payloadStart + sniEnd
+	if destStart < 0 || destEnd > len(seg2) || destStart > destEnd || sniLen > len(fakeSNI) {
+		w.sendTCPFragments(cfg, packet, dst)
+		return
+	}
+	copy(seg2[destStart:destEnd], fakeSNI[:sniLen])
 
 	binary.BigEndian.PutUint16(seg2[4:6], id0+1)
 	binary.BigEndian.PutUint16(seg2[2:4], uint16(seg2Len))
