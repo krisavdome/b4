@@ -30,7 +30,6 @@ import {
 } from "@b4.elements";
 import { useDevices, DeviceInfo, DevicesSettingsProps } from "@b4.devices";
 
-// Extract device name cell to reduce noise
 const DeviceNameCell = ({
   device,
   isSelected,
