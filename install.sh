@@ -134,37 +134,6 @@ check_root() {
     exit 1
 }
 
-# Check for required dependencies
-check_dependencies() {
-    missing_deps=""
-
-    # Check for tar
-    if ! command_exists tar; then
-        missing_deps="${missing_deps} tar"
-    fi
-
-    # Check for download tool
-    if ! command_exists wget && ! command_exists curl; then
-        missing_deps="${missing_deps} wget/curl"
-    fi
-
-    if [ -n "$missing_deps" ]; then
-        print_error "Missing required dependencies:$missing_deps"
-        print_info "Please install them first"
-
-        # Try to detect package manager and suggest install command
-        if command_exists opkg; then
-            print_info "For OpenWRT, try: opkg update && opkg install wget tar"
-        elif command_exists apt-get; then
-            print_info "Try: apt-get update && apt-get install -y wget tar"
-        elif command_exists yum; then
-            print_info "Try: yum install -y wget tar"
-        fi
-
-        exit 1
-    fi
-}
-
 # Create necessary directories
 setup_directories() {
     print_info "Creating directories..."
@@ -278,6 +247,149 @@ fetch_stdout() {
     else
         return 1
     fi
+}
+
+detect_pkg_manager() {
+    if command_exists opkg; then
+        PKG_MGR="opkg"
+        PKG_UPDATE="opkg update"
+        PKG_INSTALL="opkg install"
+    elif command_exists apt-get; then
+        PKG_MGR="apt"
+        PKG_UPDATE="apt-get update"
+        PKG_INSTALL="apt-get install -y"
+    elif command_exists yum; then
+        PKG_MGR="yum"
+        PKG_UPDATE=""
+        PKG_INSTALL="yum install -y"
+    elif command_exists apk; then
+        PKG_MGR="apk"
+        PKG_UPDATE="apk update"
+        PKG_INSTALL="apk add"
+    fi
+}
+
+install_packages() {
+    packages="$1"
+
+    [ -z "$PKG_MGR" ] && detect_pkg_manager
+    [ -z "$PKG_MGR" ] && {
+        print_error "No package manager"
+        return 1
+    }
+
+    [ -n "$PKG_UPDATE" ] && $PKG_UPDATE >/dev/null 2>&1 || true
+
+    for pkg in $packages; do
+        actual_pkg="$pkg"
+        case "$PKG_MGR" in
+        opkg) [ "$pkg" = "nohup" ] && actual_pkg="coreutils-nohup" ;;
+        apt | apk) [ "$pkg" = "nohup" ] && actual_pkg="coreutils" ;;
+        esac
+
+        print_info "Installing $actual_pkg..."
+        $PKG_INSTALL $actual_pkg >/dev/null 2>&1 && print_success "Installed $actual_pkg" || print_warning "Failed: $actual_pkg"
+    done
+}
+
+check_dependencies() {
+    required_deps="tar"
+
+    missing_required=""
+
+    if ! command_exists wget && ! command_exists curl; then
+        missing_required="${missing_required} wget"
+    fi
+
+    for dep in $required_deps; do
+        if ! command_exists "$dep"; then
+            missing_required="${missing_required} $dep"
+        fi
+    done
+
+    if [ -n "$missing_required" ]; then
+        print_error "Missing required dependencies:$missing_required"
+
+        if [ "$QUIET_MODE" = "1" ]; then
+            install_packages "$missing_required" || exit 1
+        else
+            printf "${CYAN}Attempt to install? (Y/n): ${NC}"
+            read answer
+            case "$answer" in
+            [nN] | [nN][oO]) exit 1 ;;
+            *) install_packages "$missing_required" || exit 1 ;;
+            esac
+        fi
+    fi
+
+    check_recommended_packages
+}
+
+check_recommended_packages() {
+    case "$SYSTEM_TYPE" in
+    openwrt)
+        recommended="kmod-nft-queue kmod-nf-conntrack-netlink iptables-mod-nfqueue jq wget-ssl coreutils-nohup"
+        pkg_cmd="opkg"
+        ;;
+    entware | merlin)
+        recommended="jq coreutils-nohup iptables"
+        pkg_cmd="opkg"
+        ;;
+    systemd-linux | sysv-linux | generic-linux)
+        missing=""
+        for cmd in jq nohup iptables; do
+            command_exists "$cmd" || missing="${missing} $cmd"
+        done
+        [ -z "$missing" ] && return 0
+        print_warning "Recommended but missing:$missing"
+        [ "$QUIET_MODE" = "1" ] && return 0
+        detect_pkg_manager
+        [ -z "$PKG_MGR" ] && {
+            print_warning "No package manager found"
+            return 0
+        }
+        printf "${CYAN}Install recommended packages? (Y/n): ${NC}"
+        read answer
+        case "$answer" in
+        [nN] | [nN][oO]) return 0 ;;
+        *) install_packages "$missing" ;;
+        esac
+        return 0
+        ;;
+    *)
+        return 0
+        ;;
+    esac
+
+    missing=""
+    for pkg in $recommended; do
+        $pkg_cmd list-installed 2>/dev/null | grep -q "^${pkg} " || missing="${missing} $pkg"
+    done
+
+    [ -z "$missing" ] && return 0
+
+    print_warning "Missing packages:$missing"
+
+    if [ "$QUIET_MODE" = "1" ]; then
+        $pkg_cmd update >/dev/null 2>&1
+        for pkg in $missing; do
+            $pkg_cmd install "$pkg" >/dev/null 2>&1 || true
+        done
+        return 0
+    fi
+
+    printf "${CYAN}Install missing packages? (Y/n): ${NC}"
+    read answer
+    case "$answer" in
+    [nN] | [nN][oO]) print_warning "B4 may not function correctly" ;;
+    *)
+        $pkg_cmd update >/dev/null 2>&1 || true
+        for pkg in $missing; do
+            print_info "Installing $pkg..."
+            $pkg_cmd install "$pkg" >/dev/null 2>&1 && print_success "Installed $pkg" || print_warning "Failed: $pkg"
+        done
+        ;;
+    esac
 }
 
 # --- END utils.sh ---
@@ -792,6 +904,10 @@ EOF
         "${INIT_FULL_PATH}" >"${INIT_FULL_PATH}.tmp"
     mv "${INIT_FULL_PATH}.tmp" "${INIT_FULL_PATH}"
     chmod +x "${INIT_FULL_PATH}"
+
+    if [ -f "/etc/openwrt_release" ] && [ -f "/etc/rc.common" ]; then
+        "${INIT_FULL_PATH}" enable 2>/dev/null && print_success "Service enabled for auto-start on boot"
+    fi
 
     print_success "Init script created at ${INIT_FULL_PATH}"
     print_info "  ${INIT_FULL_PATH} {start|stop|restart|status}"
