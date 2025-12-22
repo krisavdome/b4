@@ -33,9 +33,9 @@ export const VersionBadge = ({
         alignItems: "center",
         gap: 1,
         px: 2,
-        cursor: hasUpdate ? "pointer" : "default",
+        cursor: "pointer",
       }}
-      onClick={hasUpdate ? onClick : undefined}
+      onClick={onClick}
     >
       {hasUpdate ? (
         <Tooltip title="New version available! Click to view details">
