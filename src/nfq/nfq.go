@@ -466,19 +466,7 @@ func (w *Worker) dropAndInjectQUIC(cfg *config.SetConfig, raw []byte, dst net.IP
 		return
 	}
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(frags[1], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frags[0], dst)
-	} else {
-		_ = w.sock.SendIPv4(frags[0], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frags[1], dst)
-	}
+	w.SendTwoSegmentsV4(frags[0], frags[1], dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 func (w *Worker) dropAndInjectTCP(cfg *config.SetConfig, raw []byte, dst net.IP) {
@@ -672,19 +660,7 @@ func (w *Worker) sendTCPFragments(cfg *config.SetConfig, packet []byte, dst net.
 	sock.FixIPv4Checksum(seg2[:ipHdrLen])
 	sock.FixTCPChecksum(seg2)
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(seg2, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(seg1, dst)
-	} else {
-		_ = w.sock.SendIPv4(seg1, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(seg2, dst)
-	}
+	w.SendTwoSegmentsV4(seg1, seg2, dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 func (w *Worker) sendIPFragments(cfg *config.SetConfig, packet []byte, dst net.IP) {
@@ -755,19 +731,7 @@ func (w *Worker) sendIPFragments(cfg *config.SetConfig, packet []byte, dst net.I
 	binary.BigEndian.PutUint16(frag2[2:4], uint16(frag2Len))
 	sock.FixIPv4Checksum(frag2[:ipHdrLen])
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(frag2, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frag1, dst)
-	} else {
-		_ = w.sock.SendIPv4(frag1, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frag2, dst)
-	}
+	w.SendTwoSegmentsV4(frag1, frag2, dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 func (w *Worker) sendFakeSNISequence(cfg *config.SetConfig, original []byte, dst net.IP) {

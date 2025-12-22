@@ -3,7 +3,6 @@ package nfq
 import (
 	"encoding/binary"
 	"net"
-	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/dns"
@@ -149,19 +148,7 @@ func (w *Worker) sendFragmentedDNSQueryV4(cfg *config.SetConfig, raw []byte, ihl
 
 	seg2d := cfg.UDP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(frags[1], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frags[0], dst)
-	} else {
-		_ = w.sock.SendIPv4(frags[0], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(frags[1], dst)
-	}
+	w.SendTwoSegmentsV4(frags[0], frags[1], dst, seg2d, cfg.Fragmentation.ReverseOrder)
 
 	log.Tracef("DNS frag: sent %d fragments for query", len(frags))
 }
@@ -199,19 +186,7 @@ func (w *Worker) sendFragmentedDNSQueryV6(cfg *config.SetConfig, raw []byte, dst
 
 	seg2d := cfg.UDP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(frags[1], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(frags[0], dst)
-	} else {
-		_ = w.sock.SendIPv6(frags[0], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(frags[1], dst)
-	}
+	w.SendTwoSegmentsV6(frags[0], frags[1], dst, seg2d, cfg.Fragmentation.ReverseOrder)
 
 	log.Tracef("DNS frag v6: sent %d fragments", len(frags))
 }

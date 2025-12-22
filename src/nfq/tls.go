@@ -3,7 +3,6 @@ package nfq
 import (
 	"encoding/binary"
 	"net"
-	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/sock"
@@ -74,19 +73,7 @@ func (w *Worker) sendTLSFragments(cfg *config.SetConfig, packet []byte, dst net.
 
 	seg2d := cfg.TCP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(pkt2, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(pkt1, dst)
-	} else {
-		_ = w.sock.SendIPv4(pkt1, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(pkt2, dst)
-	}
+	w.SendTwoSegmentsV4(pkt1, pkt2, dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 // IPv6 version
@@ -144,17 +131,5 @@ func (w *Worker) sendTLSFragmentsV6(cfg *config.SetConfig, packet []byte, dst ne
 
 	seg2d := cfg.TCP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(pkt2, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(pkt1, dst)
-	} else {
-		_ = w.sock.SendIPv6(pkt1, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(pkt2, dst)
-	}
+	w.SendTwoSegmentsV6(pkt1, pkt2, dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }

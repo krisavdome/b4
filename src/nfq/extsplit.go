@@ -3,7 +3,6 @@ package nfq
 import (
 	"encoding/binary"
 	"net"
-	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/sock"
@@ -100,17 +99,5 @@ func (w *Worker) sendExtSplitFragments(cfg *config.SetConfig, packet []byte, dst
 
 	delay := cfg.TCP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv4(seg2, dst)
-		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(seg1, dst)
-	} else {
-		_ = w.sock.SendIPv4(seg1, dst)
-		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv4(seg2, dst)
-	}
+	w.SendTwoSegmentsV4(seg1, seg2, dst, delay, cfg.Fragmentation.ReverseOrder)
 }

@@ -2,7 +2,6 @@ package nfq
 
 import (
 	"net"
-	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/sock"
@@ -33,17 +32,5 @@ func (w *Worker) sendExtSplitFragmentsV6(cfg *config.SetConfig, packet []byte, d
 
 	delay := cfg.TCP.Seg2Delay
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(seg2, dst)
-		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(seg1, dst)
-	} else {
-		_ = w.sock.SendIPv6(seg1, dst)
-		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(seg2, dst)
-	}
+	w.SendTwoSegmentsV6(seg1, seg2, dst, delay, cfg.Fragmentation.ReverseOrder)
 }

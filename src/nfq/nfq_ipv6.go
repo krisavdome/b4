@@ -53,19 +53,7 @@ func (w *Worker) dropAndInjectQUICV6(cfg *config.SetConfig, raw []byte, dst net.
 		return
 	}
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(frags[1], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(frags[0], dst)
-	} else {
-		_ = w.sock.SendIPv6(frags[0], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(frags[1], dst)
-	}
+	w.SendTwoSegmentsV6(frags[0], frags[1], dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 // dropAndInjectTCPv6 handles TCP packet manipulation for IPv6
@@ -258,20 +246,7 @@ func (w *Worker) sendTCPSegmentsv6(cfg *config.SetConfig, packet []byte, dst net
 	binary.BigEndian.PutUint32(seg2[ipv6HdrLen+4:ipv6HdrLen+8], seq+uint32(splitPos))
 	binary.BigEndian.PutUint16(seg2[4:6], uint16(seg2Len-ipv6HdrLen))
 	sock.FixTCPChecksumV6(seg2)
-
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(seg2, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(seg1, dst)
-	} else {
-		_ = w.sock.SendIPv6(seg1, dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(seg2, dst)
-	}
+	w.SendTwoSegmentsV6(seg1, seg2, dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 func (w *Worker) sendIPFragmentsv6(cfg *config.SetConfig, packet []byte, dst net.IP) {
@@ -294,10 +269,8 @@ func (w *Worker) sendIPFragmentsv6(cfg *config.SetConfig, packet []byte, dst net
 
 	payload := packet[payloadStart:]
 
-	// Determine split position (relative to TCP payload)
 	splitPos := cfg.Fragmentation.SNIPosition
 
-	// Override with middle_sni if enabled and SNI found
 	if cfg.Fragmentation.MiddleSNI {
 		if s, e, ok := locateSNI(payload); ok && e-s >= 4 {
 			sniLen := e - s
@@ -338,19 +311,7 @@ func (w *Worker) sendIPFragmentsv6(cfg *config.SetConfig, packet []byte, dst net
 		return
 	}
 
-	if cfg.Fragmentation.ReverseOrder {
-		_ = w.sock.SendIPv6(fragments[1], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(fragments[0], dst)
-	} else {
-		_ = w.sock.SendIPv6(fragments[0], dst)
-		if seg2d > 0 {
-			time.Sleep(time.Duration(seg2d) * time.Millisecond)
-		}
-		_ = w.sock.SendIPv6(fragments[1], dst)
-	}
+	w.SendTwoSegmentsV6(fragments[0], fragments[1], dst, seg2d, cfg.Fragmentation.ReverseOrder)
 }
 
 // sendFakeSNISequencev6 sends a sequence of fake SNI packets for IPv6
