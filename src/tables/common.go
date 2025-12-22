@@ -42,9 +42,6 @@ func AddRules(cfg *config.Config) error {
 
 // ClearRulesAuto automatically detects and clears the appropriate firewall rules
 func ClearRules(cfg *config.Config) error {
-	if cfg.System.Tables.SkipSetup {
-		return nil
-	}
 
 	backend := detectFirewallBackend()
 

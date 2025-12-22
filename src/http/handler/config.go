@@ -12,7 +12,6 @@ import (
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/daniellavrushin/b4/metrics"
-	"github.com/daniellavrushin/b4/utils"
 )
 
 func (api *API) RegisterConfigApi() {
@@ -174,6 +173,7 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldConfig := a.cfg.Clone()
 	newConfig.ConfigPath = a.cfg.ConfigPath
 
 	// update logging level if changed
@@ -253,6 +253,10 @@ func (a *API) updateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if a.PerformSoftRestart(&newConfig, oldConfig) {
+		log.Infof("Soft restart completed successfully")
+	}
+
 	m := metrics.GetMetricsCollector()
 	m.RecordEvent("info", fmt.Sprintf("Loaded %d domains and %d IPs across %d sets", allDomainsCount, allIpsCount, len(newConfig.Sets)))
 	log.Infof("Loaded %d domains and %d IPs across %d sets", allDomainsCount, allIpsCount, len(newConfig.Sets))
@@ -277,6 +281,7 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Infof("Config reset requested")
+	oldConfig := a.cfg.Clone()
 
 	defaultCfg := config.NewConfig()
 	defaultCfg.System.Checker = a.cfg.System.Checker
@@ -303,6 +308,10 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if a.PerformSoftRestart(&defaultCfg, oldConfig) {
+		log.Infof("Soft restart completed successfully")
+	}
+
 	setJsonHeader(w)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -311,30 +320,67 @@ func (a *API) resetConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *API) saveAndPushConfig(cfg *config.Config) error {
+func (a *API) saveAndPushConfig(newCfg *config.Config) error {
 
 	if globalPool != nil {
-		err := globalPool.UpdateConfig(cfg)
+		err := globalPool.UpdateConfig(newCfg)
 		if err != nil {
 			return fmt.Errorf("failed to update global pool config: %v", err)
 		}
 	}
 
-	err := cfg.SaveToFile(cfg.ConfigPath)
+	err := newCfg.SaveToFile(newCfg.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to save config to file: %v", err)
 	}
 
-	oldPorts := a.cfg.CollectUDPPorts()
-	*a.cfg = *cfg
-	newPorts := a.cfg.CollectUDPPorts()
+	*a.cfg = *newCfg
 
-	if !a.cfg.System.Tables.SkipSetup && !utils.SlicesAreEqual(oldPorts, newPorts) && tablesRefreshFunc != nil {
-		log.Infof("UDP ports changed (%s -> %s), refreshing firewall rules", oldPorts, newPorts)
+	return nil
+}
+
+func (a *API) PerformSoftRestart(newCfg *config.Config, oldCfg *config.Config) bool {
+
+	oldPorts := strings.Join(oldCfg.CollectUDPPorts(), ",")
+	newPorts := strings.Join(newCfg.CollectUDPPorts(), ",")
+	shouldUpdate := false
+	if oldCfg.System.Tables.SkipSetup != newCfg.System.Tables.SkipSetup {
+
+		shouldUpdate = true
+	}
+
+	if !newCfg.System.Tables.SkipSetup && oldPorts != newPorts {
+		shouldUpdate = true
+	}
+
+	if oldCfg.MainSet.TCP.ConnBytesLimit != newCfg.MainSet.TCP.ConnBytesLimit {
+		shouldUpdate = true
+	}
+
+	if oldCfg.MainSet.UDP.ConnBytesLimit != newCfg.MainSet.UDP.ConnBytesLimit {
+		shouldUpdate = true
+	}
+
+	if oldCfg.Queue.Mark != newCfg.Queue.Mark {
+		shouldUpdate = true
+	}
+
+	if oldCfg.Queue.IPv4Enabled != newCfg.Queue.IPv4Enabled {
+		shouldUpdate = true
+	}
+	if oldCfg.Queue.IPv6Enabled != newCfg.Queue.IPv6Enabled {
+		shouldUpdate = true
+	}
+
+	if shouldUpdate {
+		log.Infof("Core settings changed, performing soft system restart")
+		if oldPorts != newPorts {
+			log.Infof("UDP ports changed (%s -> %s), refreshing firewall rules", oldPorts, newPorts)
+		}
 		if err := tablesRefreshFunc(); err != nil {
 			log.Errorf("Failed to refresh tables: %v", err)
 		}
 	}
 
-	return nil
+	return shouldUpdate
 }

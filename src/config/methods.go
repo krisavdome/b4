@@ -353,3 +353,26 @@ func (cfg *Config) CollectUDPPorts() []string {
 	sort.Strings(ports)
 	return ports
 }
+
+func (c *Config) Clone() *Config {
+	data, _ := json.Marshal(c)
+	var clone Config
+	_ = json.Unmarshal(data, &clone)
+	clone.ConfigPath = c.ConfigPath
+
+	for _, set := range clone.Sets {
+		for _, origSet := range c.Sets {
+			if set.Id == origSet.Id {
+				set.Targets.DomainsToMatch = make([]string, len(origSet.Targets.DomainsToMatch))
+				copy(set.Targets.DomainsToMatch, origSet.Targets.DomainsToMatch)
+
+				set.Targets.IpsToMatch = make([]string, len(origSet.Targets.IpsToMatch))
+				copy(set.Targets.IpsToMatch, origSet.Targets.IpsToMatch)
+				break
+			}
+		}
+	}
+
+	clone.Validate()
+	return &clone
+}

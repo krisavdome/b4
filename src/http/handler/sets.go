@@ -22,6 +22,8 @@ func (api *API) handleSetDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldConfig := api.cfg.Clone()
+
 	setId := r.PathValue("id")
 
 	if r.Method != http.MethodPost {
@@ -46,6 +48,10 @@ func (api *API) handleSetDomains(w http.ResponseWriter, r *http.Request) {
 			if err := api.saveAndPushConfig(api.cfg); err != nil {
 				http.Error(w, "Failed to save", http.StatusInternalServerError)
 				return
+			}
+
+			if api.PerformSoftRestart(api.cfg, oldConfig) {
+				log.Infof("Soft restart completed successfully")
 			}
 
 			setJsonHeader(w)
@@ -111,6 +117,8 @@ func (api *API) createSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldConfig := api.cfg.Clone()
+
 	set.Id = uuid.New().String()
 	api.initializeSetDefaults(&set)
 
@@ -122,6 +130,10 @@ func (api *API) createSet(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Failed to save config after creating set: %v", err)
 		http.Error(w, "Failed to save", http.StatusInternalServerError)
 		return
+	}
+
+	if api.PerformSoftRestart(api.cfg, oldConfig) {
+		log.Infof("Soft restart completed successfully")
 	}
 
 	log.Infof("Created set '%s' (id: %s)", set.Name, set.Id)
@@ -136,6 +148,8 @@ func (api *API) updateSet(w http.ResponseWriter, r *http.Request, id string) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
+
+	oldConfig := api.cfg.Clone()
 
 	found := false
 	for i, set := range api.cfg.Sets {
@@ -160,6 +174,10 @@ func (api *API) updateSet(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
+	if api.PerformSoftRestart(api.cfg, oldConfig) {
+		log.Infof("Soft restart completed successfully")
+	}
+
 	log.Infof("Updated set '%s' (id: %s)", updated.Name, id)
 	setJsonHeader(w)
 	json.NewEncoder(w).Encode(updated)
@@ -170,6 +188,8 @@ func (api *API) deleteSet(w http.ResponseWriter, id string) {
 		http.Error(w, "Cannot delete main set", http.StatusForbidden)
 		return
 	}
+
+	oldConfig := api.cfg
 
 	found := false
 	filtered := make([]*config.SetConfig, 0, len(api.cfg.Sets))
@@ -194,6 +214,10 @@ func (api *API) deleteSet(w http.ResponseWriter, id string) {
 		return
 	}
 
+	if api.PerformSoftRestart(api.cfg, oldConfig) {
+		log.Infof("Soft restart completed successfully")
+	}
+
 	log.Infof("Deleted set (id: %s)", id)
 	setJsonHeader(w)
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
@@ -204,6 +228,8 @@ func (api *API) handleReorderSets(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+
+	oldConfig := api.cfg.Clone()
 
 	var req struct {
 		SetIds []string `json:"set_ids"`
@@ -236,6 +262,10 @@ func (api *API) handleReorderSets(w http.ResponseWriter, r *http.Request) {
 	if err := api.saveAndPushConfig(api.cfg); err != nil {
 		http.Error(w, "Failed to save", http.StatusInternalServerError)
 		return
+	}
+
+	if api.PerformSoftRestart(api.cfg, oldConfig) {
+		log.Infof("Soft restart completed successfully")
 	}
 
 	setJsonHeader(w)
