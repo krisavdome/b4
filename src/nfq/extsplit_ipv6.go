@@ -1,7 +1,6 @@
 package nfq
 
 import (
-	"encoding/binary"
 	"net"
 	"time"
 
@@ -11,51 +10,26 @@ import (
 
 // sendExtSplitFragmentsV6 - IPv6 version: splits before SNI extension
 func (w *Worker) sendExtSplitFragmentsV6(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	const ipv6HdrLen = 40
-
-	if len(packet) < ipv6HdrLen+20 {
+	pi, ok := ExtractPacketInfoV6(packet)
+	if !ok || pi.PayloadLen < 50 {
 		_ = w.sock.SendIPv6(packet, dst)
 		return
 	}
 
-	tcpHdrLen := int((packet[ipv6HdrLen+12] >> 4) * 4)
-	payloadStart := ipv6HdrLen + tcpHdrLen
-	payloadLen := len(packet) - payloadStart
+	splitPos := findPreSNIExtensionPoint(pi.Payload)
 
-	if payloadLen < 50 {
-		_ = w.sock.SendIPv6(packet, dst)
-		return
-	}
-
-	payload := packet[payloadStart:]
-	splitPos := findPreSNIExtensionPoint(payload)
-
-	if splitPos <= 5 || splitPos >= payloadLen-10 {
+	if splitPos <= 5 || splitPos >= pi.PayloadLen-10 {
 		w.sendTCPSegmentsv6(cfg, packet, dst)
 		return
 	}
 
-	seq0 := binary.BigEndian.Uint32(packet[ipv6HdrLen+4 : ipv6HdrLen+8])
-
 	// Segment 1: everything before SNI extension
-	seg1Len := payloadStart + splitPos
-	seg1 := make([]byte, seg1Len)
-	copy(seg1[:payloadStart], packet[:payloadStart])
-	copy(seg1[payloadStart:], payload[:splitPos])
-
-	binary.BigEndian.PutUint16(seg1[4:6], uint16(seg1Len-ipv6HdrLen))
-	seg1[ipv6HdrLen+13] &^= 0x08 // Clear PSH
+	seg1 := BuildSegmentV6(packet, pi, pi.Payload[:splitPos], 0)
+	ClearPSH(seg1, pi.IPHdrLen)
 	sock.FixTCPChecksumV6(seg1)
 
 	// Segment 2: SNI extension onwards
-	seg2Len := payloadStart + (payloadLen - splitPos)
-	seg2 := make([]byte, seg2Len)
-	copy(seg2[:payloadStart], packet[:payloadStart])
-	copy(seg2[payloadStart:], payload[splitPos:])
-
-	binary.BigEndian.PutUint32(seg2[ipv6HdrLen+4:ipv6HdrLen+8], seq0+uint32(splitPos))
-	binary.BigEndian.PutUint16(seg2[4:6], uint16(seg2Len-ipv6HdrLen))
-	sock.FixTCPChecksumV6(seg2)
+	seg2 := BuildSegmentV6(packet, pi, pi.Payload[splitPos:], uint32(splitPos))
 
 	delay := cfg.TCP.Seg2Delay
 

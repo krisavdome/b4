@@ -10,10 +10,26 @@ import (
 	"github.com/florianl/go-nfqueue"
 )
 
+type Segment struct {
+	Data []byte
+	Seq  uint32
+}
+
 type Pool struct {
 	Workers  []*Worker
 	configMu sync.Mutex
 	Dhcp     *dhcp.Manager
+}
+
+type PacketInfo struct {
+	IPHdrLen     int
+	TCPHdrLen    int
+	PayloadStart int
+	PayloadLen   int
+	Payload      []byte
+	Seq0         uint32
+	ID0          uint16
+	IsIPv6       bool
 }
 
 type Worker struct {

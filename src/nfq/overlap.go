@@ -2,7 +2,6 @@ package nfq
 
 import (
 	"bytes"
-	"encoding/binary"
 	"net"
 	"time"
 
@@ -12,22 +11,14 @@ import (
 
 // sendOverlapFragments exploits TCP segment overlap behavior
 func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	ipHdrLen := int((packet[0] & 0x0F) * 4)
-	tcpHdrLen := int((packet[ipHdrLen+12] >> 4) * 4)
-	payloadStart := ipHdrLen + tcpHdrLen
-	payloadLen := len(packet) - payloadStart
-
-	if payloadLen < 20 {
+	pi, ok := ExtractPacketInfoV4(packet)
+	if !ok || pi.PayloadLen < 20 {
 		_ = w.sock.SendIPv4(packet, dst)
 		return
 	}
 
-	payload := packet[payloadStart:]
-	seq0 := binary.BigEndian.Uint32(packet[ipHdrLen+4 : ipHdrLen+8])
-	id0 := binary.BigEndian.Uint16(packet[4:6])
-
-	sniStart, sniEnd, ok := locateSNI(payload)
-	if !ok || sniEnd <= sniStart || sniEnd > payloadLen || sniStart < 0 {
+	sniStart, sniEnd, ok := locateSNI(pi.Payload)
+	if !ok || sniEnd <= sniStart || sniEnd > pi.PayloadLen || sniStart < 0 {
 		w.sendTCPFragments(cfg, packet, dst)
 		return
 	}
@@ -38,26 +29,15 @@ func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst 
 		overlapStart = 0
 	}
 
-	seg1Len := payloadStart + (payloadLen - overlapStart)
-	seg1 := make([]byte, seg1Len)
-	copy(seg1[:payloadStart], packet[:payloadStart])
-	copy(seg1[payloadStart:], payload[overlapStart:]) // REAL SNI
-
-	binary.BigEndian.PutUint32(seg1[ipHdrLen+4:ipHdrLen+8], seq0+uint32(overlapStart))
-	binary.BigEndian.PutUint16(seg1[2:4], uint16(seg1Len))
-	sock.FixIPv4Checksum(seg1[:ipHdrLen])
-	sock.FixTCPChecksum(seg1)
+	seg1 := BuildSegmentV4(packet, pi, pi.Payload[overlapStart:], uint32(overlapStart), 0)
 
 	// Segment 2: From start through SNI, with FAKE SNI (sent SECOND - DPI sees, server discards overlap)
 	seg2End := sniEnd + 4
-	if seg2End > payloadLen {
-		seg2End = payloadLen
+	if seg2End > pi.PayloadLen {
+		seg2End = pi.PayloadLen
 	}
 
-	seg2Len := payloadStart + seg2End
-	seg2 := make([]byte, seg2Len)
-	copy(seg2[:payloadStart], packet[:payloadStart])
-	copy(seg2[payloadStart:], payload[:seg2End])
+	seg2 := BuildSegmentV4(packet, pi, pi.Payload[:seg2End], 0, 1)
 
 	// Inject fake SNI
 	sniLen := sniEnd - sniStart
@@ -69,24 +49,21 @@ func (w *Worker) sendOverlapFragments(cfg *config.SetConfig, packet []byte, dst 
 		w.sendTCPFragments(cfg, packet, dst)
 		return
 	}
-	fakeSNI := []byte(fakeDomains[seq0%uint32(len(fakeDomains))])
+	fakeSNI := []byte(fakeDomains[pi.Seq0%uint32(len(fakeDomains))])
 	if len(fakeSNI) < sniLen {
 		fakeSNI = append(fakeSNI, bytes.Repeat([]byte{'.'}, sniLen-len(fakeSNI))...)
 	}
 
 	// Validate bounds before copy to prevent panic
-	destStart := payloadStart + sniStart
-	destEnd := payloadStart + sniEnd
+	destStart := pi.PayloadStart + sniStart
+	destEnd := pi.PayloadStart + sniEnd
 	if destStart < 0 || destEnd > len(seg2) || destStart > destEnd || sniLen > len(fakeSNI) {
 		w.sendTCPFragments(cfg, packet, dst)
 		return
 	}
 	copy(seg2[destStart:destEnd], fakeSNI[:sniLen])
 
-	binary.BigEndian.PutUint16(seg2[4:6], id0+1)
-	binary.BigEndian.PutUint16(seg2[2:4], uint16(seg2Len))
-	seg2[ipHdrLen+13] &^= 0x08
-	sock.FixIPv4Checksum(seg2[:ipHdrLen])
+	ClearPSH(seg2, pi.IPHdrLen)
 	sock.FixTCPChecksum(seg2)
 
 	delay := cfg.TCP.Seg2Delay

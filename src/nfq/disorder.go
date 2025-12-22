@@ -1,156 +1,51 @@
 package nfq
 
 import (
-	"encoding/binary"
-	"math/rand"
 	"net"
 	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/sock"
+	"github.com/daniellavrushin/b4/utils"
 )
 
 // sendDisorderFragments - splits and sends in random order without any faking
 // DPI expects sequential data; this exploits that assumption
 func (w *Worker) sendDisorderFragments(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	ipHdrLen := int((packet[0] & 0x0F) * 4)
-	tcpHdrLen := int((packet[ipHdrLen+12] >> 4) * 4)
-	payloadStart := ipHdrLen + tcpHdrLen
-	payloadLen := len(packet) - payloadStart
-
-	if payloadLen < 10 {
+	disorder := &cfg.Fragmentation.Disorder
+	pi, ok := ExtractPacketInfoV4(packet)
+	if !ok || pi.PayloadLen < 10 {
 		_ = w.sock.SendIPv4(packet, dst)
 		return
 	}
 
-	payload := packet[payloadStart:]
-	seq0 := binary.BigEndian.Uint32(packet[ipHdrLen+4 : ipHdrLen+8])
-	id0 := binary.BigEndian.Uint16(packet[4:6])
-
-	disorder := &cfg.Fragmentation.Disorder
-
-	var splits []int
-
-	// Use middle_sni setting to determine split strategy
-	if cfg.Fragmentation.MiddleSNI {
-		if sniStart, sniEnd, ok := locateSNI(payload); ok && sniEnd > sniStart {
-			sniLen := sniEnd - sniStart
-			splits = append(splits, sniStart)
-			if sniLen > 6 {
-				splits = append(splits, sniStart+sniLen/2)
-			}
-			splits = append(splits, sniEnd)
-		}
-	}
-
-	// Fallback if no SNI or middle_sni disabled
+	splits := GetSNISplitPoints(pi.Payload, pi.PayloadLen, cfg.Fragmentation.MiddleSNI, 0)
 	if len(splits) == 0 {
-		splits = []int{1, payloadLen / 2, payloadLen * 3 / 4}
+		splits = []int{1, pi.PayloadLen / 2, pi.PayloadLen * 3 / 4}
 	}
 
 	validSplits := []int{0}
 	for _, s := range splits {
-		if s > 0 && s < payloadLen {
+		if s > 0 && s < pi.PayloadLen {
 			validSplits = append(validSplits, s)
 		}
 	}
-	validSplits = append(validSplits, payloadLen)
+	validSplits = append(validSplits, pi.PayloadLen)
 
-	type segment struct {
-		data   []byte
-		seqOff uint32
-		order  int
-	}
-
-	segments := make([]segment, 0, len(validSplits)-1)
+	segments := make([]Segment, 0, len(validSplits)-1)
 	for i := 0; i < len(validSplits)-1; i++ {
-		start := validSplits[i]
-		end := validSplits[i+1]
-
-		segLen := payloadStart + (end - start)
-		seg := make([]byte, segLen)
-		copy(seg[:payloadStart], packet[:payloadStart])
-		copy(seg[payloadStart:], payload[start:end])
-
-		binary.BigEndian.PutUint32(seg[ipHdrLen+4:ipHdrLen+8], seq0+uint32(start))
-		binary.BigEndian.PutUint16(seg[4:6], id0+uint16(i))
-		binary.BigEndian.PutUint16(seg[2:4], uint16(segLen))
-
+		start, end := validSplits[i], validSplits[i+1]
+		seg := BuildSegmentV4(packet, pi, pi.Payload[start:end], uint32(start), uint16(i))
 		if i < len(validSplits)-2 {
-			seg[ipHdrLen+13] &^= 0x08 // Clear PSH
+			ClearPSH(seg, pi.IPHdrLen)
+			sock.FixTCPChecksum(seg)
 		}
-
-		sock.FixIPv4Checksum(seg[:ipHdrLen])
-		sock.FixTCPChecksum(seg)
-
-		segments = append(segments, segment{data: seg, seqOff: uint32(start), order: i})
+		segments = append(segments, Segment{Data: seg, Seq: pi.Seq0 + uint32(start)})
 	}
 
-	seqOvl := len(cfg.Fragmentation.SeqOverlapBytes)
-	if seqOvl > 0 && len(segments) >= 2 {
-		// Disorder mode: apply to segment index 1 (second in original order, penultimate when sent reversed)
-		// Split mode: apply to segment index 0 (first segment)
-		targetIdx := 1 // disorder
-		if disorder.ShuffleMode != "reverse" && disorder.ShuffleMode != "full" {
-			targetIdx = 0 // split-like behavior
-		}
-		if targetIdx >= len(segments) {
-			targetIdx = 0
-		}
+	r := utils.NewRand()
 
-		seg := &segments[targetIdx]
-		oldData := seg.data
-		newLen := len(oldData) + seqOvl
-		newData := make([]byte, newLen)
-
-		// Copy IP+TCP headers
-		copy(newData[:payloadStart], oldData[:payloadStart])
-
-		// Fill overlap bytes with pattern or zeros
-		pattern := cfg.Fragmentation.SeqOverlapBytes
-		for i := 0; i < seqOvl; i++ {
-			if len(pattern) > 0 {
-				newData[payloadStart+i] = pattern[i%len(pattern)]
-			} else {
-				newData[payloadStart+i] = 0x00
-			}
-		}
-
-		// Copy original segment payload after overlap
-		copy(newData[payloadStart+seqOvl:], oldData[payloadStart:])
-
-		// Decrease sequence number by seqOvl
-		origSeq := binary.BigEndian.Uint32(newData[ipHdrLen+4 : ipHdrLen+8])
-		binary.BigEndian.PutUint32(newData[ipHdrLen+4:ipHdrLen+8], origSeq-uint32(seqOvl))
-
-		// Update IP total length
-		binary.BigEndian.PutUint16(newData[2:4], uint16(newLen))
-
-		// Update IP ID
-		binary.BigEndian.PutUint16(newData[4:6], id0+uint16(targetIdx)+100)
-
-		sock.FixIPv4Checksum(newData[:ipHdrLen])
-		sock.FixTCPChecksum(newData)
-
-		seg.data = newData
-	}
-
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	// Apply shuffle mode
-	switch disorder.ShuffleMode {
-	case "reverse":
-		for i, j := 0, len(segments)-1; i < j; i, j = i+1, j-1 {
-			segments[i], segments[j] = segments[j], segments[i]
-		}
-	default: // "full"
-		if len(segments) > 1 {
-			for i := len(segments) - 1; i > 0; i-- {
-				j := r.Intn(i + 1)
-				segments[i], segments[j] = segments[j], segments[i]
-			}
-		}
-	}
+	ShuffleSegments(segments, cfg.Fragmentation.Disorder.ShuffleMode, r)
 
 	// Timing settings
 	minJitter := disorder.MinJitterUs
@@ -164,7 +59,7 @@ func (w *Worker) sendDisorderFragments(cfg *config.SetConfig, packet []byte, dst
 
 	seg2d := cfg.TCP.Seg2Delay
 	for i, seg := range segments {
-		_ = w.sock.SendIPv4(seg.data, dst)
+		_ = w.sock.SendIPv4(seg.Data, dst)
 		if i < len(segments)-1 {
 			if seg2d > 0 {
 				jitter := r.Intn(seg2d/2 + 1)
