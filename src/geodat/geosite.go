@@ -1,4 +1,3 @@
-// path: src/geodat/geosite.go
 package geodat
 
 import (

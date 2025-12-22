@@ -134,6 +134,11 @@ func (api *API) handleGeodatDownload(w http.ResponseWriter, r *http.Request) {
 
 	api.geodataManager.UpdatePaths(geositePath, geoipPath)
 
+	for _, set := range api.cfg.Sets {
+		log.Infof("Reloading geo targets for set: %s", set.Name)
+		api.loadTargetsForSetCached(set)
+	}
+
 	log.Infof("Downloaded geodat files: geosite.dat (%d bytes), geoip.dat (%d bytes)", geositeSize, geoipSize)
 
 	response := GeodatDownloadResponse{

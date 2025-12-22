@@ -1,4 +1,3 @@
-// path: src/geodat/manager.go
 package geodat
 
 import (
