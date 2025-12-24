@@ -17,6 +17,11 @@ func BuildFakeSNIPacketV6(original []byte, cfg *config.SetConfig) []byte {
 	ipv6HdrLen := 40
 	tcpHdrLen := int((original[ipv6HdrLen+12] >> 4) * 4)
 
+	var originalTLS []byte
+	if len(original) > ipv6HdrLen+tcpHdrLen {
+		originalTLS = original[ipv6HdrLen+tcpHdrLen:]
+	}
+
 	var fakePayload []byte
 	switch cfg.Faking.SNIType {
 	case config.FakePayloadRandom:
@@ -25,13 +30,22 @@ func BuildFakeSNIPacketV6(original []byte, cfg *config.SetConfig) []byte {
 	case config.FakePayloadCustom:
 		fakePayload = []byte(cfg.Faking.CustomPayload)
 	case config.FakePayloadDefault1:
-		fakePayload = FakeSNI1
+		fakePayload = make([]byte, len(FakeSNI1))
+		copy(fakePayload, FakeSNI1)
 	case config.FakePayloadDefault2:
-		fakePayload = FakeSNI2
+		fakePayload = make([]byte, len(FakeSNI2))
+		copy(fakePayload, FakeSNI2)
 	case config.FakePayloadCapture:
-		fakePayload = cfg.Faking.PayloadData
+		fakePayload = make([]byte, len(cfg.Faking.PayloadData))
+		copy(fakePayload, cfg.Faking.PayloadData)
 	default:
-		fakePayload = FakeSNI1
+		fakePayload = make([]byte, len(FakeSNI1))
+		copy(fakePayload, FakeSNI1)
+	}
+
+	if len(cfg.Faking.TLSMod) > 0 {
+		flags := ParseTLSMod(cfg.Faking.TLSMod)
+		fakePayload = ApplyTLSMod(fakePayload, originalTLS, flags)
 	}
 
 	fakeLen := ipv6HdrLen + tcpHdrLen + len(fakePayload)

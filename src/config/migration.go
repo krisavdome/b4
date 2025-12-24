@@ -28,6 +28,17 @@ var migrationRegistry = map[int]MigrationFunc{
 	9:  migrateV9to10,
 	10: migrateV10to11,
 	11: migrateV11to12,
+	12: migrateV12to13,
+}
+
+// Migration: v12 -> v13 (add payload file/data to faking config)
+func migrateV12to13(c *Config) error {
+	log.Tracef("Migration v12->v13: Adding TLSMod to faking config")
+
+	for _, set := range c.Sets {
+		set.Faking.TLSMod = DefaultSetConfig.Faking.TLSMod
+	}
+	return nil
 }
 
 // Migration: v11 -> v12 (add TCP FilterSYN setting)

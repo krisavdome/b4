@@ -100,6 +100,7 @@ var DefaultSetConfig = SetConfig{
 		SeqOffset:     10000,
 		PayloadFile:   "",
 		PayloadData:   []byte{},
+		TLSMod:        []string{},
 
 		SNIMutation: SNIMutationConfig{
 			Mode:         "off", // "off", "random", "grease", "padding", "fakeext", "fakesni", "advanced"
@@ -180,7 +181,6 @@ var DefaultConfig = Config{
 func NewSetConfig() SetConfig {
 	cfg := DefaultSetConfig
 
-	// Deep copy only the slices
 	cfg.TCP.WinValues = append(make([]int, 0), DefaultSetConfig.TCP.WinValues...)
 	cfg.Faking.SNIMutation.FakeSNIs = append(make([]string, 0), DefaultSetConfig.Faking.SNIMutation.FakeSNIs...)
 	cfg.Targets.SNIDomains = append(make([]string, 0), DefaultSetConfig.Targets.SNIDomains...)
@@ -189,18 +189,17 @@ func NewSetConfig() SetConfig {
 	cfg.Targets.GeoIpCategories = append(make([]string, 0), DefaultSetConfig.Targets.GeoIpCategories...)
 	cfg.Fragmentation.Overlap.FakeSNIs = append(make([]string, 0), DefaultSetConfig.Fragmentation.Overlap.FakeSNIs...)
 	cfg.Fragmentation.SeqOverlapPattern = append(make([]string, 0), DefaultSetConfig.Fragmentation.SeqOverlapPattern...)
+	cfg.Faking.TLSMod = append(make([]string, 0), DefaultSetConfig.Faking.TLSMod...)
 
 	return cfg
 }
 
 func NewConfig() Config {
-	cfg := DefaultConfig // shallow copy
+	cfg := DefaultConfig
 
-	// Fresh MainSet
 	mainSet := NewSetConfig()
 	cfg.MainSet = &mainSet
 
-	// Deep copy slices
 	cfg.Sets = []*SetConfig{}
 
 	return cfg
