@@ -180,6 +180,9 @@ func (n *NFTablesManager) Apply() error {
 	if err := n.addRule("output", "meta", "mark", markAccept, "accept"); err != nil {
 		return err
 	}
+	if err := n.addRule("output", "jump", nftChainName); err != nil {
+		return err
+	}
 	if err := n.addRule(nftChainName, "meta", "mark", markAccept, "return"); err != nil {
 		return err
 	}

@@ -126,9 +126,14 @@ func (m *Monitor) checkIPTablesRules() bool {
 		if m.cfg.Queue.Mark == 0 {
 			markHex = "0x8000"
 		}
+
 		out, _ = run(ipt, "-w", "-t", "mangle", "-S", "OUTPUT")
 		if !strings.Contains(out, markHex) {
 			log.Tracef("Monitor: OUTPUT mark accept rule missing")
+			return false
+		}
+		if !strings.Contains(out, "-j B4") {
+			log.Tracef("Monitor: OUTPUT->B4 jump rule missing")
 			return false
 		}
 	}
@@ -185,8 +190,9 @@ func (m *Monitor) checkNFTablesRules() bool {
 		log.Tracef("Monitor: output chain missing")
 		return false
 	}
+
 	out, _ = nft.runNft("list", "chain", "inet", nftTableName, "output")
-	if !strings.Contains(out, "accept") {
+	if !strings.Contains(out, "accept") || !strings.Contains(out, nftChainName) {
 		log.Tracef("Monitor: output mark accept rule missing")
 		return false
 	}

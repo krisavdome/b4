@@ -283,6 +283,8 @@ func (manager *IPTablesManager) buildManifest() (Manifest, error) {
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "PREROUTING", Action: "I", Spec: dnsResponseSpec},
 			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "OUTPUT", Action: "I",
 				Spec: []string{"-m", "mark", "--mark", markAccept, "-j", "ACCEPT"}},
+			Rule{manager: manager, IPT: ipt, Table: "mangle", Chain: "OUTPUT", Action: "A",
+				Spec: []string{"-j", chainName}},
 		)
 	}
 
@@ -430,6 +432,14 @@ func (ipt *IPTablesManager) clearB4JumpRules() {
 				}
 			}
 			if !removed {
+				break
+			}
+		}
+
+		// Clean OUTPUT - remove B4 jump rules
+		for {
+			_, err := run(iptBin, "-w", "-t", "mangle", "-D", "OUTPUT", "-j", "B4")
+			if err != nil {
 				break
 			}
 		}
