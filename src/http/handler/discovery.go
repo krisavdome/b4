@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/discovery"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/google/uuid"
+	"golang.org/x/net/publicsuffix"
 )
 
 func (api *API) RegisterDiscoveryApi() {
@@ -139,6 +141,23 @@ func (api *API) handleAddPresetAsSet(w http.ResponseWriter, r *http.Request) {
 		set.Name = set.Targets.SNIDomains[0]
 	}
 
+	if len(set.Targets.SNIDomains) > 0 {
+		baseName := extractDomainName(set.Targets.SNIDomains[0])
+		if baseName != "" && api.geodataManager.IsGeositeConfigured() {
+			// Check if category exists
+			tags, err := api.geodataManager.ListCategories(api.geodataManager.GetGeositePath())
+			if err == nil {
+				for _, tag := range tags {
+					if tag == baseName {
+						set.Targets.GeoSiteCategories = append(set.Targets.GeoSiteCategories, baseName)
+						log.Infof("Auto-added geosite category '%s' for domain %s", baseName, set.Targets.SNIDomains[0])
+						break
+					}
+				}
+			}
+		}
+	}
+
 	api.loadTargetsForSetCached(&set)
 	config.ApplySetDefaults(&set)
 
@@ -239,4 +258,23 @@ func (api *API) handleFingerprint(w http.ResponseWriter, r *http.Request) {
 
 	setJsonHeader(w)
 	json.NewEncoder(w).Encode(fingerprint.ToJSON())
+}
+
+func extractDomainName(domain string) string {
+	domain = strings.TrimPrefix(domain, "www.")
+
+	registered, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	if err != nil {
+		parts := strings.Split(domain, ".")
+		if len(parts) > 0 {
+			return strings.ToLower(parts[0])
+		}
+		return ""
+	}
+
+	parts := strings.Split(registered, ".")
+	if len(parts) > 0 {
+		return strings.ToLower(parts[0])
+	}
+	return ""
 }
