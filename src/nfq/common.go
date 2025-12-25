@@ -323,28 +323,6 @@ func BuildValidSplits(splits []int, payloadLen int) []int {
 	return validSplits
 }
 
-func BuildSegmentWithOverlapV4(packet []byte, pi PacketInfo, payloadSlice []byte, seqOffset uint32, idOffset uint16, overlapPattern []byte) []byte {
-	overlapLen := len(overlapPattern)
-	if overlapLen == 0 || overlapLen > len(payloadSlice) {
-		return BuildSegmentV4(packet, pi, payloadSlice, seqOffset, idOffset)
-	}
-
-	segLen := pi.PayloadStart + len(payloadSlice)
-	seg := make([]byte, segLen)
-	copy(seg[:pi.PayloadStart], packet[:pi.PayloadStart])
-
-	copy(seg[pi.PayloadStart:pi.PayloadStart+overlapLen], overlapPattern)
-	copy(seg[pi.PayloadStart+overlapLen:], payloadSlice[overlapLen:])
-
-	binary.BigEndian.PutUint32(seg[pi.IPHdrLen+4:pi.IPHdrLen+8], pi.Seq0+seqOffset)
-	binary.BigEndian.PutUint16(seg[4:6], pi.ID0+idOffset)
-	binary.BigEndian.PutUint16(seg[2:4], uint16(segLen))
-
-	sock.FixIPv4Checksum(seg[:pi.IPHdrLen])
-	sock.FixTCPChecksum(seg)
-	return seg
-}
-
 func BuildFakeOverlapSegmentV4(packet []byte, pi PacketInfo, payloadLen int, seqOffset uint32, idOffset uint16, fakePattern []byte, fakeTTL uint8, corruptChecksum bool) []byte {
 	if payloadLen <= 0 {
 		return nil
