@@ -62,6 +62,7 @@ export function ConnectionsPage() {
 
   const [availableSets, setAvailableSets] = useState<B4SetConfig[]>([]);
   const [ipInfoToken, setIpInfoToken] = useState<string>("");
+  const [devicesEnabled, setDevicesEnabled] = useState<boolean>(false);
   const [deviceMap, setDeviceMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -80,6 +81,10 @@ export function ConnectionsPage() {
   const sortedData = useSortedLogs(filteredLogs, sortColumn, sortDirection);
 
   useEffect(() => {
+    if (!devicesEnabled) {
+      setDeviceMap({});
+      return;
+    }
     devicesApi
       .list()
       .then((data) => {
@@ -91,7 +96,7 @@ export function ConnectionsPage() {
         setDeviceMap(map);
       })
       .catch(() => {});
-  }, []);
+  }, [devicesEnabled]);
 
   const fetchSets = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -104,6 +109,7 @@ export function ConnectionsPage() {
         if (data.system?.api?.ipinfo_token) {
           setIpInfoToken(data.system.api.ipinfo_token);
         }
+        setDevicesEnabled(data.queue?.devices?.enabled || false);
       }
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
