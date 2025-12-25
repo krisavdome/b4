@@ -10,21 +10,50 @@ import (
 )
 
 func ExtractPacketInfoV6(packet []byte) (PacketInfo, bool) {
-	const ipv6HdrLen = 40
-	if len(packet) < ipv6HdrLen+20 {
+	if len(packet) < 60 {
 		return PacketInfo{}, false
 	}
-	tcpHdrLen := int((packet[ipv6HdrLen+12] >> 4) * 4)
-	payloadStart := ipv6HdrLen + tcpHdrLen
+
+	nextHeader := packet[6]
+	offset := 40
+
+	for {
+		switch nextHeader {
+		case 0, 43, 60:
+			if len(packet) < offset+2 {
+				return PacketInfo{}, false
+			}
+			nextHeader = packet[offset]
+			hdrLen := int(packet[offset+1])*8 + 8
+			offset += hdrLen
+		case 44:
+			if len(packet) < offset+8 {
+				return PacketInfo{}, false
+			}
+			nextHeader = packet[offset]
+			offset += 8
+		case 6:
+			goto done
+		default:
+			return PacketInfo{}, false // Not TCP
+		}
+	}
+done:
+	if len(packet) < offset+20 {
+		return PacketInfo{}, false
+	}
+
+	tcpHdrLen := int((packet[offset+12] >> 4) * 4)
+	payloadStart := offset + tcpHdrLen
 	payloadLen := len(packet) - payloadStart
 
 	return PacketInfo{
-		IPHdrLen:     ipv6HdrLen,
+		IPHdrLen:     offset,
 		TCPHdrLen:    tcpHdrLen,
 		PayloadStart: payloadStart,
 		PayloadLen:   payloadLen,
 		Payload:      packet[payloadStart:],
-		Seq0:         binary.BigEndian.Uint32(packet[ipv6HdrLen+4 : ipv6HdrLen+8]),
+		Seq0:         binary.BigEndian.Uint32(packet[offset+4 : offset+8]),
 		IsIPv6:       true,
 	}, true
 }
@@ -55,7 +84,7 @@ func BuildSegmentV6(packet []byte, pi PacketInfo, payloadSlice []byte, seqOffset
 	copy(seg[pi.PayloadStart:], payloadSlice)
 
 	binary.BigEndian.PutUint32(seg[pi.IPHdrLen+4:pi.IPHdrLen+8], pi.Seq0+seqOffset)
-	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-pi.IPHdrLen))
+	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-40))
 
 	sock.FixTCPChecksumV6(seg)
 	return seg
@@ -91,7 +120,7 @@ func BuildSegmentWithOverlapV6(packet []byte, pi PacketInfo, payloadSlice []byte
 	copy(seg[pi.PayloadStart+overlapLen:], payloadSlice[overlapLen:])
 
 	binary.BigEndian.PutUint32(seg[pi.IPHdrLen+4:pi.IPHdrLen+8], pi.Seq0+seqOffset)
-	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-pi.IPHdrLen))
+	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-40))
 
 	sock.FixTCPChecksumV6(seg)
 	return seg
@@ -118,7 +147,7 @@ func BuildFakeOverlapSegmentV6(packet []byte, pi PacketInfo, payloadLen int, seq
 	}
 
 	binary.BigEndian.PutUint32(seg[pi.IPHdrLen+4:pi.IPHdrLen+8], pi.Seq0+seqOffset)
-	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-pi.IPHdrLen))
+	binary.BigEndian.PutUint16(seg[4:6], uint16(segLen-40))
 
 	if fakeHopLimit == 0 {
 		fakeHopLimit = 3
