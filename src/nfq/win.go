@@ -34,7 +34,7 @@ func NewWindowManipulator(cfg *config.TCPConfig) *WindowManipulator {
 
 // ManipulateWindowIPv4 sends packets with manipulated TCP window
 func (w *Worker) ManipulateWindowIPv4(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	if cfg.TCP.WinMode == "off" {
+	if cfg.TCP.WinMode == config.ConfigOff {
 		return
 	}
 
@@ -206,7 +206,7 @@ func (w *Worker) sendEscalatingWindows(packet []byte, dst net.IP, ipHdrLen int) 
 
 // ManipulateWindowIPv6 for IPv6 packets
 func (w *Worker) ManipulateWindowIPv6(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	if cfg.TCP.WinMode == "off" {
+	if cfg.TCP.WinMode == config.ConfigOff {
 		return
 	}
 

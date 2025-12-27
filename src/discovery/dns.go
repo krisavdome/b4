@@ -8,12 +8,17 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/daniellavrushin/b4/config"
 	"github.com/daniellavrushin/b4/log"
 	"github.com/daniellavrushin/b4/nfq"
 )
+
+//go:embed cdn.json
+var cdnJSON []byte
 
 type dohResponse struct {
 	Answer []struct {
@@ -22,11 +27,45 @@ type dohResponse struct {
 	} `json:"Answer"`
 }
 
+type CDNEntry struct {
+	Match   []string `json:"match"`
+	GeoIP   string   `json:"geoip"`
+	GeoSite string   `json:"geosite"`
+}
+
 type DNSProber struct {
 	domain  string
 	timeout time.Duration
 	pool    *nfq.Pool
 	cfg     *config.Config
+}
+
+var (
+	cdnEntries []CDNEntry
+	cdnOnce    sync.Once
+)
+
+func loadCDNEntries() {
+	cdnOnce.Do(func() {
+		if err := json.Unmarshal(cdnJSON, &cdnEntries); err != nil {
+			cdnEntries = []CDNEntry{}
+		}
+	})
+}
+
+func GetCDNCategories(domain string) (geoip, geosite string) {
+	loadCDNEntries()
+
+	domain = strings.ToLower(strings.TrimSuffix(domain, "."))
+
+	for _, entry := range cdnEntries {
+		for _, pattern := range entry.Match {
+			if domain == pattern || strings.HasSuffix(domain, "."+pattern) {
+				return entry.GeoIP, entry.GeoSite
+			}
+		}
+	}
+	return "", ""
 }
 
 func (ds *DiscoverySuite) runDNSDiscovery() *DNSDiscoveryResult {
@@ -85,6 +124,21 @@ func (p *DNSProber) Probe(ctx context.Context) *DNSDiscoveryResult {
 	}
 
 	expectedIPs := p.getExpectedIPs(ctx)
+
+	systemIPs := p.getSystemResolverIPs(ctx)
+	for _, ip := range systemIPs {
+		found := false
+		for _, eip := range expectedIPs {
+			if ip == eip {
+				found = true
+				break
+			}
+		}
+		if !found {
+			expectedIPs = append(expectedIPs, ip)
+		}
+	}
+
 	if len(expectedIPs) == 0 {
 		log.DiscoveryLogf("DNS Discovery: couldn't get reference IP for %s", p.domain)
 		return result
@@ -143,6 +197,39 @@ func (p *DNSProber) Probe(ctx context.Context) *DNSDiscoveryResult {
 	return result
 }
 
+func (p *DNSProber) getSystemResolverIPs(ctx context.Context) []string {
+	network := "ip4"
+	if p.cfg.Queue.IPv6Enabled && !p.cfg.Queue.IPv4Enabled {
+		network = "ip6"
+	}
+
+	seenIPs := make(map[string]bool)
+	var result []string
+
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			log.DiscoveryLogf("  DNS: retrying system resolver for %s (attempt %d)", p.domain, i+1)
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		ips, err := net.DefaultResolver.LookupIP(ctx, network, p.domain)
+		if err != nil || len(ips) == 0 {
+			continue
+		}
+
+		for _, ip := range ips {
+			ipStr := ip.String()
+			if !seenIPs[ipStr] {
+				seenIPs[ipStr] = true
+				result = append(result, ipStr)
+			}
+		}
+	}
+
+	log.DiscoveryLogf("  DNS: system resolver returned IPs: %v", result)
+	return result
+}
+
 func (p *DNSProber) getExpectedIPs(ctx context.Context) []string {
 	recordType := "A"
 	if p.cfg.Queue.IPv6Enabled && !p.cfg.Queue.IPv4Enabled {
@@ -188,6 +275,7 @@ func (p *DNSProber) getExpectedIPs(ctx context.Context) []string {
 			wantType = 28
 		}
 
+		unvalidatedIPs := []string{}
 		for _, ans := range doh.Answer {
 			if ans.Type == wantType {
 				ip := ans.Data
@@ -195,12 +283,18 @@ func (p *DNSProber) getExpectedIPs(ctx context.Context) []string {
 					continue
 				}
 				seenIPs[ip] = true
+				unvalidatedIPs = append(unvalidatedIPs, ip)
 
 				if p.testIPServesDomain(ctx, ip) {
 					log.Tracef("DoH: verified %s for %s", ip, p.domain)
 					allIPs = append(allIPs, ip)
 				}
 			}
+		}
+
+		if len(allIPs) == 0 && len(unvalidatedIPs) > 0 {
+			log.Tracef("DoH: TLS validation failed, trusting unvalidated IPs: %v", unvalidatedIPs)
+			allIPs = unvalidatedIPs
 		}
 
 		if len(allIPs) > 0 {
@@ -280,8 +374,13 @@ func (p *DNSProber) testDNS(ctx context.Context, server string, fragmented bool,
 
 	result.ResolvedIP = ips[0].String()
 
-	result.Works = p.testIPServesDomain(ctx, result.ResolvedIP)
-	result.IsPoisoned = !result.Works
+	if expectedIP != "" {
+		result.IsPoisoned = result.ResolvedIP != expectedIP
+		result.Works = !result.IsPoisoned
+	} else {
+		result.Works = p.testIPServesDomain(ctx, result.ResolvedIP)
+		result.IsPoisoned = !result.Works
+	}
 
 	return result
 }

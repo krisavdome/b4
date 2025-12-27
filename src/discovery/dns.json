@@ -1,0 +1,43 @@
+[
+    {
+        "match": [
+            "instagram.com",
+            "facebook.com",
+            "whatsapp.com",
+            "fb.com",
+            "messenger.com"
+        ],
+        "geoip": "facebook",
+        "geosite": "meta"
+    },
+    {
+        "match": [
+            "youtube.com",
+            "youtu.be",
+            "googlevideo.com",
+            "ytimg.com",
+            "youtube.*"
+        ],
+        "geoip": "google",
+        "geosite": "youtube"
+    },
+    {
+        "match": [
+            "twitter.com",
+            "x.com",
+            "twimg.com"
+        ],
+        "geoip": "twitter",
+        "geosite": "x"
+    },
+    {
+        "match": [
+            "telegram.org",
+            "t.me",
+            "telegram.me",
+            "telesco.pe"
+        ],
+        "geoip": "telegram",
+        "geosite": "telegram"
+    }
+]

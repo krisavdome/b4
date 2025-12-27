@@ -1029,7 +1029,7 @@ func ApplyFingerprintToPreset(preset *ConfigPreset, fp *DPIFingerprint) {
 	}
 
 	// If DPI is stateful, enable desync
-	if fp.TracksState && preset.Config.TCP.DesyncMode == "off" {
+	if fp.TracksState && preset.Config.TCP.DesyncMode == config.ConfigOff {
 		preset.Config.TCP.DesyncMode = "rst"
 		preset.Config.TCP.DesyncTTL = fp.OptimalTTL
 		preset.Config.TCP.DesyncCount = 2

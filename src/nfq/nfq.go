@@ -494,16 +494,16 @@ func (w *Worker) dropAndInjectTCP(cfg *config.SetConfig, raw []byte, dst net.IP)
 		return
 	}
 
-	if cfg.Faking.SNIMutation.Mode != "off" {
+	if cfg.Faking.SNIMutation.Mode != config.ConfigOff {
 		raw = w.MutateClientHello(cfg, raw, dst)
 	}
 
-	if cfg.TCP.DesyncMode != "off" {
+	if cfg.TCP.DesyncMode != config.ConfigOff {
 		w.ExecuteDesyncIPv4(cfg, raw, dst)
 		time.Sleep(time.Duration(cfg.TCP.Seg2Delay) * time.Millisecond)
 	}
 
-	if cfg.TCP.WinMode != "off" {
+	if cfg.TCP.WinMode != config.ConfigOff {
 		w.ManipulateWindowIPv4(cfg, raw, dst)
 	}
 

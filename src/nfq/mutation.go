@@ -48,7 +48,7 @@ var commonExtensions = []uint16{
 var randMutex sync.Mutex
 
 func (w *Worker) MutateClientHello(cfg *config.SetConfig, packet []byte, dst net.IP) []byte {
-	if cfg == nil || cfg.Faking.SNIMutation.Mode == "off" {
+	if cfg == nil || cfg.Faking.SNIMutation.Mode == config.ConfigOff {
 		return packet
 	}
 

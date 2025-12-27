@@ -3,6 +3,8 @@ package config
 import "github.com/daniellavrushin/b4/log"
 
 const (
+	ConfigOff = "off"
+
 	FakePayloadRandom = iota
 	FakePayloadCustom
 	FakePayloadDefault1

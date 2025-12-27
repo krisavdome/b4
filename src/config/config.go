@@ -45,10 +45,10 @@ var DefaultSetConfig = SetConfig{
 
 		DropSACK: false,
 
-		WinMode:   "off",
+		WinMode:   ConfigOff,
 		WinValues: []int{0, 1460, 8192, 65535},
 
-		DesyncMode:  "off",
+		DesyncMode:  ConfigOff,
 		DesyncTTL:   3,
 		DesyncCount: 3,
 	},
@@ -103,7 +103,7 @@ var DefaultSetConfig = SetConfig{
 		TLSMod:        []string{},
 
 		SNIMutation: SNIMutationConfig{
-			Mode:         "off", // "off", "random", "grease", "padding", "fakeext", "fakesni", "advanced"
+			Mode:         ConfigOff, // "off", "random", "grease", "padding", "fakeext", "fakesni", "advanced"
 			GreaseCount:  3,
 			PaddingSize:  2048,
 			FakeExtCount: 5,

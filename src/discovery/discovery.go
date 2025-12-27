@@ -134,16 +134,24 @@ func (ds *DiscoverySuite) RunDiscovery() {
 	dnsResult := ds.runDNSDiscovery()
 	ds.domainResult.DNSResult = dnsResult
 
+	if dnsResult != nil && len(dnsResult.ExpectedIPs) > 0 {
+		ds.dnsResult = dnsResult
+		log.DiscoveryLogf("Stored %d target IPs for preset testing: %v", len(dnsResult.ExpectedIPs), dnsResult.ExpectedIPs)
+	}
+
 	if dnsResult != nil && dnsResult.IsPoisoned {
 		if dnsResult.hasWorkingConfig() {
 			log.DiscoveryLogf("DNS poisoned - applying discovered DNS bypass for TCP testing")
 			ds.applyDNSConfig(dnsResult)
 		} else if len(dnsResult.ExpectedIPs) > 0 {
 			log.DiscoveryLogf("DNS poisoned, no bypass - using direct IPs: %v", dnsResult.ExpectedIPs)
-			ds.dnsResult = dnsResult
 		} else {
 			log.DiscoveryLogf("DNS poisoned but no expected IP known - discovery may fail")
 		}
+	}
+
+	if dnsResult != nil && len(dnsResult.ExpectedIPs) > 0 {
+		ds.dnsResult = dnsResult
 	}
 
 	if fingerprint != nil && fingerprint.Type == DPITypeNone {
@@ -163,9 +171,7 @@ func (ds *DiscoverySuite) RunDiscovery() {
 			return
 		}
 
-		// Fingerprint was wrong - DPI detected during transfer
 		log.DiscoveryLogf("Fingerprint said no DPI but download failed: %s - continuing discovery", baselineResult.Error)
-		// Update fingerprint to reflect reality
 		fingerprint.Type = DPITypeUnknown
 		fingerprint.BlockingMethod = BlockingTimeout
 		ds.domainResult.Fingerprint = fingerprint
@@ -174,7 +180,6 @@ func (ds *DiscoverySuite) RunDiscovery() {
 	phase1Presets := GetPhase1Presets()
 	if fingerprint != nil && len(fingerprint.RecommendedFamilies) > 0 {
 		phase1Presets = FilterPresetsByFingerprint(phase1Presets, fingerprint)
-		// Apply optimal TTL to all presets
 		for i := range phase1Presets {
 			ApplyFingerprintToPreset(&phase1Presets[i], fingerprint)
 		}
@@ -184,7 +189,6 @@ func (ds *DiscoverySuite) RunDiscovery() {
 	ds.TotalChecks = len(phase1Presets)
 	ds.CheckSuite.mu.Unlock()
 
-	// Phase 1: Strategy Detection
 	ds.setPhase(PhaseStrategy)
 	workingFamilies, baselineSpeed, baselineWorks := ds.runPhase1(phase1Presets)
 	ds.determineBest(baselineSpeed)
@@ -315,11 +319,9 @@ func (ds *DiscoverySuite) runPhase1(presets []ConfigPreset) ([]StrategyFamily, f
 	return workingFamilies, baselineSpeed, false
 }
 
-// detectWorkingPayloads tests both payload types and determines which work
 func (ds *DiscoverySuite) detectWorkingPayloads(presets []ConfigPreset) {
 	log.DiscoveryLogf("  Testing payload variants...")
 
-	// Find proven-combo and proven-combo-alt presets
 	var payload1Preset, payload2Preset *ConfigPreset
 	for i := range presets {
 		if presets[i].Name == "proven-combo" {
@@ -330,7 +332,6 @@ func (ds *DiscoverySuite) detectWorkingPayloads(presets []ConfigPreset) {
 		}
 	}
 
-	// Test payload 1 (if not already tested)
 	if payload1Preset != nil {
 		if _, exists := ds.domainResult.Results["proven-combo"]; !exists {
 			result1 := ds.testPreset(*payload1Preset)
@@ -350,7 +351,6 @@ func (ds *DiscoverySuite) detectWorkingPayloads(presets []ConfigPreset) {
 		}
 	}
 
-	// Test payload 2
 	if payload2Preset != nil {
 		if _, exists := ds.domainResult.Results["proven-combo-alt"]; !exists {
 			result2 := ds.testPreset(*payload2Preset)
@@ -370,11 +370,9 @@ func (ds *DiscoverySuite) detectWorkingPayloads(presets []ConfigPreset) {
 		}
 	}
 
-	// Determine best payload
 	ds.selectBestPayload()
 }
 
-// selectBestPayload chooses the best payload based on test results
 func (ds *DiscoverySuite) selectBestPayload() {
 	var bestSpeed float64
 	ds.bestPayload = config.FakePayloadDefault1 // default fallback
@@ -422,7 +420,6 @@ func (ds *DiscoverySuite) filterTestedPresets(presets []ConfigPreset) []ConfigPr
 
 // testPresetWithBestPayload tests a preset using the detected best payload
 func (ds *DiscoverySuite) testPresetWithBestPayload(preset ConfigPreset) CheckResult {
-	// Increment once regardless of how many internal tests
 	defer func() {
 		ds.CheckSuite.mu.Lock()
 		ds.CompletedChecks++
@@ -458,7 +455,6 @@ func (ds *DiscoverySuite) testPresetWithBestPayload(preset ConfigPreset) CheckRe
 
 // testPresetWithPayload tests a specific preset with a specific payload type
 func (ds *DiscoverySuite) testPresetWithPayload(preset ConfigPreset, payloadType int) CheckResult {
-	// Override the payload type
 	modifiedPreset := preset
 	modifiedPreset.Config.Faking.SNIType = payloadType
 
@@ -467,7 +463,6 @@ func (ds *DiscoverySuite) testPresetWithPayload(preset ConfigPreset, payloadType
 
 // updatePayloadKnowledge updates our knowledge about working payloads
 func (ds *DiscoverySuite) updatePayloadKnowledge(payload int, speed float64) {
-	// Check if we already have this payload recorded
 	for i, pr := range ds.workingPayloads {
 		if pr.Payload == payload {
 			if !pr.Works || speed > pr.Speed {
@@ -479,7 +474,6 @@ func (ds *DiscoverySuite) updatePayloadKnowledge(payload int, speed float64) {
 		}
 	}
 
-	// Add new payload knowledge
 	ds.workingPayloads = append(ds.workingPayloads, PayloadTestResult{
 		Payload: payload,
 		Works:   true,
@@ -500,7 +494,6 @@ func (ds *DiscoverySuite) runPhase2(families []StrategyFamily) map[StrategyFamil
 		default:
 		}
 
-		// Use binary search for families with searchable parameters
 		switch family {
 		case FamilyFakeSNI:
 			bestParams[family] = ds.optimizeFakeSNI()
@@ -509,7 +502,6 @@ func (ds *DiscoverySuite) runPhase2(families []StrategyFamily) map[StrategyFamil
 		case FamilyTLSRec:
 			bestParams[family] = ds.optimizeTLSRec()
 		default:
-			// Fallback to preset-based testing for other families
 			bestParams[family] = ds.optimizeWithPresets(family)
 		}
 	}
@@ -545,7 +537,6 @@ func (ds *DiscoverySuite) optimizeFakeSNI() ConfigPreset {
 	if ds.Fingerprint != nil && ds.Fingerprint.OptimalTTL > 0 {
 		ttlHint = ds.Fingerprint.OptimalTTL
 	}
-	// Binary search TTL
 	optimalTTL, speed := ds.findOptimalTTL(basePreset, ttlHint)
 	if optimalTTL == 0 {
 		log.DiscoveryLogf("  No working TTL found for FakeSNI")
@@ -555,7 +546,6 @@ func (ds *DiscoverySuite) optimizeFakeSNI() ConfigPreset {
 	basePreset.Config.Faking.TTL = optimalTTL
 	basePreset.Name = fmt.Sprintf("fake-ttl%d-optimized", optimalTTL)
 
-	// Test strategy variations with optimal TTL
 	strategies := []string{"pastseq", "ttl", "randseq"}
 	var bestStrategy string = "pastseq"
 	var bestSpeed = speed
@@ -588,7 +578,6 @@ func (ds *DiscoverySuite) optimizeFakeSNI() ConfigPreset {
 func (ds *DiscoverySuite) optimizeTCPFrag() ConfigPreset {
 	log.DiscoveryLogf("  Optimizing TCPFrag with binary search")
 
-	// ~5 binary search iterations (log2(16)) + 1 middle test
 	ds.CheckSuite.mu.Lock()
 	ds.TotalChecks += 6
 	ds.CheckSuite.mu.Unlock()
@@ -613,7 +602,6 @@ func (ds *DiscoverySuite) optimizeTCPFrag() ConfigPreset {
 		Config: base,
 	}
 
-	// Binary search position
 	optimalPos, speed := ds.findOptimalPosition(basePreset, 16)
 	if optimalPos == 0 {
 		optimalPos = 1
@@ -622,7 +610,6 @@ func (ds *DiscoverySuite) optimizeTCPFrag() ConfigPreset {
 	basePreset.Config.Fragmentation.SNIPosition = optimalPos
 	basePreset.Name = fmt.Sprintf("tcp-pos%d-optimized", optimalPos)
 
-	// Test middle SNI variant
 	middlePreset := basePreset
 	middlePreset.Name = fmt.Sprintf("tcp-pos%d-middle", optimalPos)
 	middlePreset.Config.Fragmentation.MiddleSNI = true
@@ -792,27 +779,58 @@ func (ds *DiscoverySuite) testPreset(preset ConfigPreset) CheckResult {
 }
 
 func (ds *DiscoverySuite) fetchWithTimeout(timeout time.Duration) CheckResult {
-	var directIPs []string
+	var allIPs []string
 	if ds.dnsResult != nil {
-		directIPs = ds.dnsResult.ExpectedIPs
-	}
-
-	if len(directIPs) == 0 {
-		return ds.fetchWithTimeoutUsingIP(timeout, "")
-	}
-
-	var lastResult CheckResult
-	for i, ip := range directIPs {
-		lastResult = ds.fetchWithTimeoutUsingIP(timeout, ip)
-		if lastResult.Status == CheckStatusComplete {
-			return lastResult
+		allIPs = append(allIPs, ds.dnsResult.ExpectedIPs...)
+		for _, probe := range ds.dnsResult.ProbeResults {
+			if probe.ResolvedIP != "" {
+				found := false
+				for _, ip := range allIPs {
+					if ip == probe.ResolvedIP {
+						found = true
+						break
+					}
+				}
+				if !found {
+					allIPs = append(allIPs, probe.ResolvedIP)
+				}
+			}
 		}
-		if i < len(directIPs)-1 {
-			log.Tracef("Direct IP %s failed, trying next", ip)
+	}
+
+	freshIPs, _ := net.LookupIP(ds.Domain)
+	for _, ip := range freshIPs {
+		ipStr := ip.String()
+		found := false
+		for _, existing := range allIPs {
+			if existing == ipStr {
+				found = true
+				break
+			}
+		}
+		if !found {
+			allIPs = append([]string{ipStr}, allIPs...)
 		}
 	}
 
-	return lastResult
+	for _, ip := range allIPs {
+		result := ds.fetchWithTimeoutUsingIP(timeout, ip)
+		if result.Status == CheckStatusComplete {
+			log.Tracef("Success with IP %s", ip)
+			return result
+		}
+		log.Tracef("IP %s failed, trying next", ip)
+	}
+
+	if len(allIPs) > 0 {
+		return CheckResult{
+			Domain: ds.Domain,
+			Status: CheckStatusFailed,
+			Error:  fmt.Sprintf("all %d IPs failed", len(allIPs)),
+		}
+	}
+
+	return ds.fetchWithTimeoutUsingIP(timeout, "")
 }
 
 func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip string) CheckResult {
@@ -878,7 +896,6 @@ func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip stri
 	result.StatusCode = resp.StatusCode
 	result.ContentSize = resp.ContentLength
 
-	// Read in chunks to detect mid-transfer blocking
 	buf := make([]byte, 16*1024)
 	var bytesRead int64
 	lastProgress := time.Now()
@@ -888,7 +905,6 @@ func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip stri
 		case <-ctx.Done():
 			result.Duration = time.Since(start)
 			result.BytesRead = bytesRead
-			// Check if we got enough before timeout
 			if bytesRead >= MIN_BYTES_FOR_SUCCESS {
 				result.Status = CheckStatusComplete
 				if result.Duration.Seconds() > 0 {
@@ -912,7 +928,6 @@ func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip stri
 			break
 		}
 		if err != nil {
-			// Connection died mid-transfer
 			result.Status = CheckStatusFailed
 			result.Error = fmt.Sprintf("read error after %d bytes: %v", bytesRead, err)
 			result.Duration = time.Since(start)
@@ -920,7 +935,6 @@ func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip stri
 			return result
 		}
 
-		// Detect stall (no progress for 2 seconds)
 		if time.Since(lastProgress) > 2*time.Second {
 			result.Status = CheckStatusFailed
 			result.Error = fmt.Sprintf("stalled after %d bytes", bytesRead)
@@ -934,7 +948,6 @@ func (ds *DiscoverySuite) fetchWithTimeoutUsingIP(timeout time.Duration, ip stri
 	result.Duration = duration
 	result.BytesRead = bytesRead
 
-	// Stricter success criteria
 	if bytesRead < MIN_BYTES_FOR_SUCCESS {
 		result.Status = CheckStatusFailed
 		result.Error = fmt.Sprintf("insufficient data: %d bytes (need %d)", bytesRead, MIN_BYTES_FOR_SUCCESS)
@@ -1056,14 +1069,14 @@ func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 	mainSet.DNS = ds.cfg.MainSet.DNS
 
 	if mainSet.TCP.WinMode == "" {
-		mainSet.TCP.WinMode = "off"
+		mainSet.TCP.WinMode = config.ConfigOff
 	}
 	if mainSet.TCP.DesyncMode == "" {
-		mainSet.TCP.DesyncMode = "off"
+		mainSet.TCP.DesyncMode = config.ConfigOff
 	}
 
 	if mainSet.Faking.SNIMutation.Mode == "" {
-		mainSet.Faking.SNIMutation.Mode = "off"
+		mainSet.Faking.SNIMutation.Mode = config.ConfigOff
 	}
 	if mainSet.Faking.SNIMutation.FakeSNIs == nil {
 		mainSet.Faking.SNIMutation.FakeSNIs = []string{}
@@ -1075,6 +1088,52 @@ func (ds *DiscoverySuite) buildTestConfig(preset ConfigPreset) *config.Config {
 		mainSet.Enabled = true
 		mainSet.Targets.SNIDomains = []string{ds.Domain}
 		mainSet.Targets.DomainsToMatch = []string{ds.Domain}
+
+		geoip, geosite := GetCDNCategories(ds.Domain)
+		if geoip != "" || geosite != "" {
+			if geoip != "" {
+				mainSet.Targets.GeoIpCategories = []string{geoip}
+			}
+			if geosite != "" {
+				mainSet.Targets.GeoSiteCategories = []string{geosite}
+			}
+			log.Tracef("Discovery: using CDN categories geoip=%s geosite=%s for %s", geoip, geosite, ds.Domain)
+		} else {
+			var ipsToAdd []string
+			if ds.dnsResult != nil {
+				ipsToAdd = append(ipsToAdd, ds.dnsResult.ExpectedIPs...)
+				for _, probe := range ds.dnsResult.ProbeResults {
+					if probe.ResolvedIP != "" {
+						found := false
+						for _, ip := range ipsToAdd {
+							if ip == probe.ResolvedIP {
+								found = true
+								break
+							}
+						}
+						if !found {
+							ipsToAdd = append(ipsToAdd, probe.ResolvedIP)
+						}
+					}
+				}
+			}
+
+			if len(ipsToAdd) > 0 {
+				cidrIPs := make([]string, len(ipsToAdd))
+				for i, ip := range ipsToAdd {
+					if strings.Contains(ip, "/") {
+						cidrIPs[i] = ip
+					} else if strings.Contains(ip, ":") {
+						cidrIPs[i] = ip + "/128"
+					} else {
+						cidrIPs[i] = ip + "/32"
+					}
+				}
+				mainSet.Targets.IPs = cidrIPs
+				mainSet.Targets.IpsToMatch = cidrIPs
+				log.Tracef("Discovery: added %d IPs to test config: %v", len(cidrIPs), cidrIPs)
+			}
+		}
 	}
 
 	return &config.Config{

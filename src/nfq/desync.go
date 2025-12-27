@@ -29,7 +29,7 @@ func NewDesyncAttacker(cfg *config.TCPConfig) *DesyncAttacker {
 
 // ExecuteDesyncIPv4 performs desync attack for IPv4
 func (w *Worker) ExecuteDesyncIPv4(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	if cfg.TCP.DesyncMode == "off" {
+	if cfg.TCP.DesyncMode == config.ConfigOff {
 		return
 	}
 
@@ -324,7 +324,7 @@ func (w *Worker) sendDesyncFull(packet []byte, dst net.IP, da *DesyncAttacker) {
 
 // ExecuteDesyncIPv6 performs desync attack for IPv6
 func (w *Worker) ExecuteDesyncIPv6(cfg *config.SetConfig, packet []byte, dst net.IP) {
-	if cfg.TCP.DesyncMode == "off" {
+	if cfg.TCP.DesyncMode == config.ConfigOff {
 		return
 	}
 
