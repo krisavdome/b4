@@ -344,6 +344,7 @@ func (t *TargetsConfig) AppendSNI(sni string) error {
 
 func (cfg *Config) CollectUDPPorts() []string {
 	portSet := make(map[string]bool)
+	portSet["443"] = true
 
 	for _, set := range cfg.Sets {
 		if !set.Enabled || set.UDP.DPortFilter == "" {
@@ -357,10 +358,6 @@ func (cfg *Config) CollectUDPPorts() []string {
 		}
 	}
 
-	if len(portSet) == 0 {
-		return []string{"443"}
-	}
-
 	ports := make([]string, 0, len(portSet))
 	for p := range portSet {
 		ports = append(ports, p)
@@ -368,7 +365,6 @@ func (cfg *Config) CollectUDPPorts() []string {
 	sort.Strings(ports)
 	return ports
 }
-
 func (c *Config) Clone() *Config {
 	data, _ := json.Marshal(c)
 	var clone Config
