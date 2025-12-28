@@ -1,17 +1,9 @@
-import {
-  Grid,
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Chip,
-  Divider,
-} from "@mui/material";
 import { formatNumber } from "@utils";
 import { colors } from "@design";
 import { ProtocolChip } from "@common/ProtocolChip";
+import { Card } from "@design/components/ui/card";
+import { Badge } from "@design/components/ui/badge";
+import { Separator } from "@design/components/ui/separator";
 
 interface Connection {
   timestamp: string;
@@ -36,126 +28,79 @@ export const DashboardActivityPanels = ({
     .slice(0, 10);
 
   return (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Paper
-          sx={{
-            p: 2,
-            bgcolor: colors.background.paper,
-            borderColor: colors.border.default,
-          }}
-          variant="outlined"
-        >
-          <Typography variant="h6" sx={{ mb: 2, color: colors.text.primary }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="col-span-1">
+        <Card className="p-4 border border-border">
+          <h6 className="text-lg font-semibold mb-4 text-foreground">
             Top Domains
-          </Typography>
+          </h6>
           {topDomainsData.length > 0 ? (
-            <List dense>
+            <ul className="space-y-0">
               {topDomainsData.map(([domain, count], index) => (
-                <ListItem key={domain}>
-                  <ListItemText
-                    primary={
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: colors.text.primary }}
-                        >
-                          {index + 1}. {domain}
-                        </Typography>
-                        <Chip
-                          label={formatNumber(count)}
-                          size="small"
-                          sx={{
-                            bgcolor: colors.accent.primary,
-                            color: colors.primary,
-                          }}
-                        />
-                      </Stack>
-                    }
-                  />
-                  <Divider />
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography
-              sx={{ color: colors.text.secondary, textAlign: "center", py: 4 }}
-            >
-              No domain data available yet
-            </Typography>
-          )}
-        </Paper>
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Paper
-          sx={{
-            p: 2,
-            bgcolor: colors.background.paper,
-            borderColor: colors.border.default,
-            height: "100%",
-          }}
-          variant="outlined"
-        >
-          <Typography variant="h6" sx={{ mb: 2, color: colors.text.primary }}>
-            Recent Activity
-          </Typography>
-          <List dense sx={{ maxHeight: 400, overflow: "auto" }}>
-            {recentConnections.map((conn) => (
-              <ListItem key={conn.timestamp}>
-                <ListItemText
-                  primary={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <ProtocolChip protocol={conn.protocol} />
-                      <Typography
-                        variant="body2"
-                        sx={{ color: colors.text.primary }}
-                      >
-                        {conn.domain}
-                      </Typography>
-                      {conn.is_target && (
-                        <Chip
-                          label="TARGET"
-                          size="small"
-                          sx={{
-                            bgcolor: "#4caf5033",
-                            color: "#4caf50",
-                            fontWeight: 600,
-                          }}
-                        />
-                      )}
-                    </Stack>
-                  }
-                  secondary={
-                    <Typography
-                      variant="caption"
-                      sx={{ color: colors.text.secondary }}
+                <li key={domain}>
+                  <div className="flex flex-row justify-between items-center py-2">
+                    <p className="text-sm text-foreground">
+                      {index + 1}. {domain}
+                    </p>
+                    <Badge
+                      variant="default"
+                      className="text-xs px-1.5 py-0.5"
+                      style={{
+                        backgroundColor: `${colors.accent.primary}`,
+                        color: colors.primary,
+                      }}
                     >
-                      {conn.source} → {conn.destination} •{" "}
-                      {new Date(conn.timestamp).toLocaleTimeString()}
-                    </Typography>
-                  }
-                />
-              </ListItem>
+                      {formatNumber(count)}
+                    </Badge>
+                  </div>
+                  {index < topDomainsData.length - 1 && <Separator />}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No domain data available yet
+            </p>
+          )}
+        </Card>
+      </div>
+
+      <div className="col-span-1">
+        <Card className="p-4 h-full border border-border">
+          <h6 className="text-lg font-semibold mb-4 text-foreground">
+            Recent Activity
+          </h6>
+          <ul className="max-h-100 overflow-auto space-y-0">
+            {recentConnections.map((conn) => (
+              <li key={conn.timestamp} className="py-2">
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-row gap-2 items-center">
+                    <ProtocolChip protocol={conn.protocol} />
+                    <p className="text-sm text-foreground">{conn.domain}</p>
+                    {conn.is_target && (
+                      <Badge
+                        variant="default"
+                        className="text-xs px-1.5 py-0.5 font-semibold bg-green-500/20 text-green-500"
+                      >
+                        TARGET
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {conn.source} → {conn.destination} •{" "}
+                    {new Date(conn.timestamp).toLocaleTimeString()}
+                  </p>
+                </div>
+              </li>
             ))}
             {recentConnections.length === 0 && (
-              <Typography
-                sx={{
-                  color: colors.text.secondary,
-                  textAlign: "center",
-                  py: 4,
-                }}
-              >
+              <p className="text-muted-foreground text-center py-8">
                 No recent connections
-              </Typography>
+              </p>
             )}
-          </List>
-        </Paper>
-      </Grid>
-    </Grid>
+          </ul>
+        </Card>
+      </div>
+    </div>
   );
 };

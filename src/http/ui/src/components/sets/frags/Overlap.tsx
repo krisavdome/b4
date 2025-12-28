@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Grid, Box, Typography } from "@mui/material";
-import { B4TextField } from "@b4.fields";
+import { AddIcon } from "@b4.icons";
+import { ChipList } from "@components/common/ChipList";
+import { Alert, AlertDescription } from "@design/components/ui/alert";
+import { Button } from "@design/components/ui/button";
+import { Field, FieldLabel } from "@design/components/ui/field";
+import { Input } from "@design/components/ui/input";
+import { Separator } from "@design/components/ui/separator";
 import { B4SetConfig } from "@models/config";
-import { colors } from "@design";
-import { B4Alert, B4ChipList, B4FormHeader, B4PlusButton } from "@b4.elements";
+import { useState } from "react";
 
 interface OverlapSettingsProps {
   config: B4SetConfig;
@@ -41,175 +44,116 @@ export const OverlapSettings = ({ config, onChange }: OverlapSettingsProps) => {
 
   return (
     <>
-      <B4FormHeader label="Overlap Strategy" />
+      <div className="relative my-4 md:col-span-2 flex items-center">
+        <Separator className="absolute inset-0 top-1/2" />
+        <span className="text-xs font-medium text-muted-foreground px-2 uppercase bg-card relative mx-auto block w-fit">
+          Overlap Strategy
+        </span>
+      </div>
 
-      <B4Alert severity="info" sx={{ m: 0 }}>
-        Exploits RFC 793: server keeps FIRST received data for overlapping
-        segments. Real SNI sent first (server sees), fake SNI sent second (DPI
-        sees).
-      </B4Alert>
+      <Alert className="m-0">
+        <AlertDescription>
+          Exploits RFC 793: server keeps FIRST received data for overlapping
+          segments. Real SNI sent first (server sees), fake SNI sent second (DPI
+          sees).
+        </AlertDescription>
+      </Alert>
 
       {/* Visual explanation */}
-      <Grid size={{ xs: 12 }}>
-        <Box
-          sx={{
-            p: 2,
-            bgcolor: colors.background.paper,
-            borderRadius: 1,
-            border: `1px solid ${colors.border.default}`,
-          }}
-        >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            component="div"
-            sx={{ mb: 1 }}
-          >
+      <div className="md:col-span-2">
+        <div className="p-4 bg-card rounded-md border border-border">
+          <p className="text-xs text-muted-foreground mb-2">
             HOW OVERLAP WORKS
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{ minWidth: 80, color: colors.text.secondary }}
-              >
+          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground min-w-20">
                 Sent 1st:
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.5,
-                  fontFamily: "monospace",
-                  fontSize: "0.7rem",
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 1,
-                    bgcolor: colors.accent.secondary,
-                    borderRadius: 0.5,
-                    border: `2px solid ${colors.secondary}`,
-                  }}
-                >
+              </p>
+              <div className="flex gap-1 font-mono text-xs">
+                <div className="p-2 bg-accent-secondary rounded border-2 border-secondary">
                   youtube.com (REAL)
-                </Box>
-                <Box
-                  sx={{
-                    p: 1,
-                    bgcolor: colors.accent.primary,
-                    borderRadius: 0.5,
-                  }}
-                >
-                  ...rest
-                </Box>
-              </Box>
-              <Typography
-                variant="caption"
-                sx={{ color: colors.secondary, ml: 1 }}
-              >
-                → Server keeps
-              </Typography>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{ minWidth: 80, color: colors.text.secondary }}
-              >
+                </div>
+                <div className="p-2 bg-accent rounded">...rest</div>
+              </div>
+              <p className="text-xs text-secondary ml-2">→ Server keeps</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground min-w-20">
                 Sent 2nd:
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.5,
-                  fontFamily: "monospace",
-                  fontSize: "0.7rem",
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 1,
-                    bgcolor: colors.accent.primary,
-                    borderRadius: 0.5,
-                  }}
-                >
-                  Header...
-                </Box>
-                <Box
-                  sx={{
-                    p: 1,
-                    bgcolor: colors.tertiary,
-                    borderRadius: 0.5,
-                    border: `2px dashed ${colors.secondary}`,
-                  }}
-                >
+              </p>
+              <div className="flex gap-1 font-mono text-xs">
+                <div className="p-2 bg-accent rounded">Header...</div>
+                <div className="p-2 bg-tertiary rounded border-2 border-dashed border-secondary">
                   {fakeSNIs[0] || "ya.ru"}...... (FAKE)
-                </Box>
-              </Box>
-              <Typography
-                variant="caption"
-                sx={{ color: colors.secondary, ml: 1 }}
-              >
+                </div>
+              </div>
+              <p className="text-xs text-secondary ml-2">
                 → DPI sees, server discards
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Grid>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Fake SNIs editor */}
-      <Grid size={{ xs: 12 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Fake SNI Domains
-        </Typography>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ mb: 2, display: "block" }}
-        >
+      <div className="md:col-span-2">
+        <p className="text-sm font-semibold mb-2">Fake SNI Domains</p>
+        <p className="text-xs text-muted-foreground mb-4">
           Domains injected into overlapping segment. DPI sees these instead of
           real target. Use allowed/unblocked domains.
-        </Typography>
-      </Grid>
+        </p>
+      </div>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <B4TextField
-            label="Add Domain"
-            value={newDomain}
-            onChange={(e) => setNewDomain(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="e.g., allowed-site.ru"
-            size="small"
-          />
-          <B4PlusButton
+      <div>
+        <div className="flex gap-2">
+          <Field className="flex-1">
+            <FieldLabel>Add Domain</FieldLabel>
+            <Input
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g., allowed-site.ru"
+            />
+          </Field>
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={handleAddDomain}
             disabled={!newDomain.trim()}
-          />
-        </Box>
-      </Grid>
+          >
+            <AddIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
-      <B4ChipList
-        items={fakeSNIs}
-        getKey={(d) => d}
-        getLabel={(d) => d}
-        onDelete={handleRemoveDomain}
-        emptyMessage="No domains configured - defaults will be used"
-        gridSize={{ xs: 12, md: 6 }}
-        showEmpty
-      />
+      <div>
+        <ChipList
+          items={fakeSNIs}
+          getKey={(d) => d}
+          getLabel={(d) => d}
+          onDelete={handleRemoveDomain}
+          emptyMessage="No domains configured - defaults will be used"
+          showEmpty
+        />
+      </div>
 
       {fakeSNIs.length === 0 && (
-        <B4Alert severity="warning" sx={{ m: 0 }}>
-          Using default domains (ya.ru, vk.com, etc). Add custom domains that
-          are known to be unblocked in your region.
-        </B4Alert>
+        <Alert variant="destructive" className="m-0 md:col-span-2">
+          <AlertDescription>
+            Using default domains (ya.ru, vk.com, etc). Add custom domains that
+            are known to be unblocked in your region.
+          </AlertDescription>
+        </Alert>
       )}
 
       {fakeSNIs.length > 0 && fakeSNIs.length < 3 && (
-        <B4Alert severity="info" sx={{ m: 0 }}>
-          Tip: Add more domains for variety. A random one is selected per
-          connection.
-        </B4Alert>
+        <Alert className="m-0 md:col-span-2">
+          <AlertDescription>
+            Tip: Add more domains for variety. A random one is selected per
+            connection.
+          </AlertDescription>
+        </Alert>
       )}
     </>
   );

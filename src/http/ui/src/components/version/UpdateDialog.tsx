@@ -1,35 +1,40 @@
-import { useState, useEffect, forwardRef } from "react";
-import {
-  Button,
-  Typography,
-  Box,
-  Divider,
-  Stack,
-  LinearProgress,
-  Chip,
-  FormControlLabel,
-  Switch,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-} from "@mui/material";
+import { forwardRef, useEffect, useState } from "react";
 
 import {
-  NewReleaseIcon,
-  DescriptionIcon,
-  OpenInNewIcon,
   CheckCircleIcon,
   CloseIcon,
   CloudDownloadIcon,
+  DescriptionIcon,
+  NewReleaseIcon,
+  OpenInNewIcon,
 } from "@b4.icons";
-import { B4Alert } from "@b4.elements";
-import ReactMarkdown from "react-markdown";
-import { useSystemUpdate } from "@hooks/useSystemUpdate";
-import { colors } from "@design";
-import { B4Dialog } from "@common/B4Dialog";
+import { Alert, AlertDescription } from "@design/components/ui/alert";
+import { Badge } from "@design/components/ui/badge";
+import { Button } from "@design/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@design/components/ui/dialog";
+import { Label } from "@design/components/ui/label";
+import { Progress } from "@design/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@design/components/ui/select";
+import { Separator } from "@design/components/ui/separator";
+import { Switch } from "@design/components/ui/switch";
+import { cn } from "@design/lib/utils";
 import { GitHubRelease, compareVersions } from "@hooks/useGitHubRelease";
+import { useSystemUpdate } from "@hooks/useSystemUpdate";
 import React from "react";
+import ReactMarkdown from "react-markdown";
 
 interface UpdateModalProps {
   open: boolean;
@@ -41,20 +46,13 @@ interface UpdateModalProps {
   onTogglePrerelease: (include: boolean) => void;
 }
 
-const H2Typography = forwardRef<
-  HTMLHeadingElement,
-  React.ComponentProps<typeof Typography>
->(function H2Typography(props, ref) {
-  return (
-    <Typography
-      component="h2"
-      variant="subtitle2"
-      sx={{ fontWeight: 800, textTransform: "uppercase" }}
-      ref={ref}
-      {...props}
-    />
-  );
-});
+const H2Typography = forwardRef<HTMLHeadingElement, React.ComponentProps<"h2">>(
+  function H2Typography(props, ref) {
+    return (
+      <h2 className="text-sm font-extrabold uppercase" ref={ref} {...props} />
+    );
+  }
+);
 
 export const UpdateModal = ({
   open,
@@ -162,24 +160,25 @@ export const UpdateModal = ({
       case "updating":
       case "reconnecting":
         return (
-          <Box sx={{ mb: 3 }}>
-            <Typography sx={{ mb: 1, color: colors.text.secondary }}>
-              {updateMessage}
-            </Typography>
-            <LinearProgress />
-          </Box>
+          <div className="mb-6">
+            <p className="mb-2 text-muted-foreground">{updateMessage}</p>
+            <Progress />
+          </div>
         );
       case "success":
         return (
-          <B4Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 2 }}>
-            {updateMessage}
-          </B4Alert>
+          <Alert className="mb-4">
+            <CheckCircleIcon className="h-3.5 w-3.5" />
+            <AlertDescription>
+              <div className="flex items-center gap-2">{updateMessage}</div>
+            </AlertDescription>
+          </Alert>
         );
       case "error":
         return (
-          <B4Alert severity="error" sx={{ mb: 2 }}>
-            {updateMessage}
-          </B4Alert>
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{updateMessage}</AlertDescription>
+          </Alert>
         );
       default:
         return null;
@@ -191,166 +190,129 @@ export const UpdateModal = ({
       {getStatusContent()}
 
       {updateStatus === "idle" && (
-        <Box sx={{ mb: 3 }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            alignItems="center"
-            sx={{ mb: 2, mt: 2 }}
-          >
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel>Select Version</InputLabel>
+        <div className="mb-6">
+          <div className="flex flex-row gap-4 items-center mb-4 mt-4">
+            <div className="min-w-55">
+              <Label>Select Version</Label>
               <Select
                 value={selectedVersion}
-                label="Select Version"
-                onChange={(e) => setSelectedVersion(e.target.value)}
+                onValueChange={(value) => setSelectedVersion(value)}
               >
-                {releases.map((r) => (
-                  <MenuItem key={r.tag_name} value={r.tag_name}>
-                    {r.tag_name}
-                    {r.prerelease && " (pre-release)"}
-                    {r.tag_name === `v${currentVersion}` && " (current)"}
-                  </MenuItem>
-                ))}
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Version" />
+                </SelectTrigger>
+                <SelectContent>
+                  {releases.map((r) => (
+                    <SelectItem key={r.tag_name} value={r.tag_name}>
+                      {r.tag_name}
+                      {r.prerelease && " (pre-release)"}
+                      {r.tag_name === `v${currentVersion}` && " (current)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={includePrerelease}
-                  onChange={(e) => onTogglePrerelease(e.target.checked)}
-                  size="small"
-                />
-              }
-              label="Include pre-releases"
-            />
-          </Stack>
-          <Stack direction="row" spacing={1}>
-            <Chip
-              label={`Current: v${currentVersion}`}
-              size="small"
-              sx={{
-                bgcolor: colors.accent.primary,
-                color: colors.text.primary,
-              }}
-            />
-            {!isCurrent && (
-              <Chip
-                label={isDowngrade ? "Downgrade" : "Upgrade"}
-                size="small"
-                color={isDowngrade ? "warning" : "success"}
-                sx={{ fontWeight: 600 }}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={includePrerelease}
+                onCheckedChange={(checked) => onTogglePrerelease(checked)}
               />
+              <Label>Include pre-releases</Label>
+            </div>
+          </div>
+          <div className="flex flex-row gap-2">
+            <Badge variant="default" className="text-xs px-1.5 py-0.5">
+              {`Current: v${currentVersion}`}
+            </Badge>
+            {!isCurrent && (
+              <Badge
+                variant={isDowngrade ? "destructive" : "secondary"}
+                className="text-xs px-1.5 py-0.5 font-semibold"
+              >
+                {isDowngrade ? "Downgrade" : "Upgrade"}
+              </Badge>
             )}
             {selectedRelease?.prerelease && (
-              <Chip label="Pre-release" size="small" color="info" />
+              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                Pre-release
+              </Badge>
             )}
-          </Stack>
-        </Box>
+          </div>
+        </div>
       )}
 
       {selectedRelease && (
-        <Box
-          sx={{
-            maxHeight: 400,
-            overflow: "auto",
-            p: 2,
-            bgcolor: colors.background.default,
-            borderRadius: 1,
-            border: `1px solid ${colors.border.default}`,
-          }}
-        >
-          <Typography
-            variant="subtitle1"
-            sx={{
-              color: colors.secondary,
-              mb: 2,
-              fontWeight: 600,
-              textTransform: "uppercase",
-            }}
-          >
+        <div className="max-h-100 overflow-auto p-4 bg-background rounded-md border border-border">
+          <h6 className="text-secondary mb-4 font-semibold uppercase">
             Release Notes - {selectedRelease.tag_name}
-          </Typography>
-          <Box
-            sx={{
-              color: colors.text.primary,
-              "& h1, & h2, & h3": { color: colors.secondary, mt: 2, mb: 1 },
-              "& p": { mb: 1, lineHeight: 1.6 },
-              "& ul, & ol": { pl: 3, mb: 1 },
-              "& code": {
-                bgcolor: colors.background.paper,
-                color: colors.secondary,
-                px: 0.5,
-                py: 0.25,
-                borderRadius: 0.5,
-                fontSize: "0.9em",
-              },
-              "& a": { color: colors.secondary },
-            }}
-          >
+          </h6>
+          <div className="text-foreground [&_h1]:text-secondary [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-secondary [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-secondary [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-2 [&_p]:leading-relaxed [&_ul]:pl-6 [&_ul]:mb-2 [&_ol]:pl-6 [&_ol]:mb-2 [&_code]:bg-card [&_code]:text-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_a]:text-secondary">
             <ReactMarkdown components={{ h2: H2Typography }}>
               {selectedRelease.body || "No release notes available."}
             </ReactMarkdown>
-          </Box>
-        </Box>
+          </div>
+        </div>
       )}
 
-      <Divider sx={{ my: 2, borderColor: colors.border.default }} />
+      <Separator className="my-4" />
 
-      <Stack direction="row" spacing={2} justifyContent="center">
-        <Button
-          variant="outlined"
-          startIcon={<DescriptionIcon />}
-          href="https://github.com/DanielLavrushin/b4/blob/main/changelog.md"
-          target="_blank"
-          disabled={isUpdating}
-        >
-          Full Changelog
+      <div className="flex flex-row gap-4 justify-center">
+        <Button variant="outline" asChild>
+          <a
+            href="https://github.com/DanielLavrushin/b4/blob/main/changelog.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2"
+          >
+            <DescriptionIcon className="h-4 w-4" />
+            Full Changelog
+          </a>
         </Button>
         {selectedRelease && (
-          <Button
-            variant="outlined"
-            startIcon={<OpenInNewIcon />}
-            href={selectedRelease.html_url}
-            target="_blank"
-            disabled={isUpdating}
-          >
-            View on GitHub
+          <Button variant="outline" asChild>
+            <a
+              href={selectedRelease.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2"
+            >
+              <OpenInNewIcon className="h-4 w-4" />
+              View on GitHub
+            </a>
           </Button>
         )}
-      </Stack>
+      </div>
     </>
   );
 
   const dialogActions = () => (
     <>
-      <Button
-        onClick={onDismiss}
-        startIcon={<CloseIcon />}
-        disabled={isUpdating}
-      >
+      <Button onClick={onDismiss} variant="ghost" disabled={isUpdating}>
+        <CloseIcon className="h-4 w-4 mr-2" />
         Don't Show Again
       </Button>
-      <Box sx={{ flex: 1 }} />
+      <div className="flex-1" />
       {updateStatus === "idle" && (
         <>
-          <Button onClick={onClose} variant="outlined" disabled={isUpdating}>
+          <Button onClick={onClose} variant="outline" disabled={isUpdating}>
             Close
           </Button>
           <Button
             onClick={() => void handleUpdate()}
-            variant="contained"
-            startIcon={<CloudDownloadIcon />}
+            variant="default"
             disabled={isUpdating || isCurrent}
-            color={isDowngrade ? "warning" : "primary"}
+            className={cn(
+              isDowngrade && "bg-destructive hover:bg-destructive/90"
+            )}
           >
+            <CloudDownloadIcon className="h-4 w-4 mr-2" />
             {isDowngrade ? "Downgrade" : "Update"}
           </Button>
         </>
       )}
       {updateStatus === "success" && (
         <Button
-          variant="contained"
+          variant="default"
           onClick={() => globalThis.window.location.reload()}
         >
           Reload Page
@@ -359,15 +321,37 @@ export const UpdateModal = ({
     </>
   );
 
+  const dialogProps = getDialogProps();
+
   return (
-    <B4Dialog
-      {...getDialogProps()}
+    <Dialog
       open={open}
-      onClose={isUpdating ? () => {} : onClose}
-      actions={dialogActions()}
-      maxWidth="lg"
+      onOpenChange={(open) => !open && (isUpdating ? () => {} : onClose())}
     >
-      {dialogContent()}
-    </B4Dialog>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground">
+              {dialogProps.icon}
+            </div>
+            <div className="flex-1">
+              <DialogTitle>{dialogProps.title}</DialogTitle>
+              {dialogProps.subtitle && (
+                <DialogDescription className="mt-1">
+                  {dialogProps.subtitle}
+                </DialogDescription>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="py-4">{dialogContent()}</div>
+        {dialogActions() && (
+          <>
+            <Separator />
+            <DialogFooter>{dialogActions()}</DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

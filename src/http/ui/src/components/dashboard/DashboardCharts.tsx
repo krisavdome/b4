@@ -1,6 +1,6 @@
-import { Box, Grid, Paper, Typography } from "@mui/material";
 import { SimpleLineChart } from "./SimpleLineChart";
 import { colors } from "@design";
+import { Card } from "@design/components/ui/card";
 
 interface DashboardChartsProps {
   connectionRate: { timestamp: number; value: number }[];
@@ -9,24 +9,17 @@ interface DashboardChartsProps {
 
 export const DashboardCharts = ({ connectionRate }: DashboardChartsProps) => {
   return (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12, lg: 12 }}>
-        <Paper
-          sx={{
-            p: 2,
-            bgcolor: colors.background.paper,
-            borderColor: colors.border.default,
-          }}
-          variant="outlined"
-        >
-          <Typography variant="h6" sx={{ mb: 2, color: colors.text.primary }}>
+    <div className="grid grid-cols-1 gap-6">
+      <div className="col-span-1 lg:col-span-1">
+        <Card className="p-4 border border-border">
+          <h6 className="text-lg font-semibold mb-4 text-foreground">
             Connection Rate (last 60s)
-          </Typography>
-          <Box sx={{ pl: 5 }}>
+          </h6>
+          <div className="pl-12">
             <SimpleLineChart data={connectionRate} color={colors.secondary} />
-          </Box>
-        </Paper>
-      </Grid>
-    </Grid>
+          </div>
+        </Card>
+      </div>
+    </div>
   );
 };

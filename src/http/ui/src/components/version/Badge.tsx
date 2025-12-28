@@ -1,6 +1,12 @@
-import { Box, Chip, CircularProgress, Tooltip } from "@mui/material";
-import { colors } from "@design";
 import { NewReleaseIcon } from "@b4.icons";
+import { Badge } from "@design/components/ui/badge";
+import { Spinner } from "@design/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@design/components/ui/tooltip";
+import { cn } from "@design/lib/utils";
 
 interface VersionBadgeProps {
   version: string;
@@ -17,61 +23,42 @@ export const VersionBadge = ({
 }: VersionBadgeProps) => {
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2 }}>
-        <CircularProgress size={12} sx={{ color: colors.secondary }} />
-        <span style={{ color: colors.text.secondary, fontSize: "0.75rem" }}>
+      <div className="flex items-center gap-2 px-4">
+        <Spinner className="h-4 w-4" />
+        <span className="text-muted-foreground text-xs">
           Checking for updates...
         </span>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        px: 2,
-        cursor: "pointer",
-      }}
+    <div
+      className="flex items-center gap-2 px-4 cursor-pointer"
       onClick={onClick}
     >
       {hasUpdate ? (
-        <Tooltip title="New version available! Click to view details">
-          <Chip
-            label={`v${version}`}
-            size="small"
-            icon={<NewReleaseIcon />}
-            sx={{
-              bgcolor: colors.accent.secondary,
-              color: colors.secondary,
-              fontWeight: 600,
-              animation: "pulse 2s ease-in-out infinite",
-              "@keyframes pulse": {
-                "0%, 100%": {
-                  opacity: 1,
-                },
-                "50%": {
-                  opacity: 0.7,
-                },
-              },
-              "& .MuiChip-icon": {
-                color: colors.secondary,
-              },
-              "&:hover": {
-                bgcolor: colors.accent.secondaryHover,
-                transform: "scale(1.05)",
-              },
-              transition: "all 0.2s ease",
-            }}
-          />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div>
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-xs px-1.5 py-0.5 font-semibold animate-pulse hover:scale-105 transition-all inline-flex items-center gap-1"
+                )}
+              >
+                <NewReleaseIcon className="h-3 w-3" />
+                {`v${version}`}
+              </Badge>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>New version available! Click to view details</p>
+          </TooltipContent>
         </Tooltip>
       ) : (
-        <span style={{ color: colors.secondary, fontSize: "0.75rem" }}>
-          v{version}
-        </span>
+        <span className="text-secondary text-xs">v{version}</span>
       )}
-    </Box>
+    </div>
   );
 };

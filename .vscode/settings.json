@@ -139,5 +139,6 @@
   },
   "[dotenv]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  "css.lint.unknownAtRules": "ignore"
 }

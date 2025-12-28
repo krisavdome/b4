@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Box, Typography } from "@mui/material";
 import { colors } from "@design";
+import { useEffect, useRef } from "react";
 
 interface SimpleChartProps {
   data: { timestamp: number; value: number }[];
@@ -63,9 +62,7 @@ export const SimpleLineChart = ({
   }, [data]);
 
   if (data.length === 0)
-    return (
-      <Typography sx={{ color: colors.text.secondary }}>No data</Typography>
-    );
+    return <p className="text-muted-foreground">No data</p>;
 
   const maxValue = Math.max(...data.map((d) => d.value), 1);
   const minValue = Math.min(...data.map((d) => d.value), 0);
@@ -85,15 +82,7 @@ export const SimpleLineChart = ({
   const gradientId = `gradient-${Math.random().toString(36).substring(2, 11)}`;
 
   return (
-    <Box
-      sx={{
-        position: "relative",
-        width: "100%",
-        height,
-        pl: 1,
-        overflow: "hidden",
-      }}
-    >
+    <div className="relative w-full overflow-hidden pl-1" style={{ height }}>
       <svg
         ref={svgRef}
         width="100%"
@@ -148,49 +137,17 @@ export const SimpleLineChart = ({
         />
       </svg>
 
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          pr: 1,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: colors.text.secondary,
-            fontSize: "0.7rem",
-            lineHeight: 1,
-          }}
-        >
+      <div className="absolute top-0 left-0 h-full flex flex-col justify-between pr-1">
+        <p className="text-[0.7rem] text-muted-foreground leading-none">
           {maxValue.toFixed(1)}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: colors.text.secondary,
-            fontSize: "0.7rem",
-            lineHeight: 1,
-          }}
-        >
+        </p>
+        <p className="text-[0.7rem] text-muted-foreground leading-none">
           {(minValue + range / 2).toFixed(1)}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: colors.text.secondary,
-            fontSize: "0.7rem",
-            lineHeight: 1,
-          }}
-        >
+        </p>
+        <p className="text-[0.7rem] text-muted-foreground leading-none">
           {minValue.toFixed(1)}
-        </Typography>
-      </Box>
-    </Box>
+        </p>
+      </div>
+    </div>
   );
 };

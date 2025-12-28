@@ -1,16 +1,34 @@
-import { Grid, FormControlLabel, Switch, Typography, Box } from "@mui/material";
-import { DnsIcon } from "@b4.icons";
-import { B4SetConfig, WindowMode, DesyncMode } from "@models/config";
+import { AddIcon, TcpIcon } from "@b4.icons";
+import { ChipList } from "@components/common/ChipList";
+import { Alert, AlertDescription } from "@design/components/ui/alert";
+import { Badge } from "@design/components/ui/badge";
+import { Button } from "@design/components/ui/button";
 import {
-  B4Slider,
-  B4Select,
-  B4TextField,
-  B4Section,
-  B4Alert,
-  B4FormHeader,
-  B4PlusButton,
-  B4ChipList,
-} from "@b4.elements";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@design/components/ui/card";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@design/components/ui/field";
+import { Input } from "@design/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@design/components/ui/select";
+import { Separator } from "@design/components/ui/separator";
+import { Slider } from "@design/components/ui/slider";
+import { Switch } from "@design/components/ui/switch";
+import { B4SetConfig, DesyncMode, WindowMode } from "@models/config";
 import { useState } from "react";
 
 interface TcpSettingsProps {
@@ -82,249 +100,369 @@ export const TcpSettings = ({ config, main, onChange }: TcpSettingsProps) => {
   };
 
   return (
-    <B4Section
-      title="TCP Configuration"
-      description="Configure TCP packet handling and DPI bypass techniques"
-      icon={<DnsIcon />}
-    >
-      {/* Basic TCP Settings */}
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <B4Slider
-            label="Connection Bytes Limit"
-            value={config.tcp.conn_bytes_limit}
-            onChange={(value: number) =>
-              onChange("tcp.conn_bytes_limit", value)
-            }
-            min={1}
-            max={main.id === config.id ? 100 : main.tcp.conn_bytes_limit}
-            step={1}
-            helperText={
-              main.id === config.id
-                ? "Main set limit (changing requires service restart to take effect)"
-                : `Max: ${main.tcp.conn_bytes_limit} (limited by main set)`
-            }
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <B4Slider
-            label="Segment 2 Delay"
-            value={config.tcp.seg2delay}
-            onChange={(value: number) => onChange("tcp.seg2delay", value)}
-            min={0}
-            max={1000}
-            step={10}
-            valueSuffix=" ms"
-            helperText="Delay between TCP segments (helps with timing-based DPI)"
-          />
-        </Grid>
-
-        {/* SACK and SYN Fake */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={config.tcp.drop_sack || false}
-                onChange={(e) => onChange("tcp.drop_sack", e.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight={500}>
-                  Drop SACK Options
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Strip Selective Acknowledgment from TCP headers to confuse
-                  stateful DPI
-                </Typography>
-              </Box>
-            }
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={config.tcp.syn_fake || false}
-                onChange={(e) => onChange("tcp.syn_fake", e.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight={500}>
-                  SYN Fake Packets
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Send fake SYN packets during handshake (aggressive technique)
-                </Typography>
-              </Box>
-            }
-          />
-        </Grid>
-
-        {config.tcp.syn_fake && (
-          <>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <B4Slider
-                label="SYN Fake Payload Length"
-                value={config.tcp.syn_fake_len || 0}
-                onChange={(value: number) =>
-                  onChange("tcp.syn_fake_len", value)
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground">
+            <TcpIcon />
+          </div>
+          <div className="flex-1">
+            <CardTitle>TCP Configuration</CardTitle>
+            <CardDescription className="mt-1">
+              Configure TCP packet handling and DPI bypass techniques
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <Separator className="mb-4" />
+      <CardContent className="flex flex-col gap-4">
+        {/* Basic TCP Settings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Field className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel className="text-sm font-medium">
+                  Connection Bytes Limit
+                </FieldLabel>
+                <Badge variant="secondary" className="font-semibold">
+                  {config.tcp.conn_bytes_limit}
+                </Badge>
+              </div>
+              <Slider
+                value={[config.tcp.conn_bytes_limit]}
+                onValueChange={(values) =>
+                  onChange("tcp.conn_bytes_limit", values[0])
                 }
-                min={0}
-                max={1200}
-                step={64}
-                valueSuffix=" bytes"
-                helperText="0 = header only, >0 = add fake TLS payload"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <B4Slider
-                label="SYN Fake TTL"
-                value={config.tcp.syn_ttl || 0}
-                onChange={(value: number) => onChange("tcp.syn_ttl", value)}
                 min={1}
-                max={100}
+                max={main.id === config.id ? 100 : main.tcp.conn_bytes_limit}
                 step={1}
-                valueSuffix=" ms"
-                helperText="TTL value for SYN fake packets (default 3 if unset)"
+                className="w-full"
               />
-            </Grid>
-          </>
-        )}
-      </Grid>
+              <FieldDescription>
+                {main.id === config.id
+                  ? "Main set limit (changing requires service restart to take effect)"
+                  : `Max: ${main.tcp.conn_bytes_limit} (limited by main set)`}
+              </FieldDescription>
+            </Field>
+          </div>
+          <div>
+            <Field className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel className="text-sm font-medium">
+                  Segment 2 Delay
+                </FieldLabel>
+                <Badge variant="secondary" className="font-semibold">
+                  {config.tcp.seg2delay} ms
+                </Badge>
+              </div>
+              <Slider
+                value={[config.tcp.seg2delay]}
+                onValueChange={(values) => onChange("tcp.seg2delay", values[0])}
+                min={0}
+                max={1000}
+                step={10}
+                className="w-full"
+              />
+              <FieldDescription>
+                Delay between TCP segments (helps with timing-based DPI)
+              </FieldDescription>
+            </Field>
+          </div>
 
-      {/* TCP Window Configuration */}
-      <B4FormHeader label="TCP Window Manipulation" />
-      <Grid container spacing={3}>
-        <B4Alert>
-          Window manipulation sends fake ACK packets with modified TCP window
-          sizes before your real packet. These fakes use low TTL so they expire
-          before reaching the server but confuse middlebox DPI.
-        </B4Alert>
+          {/* SACK and SYN Fake */}
+          <div>
+            <label htmlFor="switch-tcp-drop-sack">
+              <Field orientation="horizontal" className="has-[>[data-state=checked]]:bg-primary/5 dark:has-[>[data-state=checked]]:bg-primary/10 has-[>[data-checked]]:bg-primary/5 dark:has-[>[data-checked]]:bg-primary/10 p-2">
+                <FieldContent>
+                  <FieldTitle>Drop SACK Options</FieldTitle>
+                  <FieldDescription>
+                    Strip Selective Acknowledgment from TCP headers to confuse
+                    stateful DPI
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  id="switch-tcp-drop-sack"
+                  checked={config.tcp.drop_sack || false}
+                  onCheckedChange={(checked) =>
+                    onChange("tcp.drop_sack", checked)
+                  }
+                />
+              </Field>
+            </label>
+          </div>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <B4Select
-            label="Window Mode"
-            value={config.tcp.win_mode}
-            options={windowModeOptions}
-            onChange={(e) => onChange("tcp.win_mode", e.target.value as string)}
-            helperText={windowModeDescriptions[config.tcp.win_mode]}
-          />
-        </Grid>
+          <div>
+            <label htmlFor="switch-tcp-syn-fake">
+              <Field orientation="horizontal" className="has-[>[data-state=checked]]:bg-primary/5 dark:has-[>[data-state=checked]]:bg-primary/10 has-[>[data-checked]]:bg-primary/5 dark:has-[>[data-checked]]:bg-primary/10 p-2">
+                <FieldContent>
+                  <FieldTitle>SYN Fake Packets</FieldTitle>
+                  <FieldDescription>
+                    Send fake SYN packets during handshake (aggressive technique)
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  id="switch-tcp-syn-fake"
+                  checked={config.tcp.syn_fake || false}
+                  onCheckedChange={(checked) => onChange("tcp.syn_fake", checked)}
+                />
+              </Field>
+            </label>
+          </div>
 
-        {showWinValues && (
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Custom Window Values
-            </Typography>
-            <Typography variant="caption" color="text.secondary" gutterBottom>
-              {config.tcp.win_mode === "oscillate"
-                ? "Packets will cycle through these values in order"
-                : "Random values will be picked from this list"}
-            </Typography>
-
-            <Grid container spacing={2} alignItems="center">
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 2,
-                    mt: 1,
-                    alignItems: "center",
-                  }}
-                >
-                  <B4TextField
-                    label="Add Value (0-65535)"
-                    value={newWinValue}
-                    onChange={(e) => setNewWinValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddWinValue();
-                      }
-                    }}
-                    type="number"
+          {config.tcp.syn_fake && (
+            <>
+              <div>
+                <Field className="w-full space-y-2">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel className="text-sm font-medium">
+                      SYN Fake Payload Length
+                    </FieldLabel>
+                    <Badge variant="secondary" className="font-semibold">
+                      {config.tcp.syn_fake_len || 0} bytes
+                    </Badge>
+                  </div>
+                  <Slider
+                    value={[config.tcp.syn_fake_len || 0]}
+                    onValueChange={(values) =>
+                      onChange("tcp.syn_fake_len", values[0])
+                    }
+                    min={0}
+                    max={1200}
+                    step={64}
+                    className="w-full"
                   />
+                  <FieldDescription>
+                    0 = header only, {">"}0 = add fake TLS payload
+                  </FieldDescription>
+                </Field>
+              </div>
+              <div>
+                <Field className="w-full space-y-2">
+                  <div className="flex items-center justify-between">
+                    <FieldLabel className="text-sm font-medium">
+                      SYN Fake TTL
+                    </FieldLabel>
+                    <Badge variant="secondary" className="font-semibold">
+                      {config.tcp.syn_ttl || 0} ms
+                    </Badge>
+                  </div>
+                  <Slider
+                    value={[config.tcp.syn_ttl || 0]}
+                    onValueChange={(values) =>
+                      onChange("tcp.syn_ttl", values[0])
+                    }
+                    min={1}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                  <FieldDescription>
+                    TTL value for SYN fake packets (default 3 if unset)
+                  </FieldDescription>
+                </Field>
+              </div>
+            </>
+          )}
+        </div>
 
-                  <B4PlusButton
+        {/* TCP Window Configuration */}
+        <div className="relative my-4 md:col-span-2 flex items-center">
+          <Separator className="absolute inset-0 top-1/2" />
+          <span className="text-xs font-medium text-muted-foreground px-2 uppercase bg-card relative mx-auto block w-fit">
+            TCP Window Manipulation
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Alert className="md:col-span-2">
+            <AlertDescription>
+              Window manipulation sends fake ACK packets with modified TCP
+              window sizes before your real packet. These fakes use low TTL so
+              they expire before reaching the server but confuse middlebox DPI.
+            </AlertDescription>
+          </Alert>
+
+          <div>
+            <Field>
+              <FieldLabel>Window Mode</FieldLabel>
+              <Select
+                value={config.tcp.win_mode}
+                onValueChange={(value) =>
+                  onChange("tcp.win_mode", value as string)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select window mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {windowModeOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value.toString()}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                {windowModeDescriptions[config.tcp.win_mode]}
+              </FieldDescription>
+            </Field>
+          </div>
+
+          {showWinValues && (
+            <div className="md:col-span-2">
+              <p className="text-sm font-semibold mb-1">Custom Window Values</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                {config.tcp.win_mode === "oscillate"
+                  ? "Packets will cycle through these values in order"
+                  : "Random values will be picked from this list"}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="flex gap-4 mt-2 items-center">
+                  <Field className="flex-1">
+                    <FieldLabel>Add Value (0-65535)</FieldLabel>
+                    <Input
+                      value={newWinValue}
+                      onChange={(e) => setNewWinValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddWinValue();
+                        }
+                      }}
+                      type="number"
+                    />
+                  </Field>
+
+                  <Button
+                    variant="secondary"
+                    size="icon"
                     onClick={handleAddWinValue}
                     disabled={!newWinValue}
+                  >
+                    <AddIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div>
+                  <ChipList
+                    items={winValues}
+                    getKey={(v) => v}
+                    getLabel={(v) => v.toLocaleString()}
+                    onDelete={handleRemoveWinValue}
+                    emptyMessage="No values configured - defaults will be used"
+                    showEmpty
                   />
-                </Box>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <B4ChipList
-                  items={winValues}
-                  getKey={(v) => v}
-                  getLabel={(v) => v.toLocaleString()}
-                  onDelete={handleRemoveWinValue}
-                  emptyMessage="No values configured - defaults will be used"
-                  showEmpty
-                />
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-      </Grid>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* TCP Desync Configuration */}
-      <B4FormHeader label="TCP Desync Attack" />
-      <Grid container spacing={3}>
-        <B4Alert>
-          Desync attacks inject fake TCP control packets (RST/FIN/ACK) with
-          corrupted checksums and low TTL. These packets confuse stateful DPI
-          systems but are discarded by the real server.
-        </B4Alert>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <B4Select
-            label="Desync Mode"
-            value={config.tcp.desync_mode}
-            options={desyncModeOptions}
-            onChange={(e) =>
-              onChange("tcp.desync_mode", e.target.value as string)
-            }
-            helperText={desyncModeDescriptions[config.tcp.desync_mode]}
-          />
-        </Grid>
+        {/* TCP Desync Configuration */}
+        <div className="relative my-4 md:col-span-2 flex items-center">
+          <Separator className="absolute inset-0 top-1/2" />
+          <span className="text-xs font-medium text-muted-foreground px-2 uppercase bg-card relative mx-auto block w-fit">
+            TCP Desync Attack
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Alert className="md:col-span-3">
+            <AlertDescription>
+              Desync attacks inject fake TCP control packets (RST/FIN/ACK) with
+              corrupted checksums and low TTL. These packets confuse stateful
+              DPI systems but are discarded by the real server.
+            </AlertDescription>
+          </Alert>
+          <div>
+            <Field>
+              <FieldLabel>Desync Mode</FieldLabel>
+              <Select
+                value={config.tcp.desync_mode}
+                onValueChange={(value) =>
+                  onChange("tcp.desync_mode", value as string)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select desync mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {desyncModeOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value.toString()}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                {desyncModeDescriptions[config.tcp.desync_mode]}
+              </FieldDescription>
+            </Field>
+          </div>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <B4Slider
-            label="Desync TTL"
-            value={config.tcp.desync_ttl}
-            onChange={(value: number) => onChange("tcp.desync_ttl", value)}
-            min={1}
-            max={20}
-            step={1}
-            disabled={!isDesyncEnabled}
-            helperText={
-              isDesyncEnabled
-                ? "Low TTL ensures packets expire before reaching server"
-                : "Enable desync mode first"
-            }
-          />
-        </Grid>
+          <div>
+            <Field className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel className="text-sm font-medium">
+                  Desync TTL
+                </FieldLabel>
+                <Badge variant="secondary" className="font-semibold">
+                  {config.tcp.desync_ttl}
+                </Badge>
+              </div>
+              <Slider
+                value={[config.tcp.desync_ttl]}
+                onValueChange={(values) =>
+                  onChange("tcp.desync_ttl", values[0])
+                }
+                min={1}
+                max={20}
+                step={1}
+                disabled={!isDesyncEnabled}
+                className="w-full"
+              />
+              <FieldDescription>
+                {isDesyncEnabled
+                  ? "Low TTL ensures packets expire before reaching server"
+                  : "Enable desync mode first"}
+              </FieldDescription>
+            </Field>
+          </div>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <B4Slider
-            label="Desync Packet Count"
-            value={config.tcp.desync_count}
-            onChange={(value: number) => onChange("tcp.desync_count", value)}
-            min={1}
-            max={20}
-            step={1}
-            disabled={!isDesyncEnabled}
-            helperText={
-              isDesyncEnabled
-                ? "Number of fake packets per desync attack"
-                : "Enable desync mode first"
-            }
-          />
-        </Grid>
-      </Grid>
-    </B4Section>
+          <div>
+            <Field className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel className="text-sm font-medium">
+                  Desync Packet Count
+                </FieldLabel>
+                <Badge variant="secondary" className="font-semibold">
+                  {config.tcp.desync_count}
+                </Badge>
+              </div>
+              <Slider
+                value={[config.tcp.desync_count]}
+                onValueChange={(values) =>
+                  onChange("tcp.desync_count", values[0])
+                }
+                min={1}
+                max={20}
+                step={1}
+                disabled={!isDesyncEnabled}
+                className="w-full"
+              />
+              <FieldDescription>
+                {isDesyncEnabled
+                  ? "Number of fake packets per desync attack"
+                  : "Enable desync mode first"}
+              </FieldDescription>
+            </Field>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

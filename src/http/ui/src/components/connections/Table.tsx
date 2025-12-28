@@ -1,23 +1,17 @@
-import { useRef, useState, useEffect, useCallback, useMemo, memo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Stack,
-  Box,
-  Tooltip,
-} from "@mui/material";
-import { AddIcon } from "@b4.icons";
-import { SortableTableCell, SortDirection } from "@common/SortableTableCell";
-import { ProtocolChip } from "@common/ProtocolChip";
-import { colors } from "@design";
-import { B4Badge } from "@common/B4Badge";
-import { asnStorage } from "@utils";
 import { ParsedLog } from "@b4.connections";
+import { AddIcon } from "@b4.icons";
+import { ProtocolChip } from "@common/ProtocolChip";
+import { SortableTableCell, SortDirection } from "@common/SortableTableCell";
+import { colors } from "@design";
+import { Badge } from "@design/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@design/components/ui/tooltip";
+import { cn } from "@design/lib/utils";
+import { asnStorage } from "@utils";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type SortColumn =
   | "timestamp"
@@ -53,143 +47,91 @@ const TableRowMemo = memo<{
     }, [log.destination]);
 
     return (
-      <TableRow
-        sx={{
-          height: ROW_HEIGHT,
-          "&:hover": {
-            bgcolor: colors.accent.primaryStrong,
-          },
-        }}
+      <tr
+        className={cn(
+          "h-10.25 hover:bg-accent transition-colors",
+          `hover:bg-[${colors.accent.primaryStrong}]`
+        )}
       >
-        <TableCell
-          sx={{
-            color: "text.secondary",
-            fontFamily: "monospace",
-            fontSize: 12,
-            borderBottom: `1px solid ${colors.border.light}`,
-            py: 1,
-          }}
-        >
+        <td className="text-muted-foreground font-mono text-xs border-b border-border py-2 px-4">
           {log.timestamp.split(" ")[1]}
-        </TableCell>
-        <TableCell
-          sx={{
-            borderBottom: `1px solid ${colors.border.light}`,
-            py: 1,
-          }}
-        >
+        </td>
+        <td className="border-b border-border py-2 px-4">
           <ProtocolChip protocol={log.protocol} />
-        </TableCell>
-        <TableCell
-          sx={{
-            borderBottom: `1px solid ${colors.border.light}`,
-            py: 1,
-          }}
-        >
+        </td>
+        <td className="border-b border-border py-2 px-4">
           {(log.ipSet || log.hostSet) && (
-            <B4Badge color="secondary" label={log.ipSet || log.hostSet} />
+            <Badge variant="secondary">{log.ipSet || log.hostSet}</Badge>
           )}
-        </TableCell>
-        <TableCell
-          sx={{
-            color: "text.primary",
-            borderBottom: `1px solid ${colors.border.light}`,
-            cursor: log.domain && !log.hostSet ? "pointer" : "default",
-            py: 1,
-            "&:hover":
-              log.domain && !log.hostSet
-                ? {
-                    bgcolor: colors.accent.primary,
-                    color: colors.secondary,
-                  }
-                : {},
-          }}
+        </td>
+        <td
+          className={cn(
+            "text-foreground border-b border-border py-2 px-4",
+            log.domain &&
+              !log.hostSet &&
+              "cursor-pointer hover:bg-accent hover:text-accent-foreground"
+          )}
           onClick={() =>
             log.domain && !log.hostSet && onDomainClick(log.domain)
           }
         >
-          <Stack direction="row" spacing={1} alignItems="center">
-            {log.domain && <Typography>{log.domain}</Typography>}
-            <Box sx={{ flex: 1 }} />
+          <div className="flex flex-row gap-2 items-center">
+            {log.domain && <span>{log.domain}</span>}
+            <div className="flex-1" />
             {log.domain && !log.hostSet && (
               <AddIcon
-                sx={{
-                  fontSize: 16,
-                  bgcolor: `${colors.secondary}88`,
-                  color: colors.background.default,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  "&:hover": {
-                    bgcolor: colors.secondary,
-                  },
+                className="h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDomainClick(log.domain!);
                 }}
               />
             )}
-          </Stack>
-        </TableCell>
-        <TableCell
-          sx={{
-            color: "text.secondary",
-            fontFamily: "monospace",
-            fontSize: 12,
-            borderBottom: `1px solid ${colors.border.light}`,
-            py: 1,
-          }}
-        >
-          <Tooltip title={log.source} placement="top" arrow>
-            {log.deviceName ? (
-              <B4Badge label={log.deviceName} color="primary" />
-            ) : (
-              <span>{log.source}</span>
-            )}
+          </div>
+        </td>
+        <td className="text-muted-foreground font-mono text-xs border-b border-border py-2 px-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                {log.deviceName ? (
+                  <Badge variant="default">{log.deviceName}</Badge>
+                ) : (
+                  <span>{log.source}</span>
+                )}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{log.source}</p>
+            </TooltipContent>
           </Tooltip>
-        </TableCell>
-        <TableCell
-          sx={{
-            color: "text.primary",
-            borderBottom: `1px solid ${colors.border.light}`,
-            py: 1,
-          }}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Box
-              sx={{
-                cursor: !log.ipSet ? "pointer" : "default",
-                "&:hover": !log.ipSet
-                  ? {
-                      bgcolor: colors.accent.primary,
-                      color: colors.secondary,
-                    }
-                  : {},
-              }}
+        </td>
+        <td className="text-foreground border-b border-border py-2 px-4">
+          <div className="flex flex-row gap-2 items-center">
+            <span
+              className={cn(
+                !log.ipSet &&
+                  "cursor-pointer hover:bg-accent hover:text-accent-foreground"
+              )}
               onClick={() =>
                 log.destination && !log.ipSet && onIpClick(log.destination)
               }
             >
               {log.destination}
-            </Box>
-            {asnName && (
-              <B4Badge variant="outlined" color="primary" label={asnName} />
-            )}
-            <Box sx={{ flex: 1 }} />
+            </span>
+            {asnName && <Badge variant="outline">{asnName}</Badge>}
+            <div className="flex-1" />
             {!log.ipSet && (
               <AddIcon
-                onClick={() => onIpClick(log.destination)}
-                sx={{
-                  fontSize: 16,
-                  bgcolor: `${colors.secondary}88`,
-                  color: colors.background.default,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  "&:hover": {
-                    bgcolor: colors.secondary,
-                  },
+                className="h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onIpClick(log.destination!);
                 }}
               />
             )}
-          </Stack>
-        </TableCell>
-      </TableRow>
+          </div>
+        </td>
+      </tr>
     );
   },
   (prev, next) => prev.log.raw === next.log.raw
@@ -263,18 +205,14 @@ export const DomainsTable = ({
   }, [data.length]);
 
   return (
-    <TableContainer
+    <div
       ref={containerRef}
       onScroll={handleScroll}
-      sx={{
-        flex: 1,
-        backgroundColor: colors.background.dark,
-        overflow: "auto",
-      }}
+      className="flex-1 bg-background overflow-auto"
     >
-      <Table stickyHeader size="small">
-        <TableHead>
-          <TableRow>
+      <table className="w-full border-collapse">
+        <thead className="sticky top-0 z-1">
+          <tr>
             <SortableTableCell
               label="Time"
               active={sortColumn === "timestamp"}
@@ -311,38 +249,28 @@ export const DomainsTable = ({
               direction={sortColumn === "destination" ? sortDirection : null}
               onSort={() => onSort("destination")}
             />
-          </TableRow>
-        </TableHead>
-        <TableBody>
+          </tr>
+        </thead>
+        <tbody>
           {data.length === 0 ? (
-            <TableRow>
-              <TableCell
+            <tr>
+              <td
                 colSpan={6}
-                sx={{
-                  textAlign: "center",
-                  py: 4,
-                  color: "text.secondary",
-                  fontStyle: "italic",
-                  bgcolor: colors.background.dark,
-                  borderBottom: "none",
-                }}
+                className="text-center py-8 text-muted-foreground italic bg-background border-none"
               >
                 Waiting for connections...
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
             <>
               {startIndex > 0 && (
-                <TableRow>
-                  <TableCell
+                <tr>
+                  <td
                     colSpan={6}
-                    sx={{
-                      height: startIndex * ROW_HEIGHT,
-                      p: 0,
-                      border: "none",
-                    }}
+                    style={{ height: startIndex * ROW_HEIGHT }}
+                    className="p-0 border-none"
                   />
-                </TableRow>
+                </tr>
               )}
 
               {visibleData.map((log) => (
@@ -355,21 +283,18 @@ export const DomainsTable = ({
               ))}
 
               {endIndex < data.length && (
-                <TableRow>
-                  <TableCell
+                <tr>
+                  <td
                     colSpan={6}
-                    sx={{
-                      height: (data.length - endIndex) * ROW_HEIGHT,
-                      p: 0,
-                      border: "none",
-                    }}
+                    style={{ height: (data.length - endIndex) * ROW_HEIGHT }}
+                    className="p-0 border-none"
                   />
-                </TableRow>
+                </tr>
               )}
             </>
           )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 };
