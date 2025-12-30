@@ -44,7 +44,6 @@ export const DashboardActivityPanels = ({
                     </p>
                     <Badge
                       variant="default"
-                      className="text-xs px-1.5 py-0.5"
                       style={{
                         backgroundColor: `${colors.accent.primary}`,
                         color: colors.primary,
@@ -80,7 +79,7 @@ export const DashboardActivityPanels = ({
                     {conn.is_target && (
                       <Badge
                         variant="default"
-                        className="text-xs px-1.5 py-0.5 font-semibold bg-green-500/20 text-green-500"
+                        className="font-semibold bg-green-500/20 text-green-500"
                       >
                         TARGET
                       </Badge>

@@ -85,7 +85,7 @@ export const AddSniModal = ({
               </AlertDescription>
             </Alert>
             <p className="text-sm text-muted-foreground mb-2">
-              Original domain: <Badge variant="default">{domain}</Badge>
+              Original domain: <Badge>{domain}</Badge>
             </p>
             {!createNewSet && sets.length > 0 && (
               <div className="mb-4">

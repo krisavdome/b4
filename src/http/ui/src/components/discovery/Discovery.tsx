@@ -323,7 +323,7 @@ export const DiscoveryRunner = () => {
                     {suite.current_phase && (
                       <Badge
                         variant="secondary"
-                        className="text-xs px-1.5 py-0.5 mr-2 inline-flex items-center gap-1"
+                        className="mr-2 inline-flex items-center gap-1"
                       >
                         {phaseNames[suite.current_phase]}
                       </Badge>
@@ -398,38 +398,20 @@ export const DiscoveryRunner = () => {
                               {domainResult.domain}
                             </h6>
                             {domainResult.best_success ? (
-                              <Badge
-                                variant="default"
-                                className="text-xs px-1.5 py-0.5"
-                              >
-                                Success
-                              </Badge>
+                              <Badge>Success</Badge>
                             ) : running ? (
-                              <Badge
-                                variant="outline"
-                                className="text-xs px-1.5 py-0.5"
-                              >
-                                Testing...
-                              </Badge>
+                              <Badge variant="outline">Testing...</Badge>
                             ) : (
-                              <Badge
-                                variant="destructive"
-                                className="text-xs px-1.5 py-0.5"
-                              >
-                                Failed
-                              </Badge>
+                              <Badge variant="destructive">Failed</Badge>
                             )}
-                            <Badge
-                              variant="default"
-                              className="text-xs px-1.5 py-0.5"
-                            >
+                            <Badge>
                               {`${successCount}/${totalCount} configs`}
                             </Badge>
                             {domainResult.improvement &&
                               domainResult.improvement > 0 && (
                                 <Badge
                                   variant="secondary"
-                                  className="text-xs px-1.5 py-0.5 inline-flex items-center gap-1"
+                                  className="inline-flex items-center gap-1"
                                 >
                                   <ImprovementIcon className="h-3 w-3" />
                                   {`+${domainResult.improvement.toFixed(0)}%`}
@@ -484,7 +466,7 @@ export const DiscoveryRunner = () => {
                                     domainResult.results[
                                       domainResult.best_preset
                                     ]?.family && (
-                                      <Badge variant="default" className="ml-2">
+                                      <Badge className="ml-2">
                                         {
                                           familyNames[
                                             domainResult.results[
@@ -560,12 +542,7 @@ export const DiscoveryRunner = () => {
                               <div key={phase} className="mb-6">
                                 <h6 className="text-xs uppercase text-muted-foreground mb-3 flex items-center gap-2">
                                   {phaseNames[phase]}
-                                  <Badge
-                                    variant="default"
-                                    className="text-xs px-1.5 py-0.5"
-                                  >
-                                    {groupedResults[phase].length}
-                                  </Badge>
+                                  <Badge>{groupedResults[phase].length}</Badge>
                                 </h6>
                                 <div className="flex flex-row gap-2 flex-wrap">
                                   {groupedResults[phase]
@@ -581,7 +558,6 @@ export const DiscoveryRunner = () => {
                                               ? "default"
                                               : "destructive"
                                           }
-                                          className="text-xs px-1.5 py-0.5"
                                         >
                                           {`${result.preset_name}: ${
                                             result.status === "complete"

@@ -221,19 +221,19 @@ export const UpdateModal = ({
             </div>
           </div>
           <div className="flex flex-row gap-2">
-            <Badge variant="default" className="text-xs px-1.5 py-0.5">
+            <Badge>
               {`Current: v${currentVersion}`}
             </Badge>
             {!isCurrent && (
               <Badge
                 variant={isDowngrade ? "destructive" : "secondary"}
-                className="text-xs px-1.5 py-0.5 font-semibold"
+                className="font-semibold"
               >
                 {isDowngrade ? "Downgrade" : "Upgrade"}
               </Badge>
             )}
             {selectedRelease?.prerelease && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+              <Badge variant="outline">
                 Pre-release
               </Badge>
             )}

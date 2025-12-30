@@ -47,7 +47,7 @@ export const DomainsControlBar = ({
           className="flex-1"
         />
         <div className="flex flex-row gap-2 items-center">
-          <Badge variant="default">{`${totalCount} connections`}</Badge>
+          <Badge>{`${totalCount} connections`}</Badge>
           {filter && (
             <Badge variant="outline">{`${filteredCount} filtered`}</Badge>
           )}

@@ -234,22 +234,20 @@ export function DnsSettings({ config, onChange, ipv6 }: DnsSettingsProps) {
                     HOW IT WORKS
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="default" className="bg-accent">
+                    <Badge className="bg-accent">
                       App
                     </Badge>
                     <p className="text-xs text-muted-foreground">
                       → DNS query for
                     </p>
                     <Badge
-                      variant="default"
-                      className="text-xs px-1.5 py-0.5 bg-accent text-accent-foreground"
+                      className="bg-accent text-accent-foreground"
                     >
                       instagram.com
                     </Badge>
                     <p className="text-xs text-muted-foreground">→</p>
                     <Badge
-                      variant="default"
-                      className="text-xs px-1.5 py-0.5 bg-destructive/20 text-destructive line-through"
+                      className="bg-destructive/20 text-destructive line-through"
                     >
                       poisoned DNS
                     </Badge>

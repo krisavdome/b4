@@ -222,10 +222,7 @@ export const DevicesSettings = ({ config, onChange }: DevicesSettingsProps) => {
                         Available Devices
                       </h6>
                       {source && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs px-1.5 py-0.5"
-                        >
+                        <Badge variant="secondary">
                           {source}
                         </Badge>
                       )}

@@ -285,7 +285,7 @@ export function DashboardPage() {
         <div className="flex flex-row gap-4 items-center">
           <Badge
             variant={connected ? "default" : "destructive"}
-            className="text-xs px-1.5 py-0.5 inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1"
           >
             {connected ? (
               <CheckIcon className="h-3 w-3" />

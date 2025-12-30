@@ -64,7 +64,7 @@ const TargetBadge = ({ label, type }: TargetBadgeProps) => {
       <TooltipTrigger asChild>
         <Badge
           variant={isGeo ? "secondary" : "outline"}
-          className="text-xs px-1.5 py-0.5 inline-flex items-center gap-1"
+          className="inline-flex items-center gap-1"
         >
           {(type === "ip" || type === "geoip") && (
             <IpIcon className="h-3 w-3" />
@@ -229,7 +229,7 @@ export const SetCard = ({
               {isMain && (
                 <Badge
                   variant="secondary"
-                  className="text-xs px-1.5 py-0.5 shrink-0"
+                  className="shrink-0"
                 >
                   MAIN
                 </Badge>
@@ -315,7 +315,7 @@ export const SetCard = ({
                     />
                   ))}
                   {totalTargets > 2 && (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                    <Badge variant="outline">
                       +{totalTargets - 2}
                     </Badge>
                   )}

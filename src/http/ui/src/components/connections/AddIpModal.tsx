@@ -223,7 +223,7 @@ export const AddIpModal = ({
               {!ipInfo ? (
                 <div className="flex flex-row gap-4 items-center">
                   <p className="text-sm text-muted-foreground">
-                    Original IP: <Badge variant="default">{ip}</Badge>
+                    Original IP: <Badge>{ip}</Badge>
                   </p>
                   <div className="flex-1" />
                   {ipInfoToken && (

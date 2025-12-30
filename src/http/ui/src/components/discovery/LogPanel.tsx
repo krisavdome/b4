@@ -61,7 +61,7 @@ export const DiscoveryLogPanel = ({ running }: DiscoveryLogPanelProps) => {
                 )}
               />
               {logs.length > 0 && (
-                <Badge variant="default">{`${logs.length} lines`}</Badge>
+                <Badge>{`${logs.length} lines`}</Badge>
               )}
             </div>
             <div className="flex items-center gap-1">

@@ -94,7 +94,7 @@ const TableRowMemo = memo<{
             <TooltipTrigger asChild>
               <span>
                 {log.deviceName ? (
-                  <Badge variant="default">{log.deviceName}</Badge>
+                  <Badge>{log.deviceName}</Badge>
                 ) : (
                   <span>{log.source}</span>
                 )}

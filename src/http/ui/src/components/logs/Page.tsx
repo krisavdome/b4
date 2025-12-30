@@ -101,11 +101,11 @@ export function LogsPage() {
               className="flex-1"
             />
             <div className="flex flex-row gap-2 items-center">
-              <Badge variant="default" className="text-xs px-1.5 py-0.5">
+              <Badge>
                 {`${logs.length} lines`}
               </Badge>
               {filter && (
-                <Badge variant="default" className="text-xs px-1.5 py-0.5">
+                <Badge>
                   {`${filtered.length} filtered`}
                 </Badge>
               )}

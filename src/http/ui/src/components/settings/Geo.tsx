@@ -186,13 +186,13 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
                   {geositeInfo.exists ? (
                     <Badge
                       variant="secondary"
-                      className="text-xs px-1.5 py-0.5 inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1"
                     >
                       <SuccessIcon className="h-3 w-3" />
                       Active
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                    <Badge variant="outline">
                       Not Found
                     </Badge>
                   )}
@@ -235,13 +235,13 @@ export const GeoSettings = ({ config, loadConfig }: GeoSettingsProps) => {
                   {geoipInfo.exists ? (
                     <Badge
                       variant="secondary"
-                      className="text-xs px-1.5 py-0.5 inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1"
                     >
                       <SuccessIcon className="h-3 w-3" />
                       Active
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                    <Badge variant="outline">
                       Not Found
                     </Badge>
                   )}
