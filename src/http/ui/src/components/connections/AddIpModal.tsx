@@ -386,7 +386,6 @@ export const AddIpModal = ({
           <div className="flex-1" />
           <Button
             onClick={handleAdd}
-            variant="default"
             disabled={!selected && prefixes.length === 0}
           >
             <AddIcon className="h-4 w-4 mr-2" />

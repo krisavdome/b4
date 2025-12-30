@@ -159,7 +159,6 @@ export const ImportExportSettings = ({
               </Button>
             </div>
             <Button
-              variant="default"
               onClick={handleApply}
               disabled={!hasChanges}
             >

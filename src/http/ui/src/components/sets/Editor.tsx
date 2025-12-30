@@ -273,7 +273,6 @@ export const SetEditor = ({
             Cancel
           </Button>
           <Button
-            variant="default"
             onClick={handleSave}
             disabled={!editedSet.name.trim() || saving}
             className="min-w-35"

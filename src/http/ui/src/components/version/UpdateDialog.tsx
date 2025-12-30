@@ -299,7 +299,6 @@ export const UpdateModal = ({
           </Button>
           <Button
             onClick={() => void handleUpdate()}
-            variant="default"
             disabled={isUpdating || isCurrent}
             className={cn(
               isDowngrade && "bg-destructive hover:bg-destructive/90"
@@ -312,7 +311,6 @@ export const UpdateModal = ({
       )}
       {updateStatus === "success" && (
         <Button
-          variant="default"
           onClick={() => globalThis.window.location.reload()}
         >
           Reload Page

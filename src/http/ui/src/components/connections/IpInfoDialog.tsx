@@ -181,7 +181,7 @@ export const IpInfoModal = ({
         <Separator />
         <DialogFooter>
           {ipInfo?.hostname && onAddHostname && (
-            <Button onClick={handleAddHostname} variant="default">
+            <Button onClick={handleAddHostname}>
               <AddIcon className="h-4 w-4 mr-2" />
               Add Hostname
             </Button>

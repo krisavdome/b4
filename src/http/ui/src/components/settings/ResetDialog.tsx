@@ -109,7 +109,6 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
               onClick={() => {
                 void handleReset();
               }}
-              variant="default"
             >
               <RestoreIcon className="h-4 w-4 mr-2" />
               Reset to Defaults
@@ -118,7 +117,7 @@ export const ResetDialog = ({ open, onClose, onSuccess }: ResetDialogProps) => {
         );
       case "error":
         return (
-          <Button onClick={handleClose} variant="default">
+          <Button onClick={handleClose}>
             Close
           </Button>
         );

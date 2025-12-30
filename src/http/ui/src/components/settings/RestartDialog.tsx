@@ -191,7 +191,6 @@ export const RestartDialog = ({ open, onClose }: RestartDialogProps) => {
               onClick={() => {
                 void handleRestart();
               }}
-              variant="default"
             >
               <RestartIcon className="h-4 w-4 mr-2" />
               Restart Service
@@ -200,11 +199,7 @@ export const RestartDialog = ({ open, onClose }: RestartDialogProps) => {
         );
 
       case "error":
-        return (
-          <Button onClick={handleClose} variant="default">
-            Close
-          </Button>
-        );
+        return <Button onClick={handleClose}>Close</Button>;
 
       default:
         return null;

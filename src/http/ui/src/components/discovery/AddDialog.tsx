@@ -220,7 +220,6 @@ export const DiscoveryAddDialog = ({
               Cancel
             </Button>
             <Button
-              variant="default"
               onClick={handleConfirm}
               disabled={loading || (mode === "existing" && !selectedSetId)}
             >

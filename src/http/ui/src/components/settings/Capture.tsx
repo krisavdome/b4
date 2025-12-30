@@ -223,7 +223,6 @@ export const CaptureSettings = () => {
                   </p>
                 )}
                 <Button
-                  variant="default"
                   onClick={() => void uploadCapture()}
                   disabled={loading || !uploadForm.file || !uploadForm.domain}
                 >
@@ -278,7 +277,6 @@ export const CaptureSettings = () => {
               <div className="flex flex-row gap-2">
                 <Button
                   className="flex-1"
-                  variant="default"
                   onClick={() => void probeCapture()}
                   disabled={loading || !probeForm.domain}
                 >
@@ -454,7 +452,6 @@ export const CaptureSettings = () => {
           <Separator />
           <DialogFooter>
             <Button
-              variant="default"
               onClick={() => {
                 if (hexDialog.capture?.hex_data) {
                   copyHex(hexDialog.capture.hex_data);

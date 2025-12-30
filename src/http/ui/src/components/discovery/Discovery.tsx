@@ -260,7 +260,6 @@ export const DiscoveryRunner = () => {
                 </div>
                 {!running && !suite && (
                   <Button
-                    variant="default"
                     onClick={() => {
                       void startDiscovery(checkUrl);
                     }}
@@ -480,7 +479,6 @@ export const DiscoveryRunner = () => {
                               </div>
                             </div>
                             <Button
-                              variant="default"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const bestResult =

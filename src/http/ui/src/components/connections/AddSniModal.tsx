@@ -140,7 +140,6 @@ export const AddSniModal = ({
           <div className="flex-1" />
           <Button
             onClick={handleAdd}
-            variant="default"
             disabled={!selected || !selectedSetId}
           >
             <AddIcon className="h-4 w-4 mr-2" />

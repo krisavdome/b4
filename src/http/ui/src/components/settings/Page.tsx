@@ -321,7 +321,6 @@ export function SettingsPage() {
 
             <Button
               size="sm"
-              variant="default"
               onClick={() => {
                 void saveConfig();
               }}
@@ -350,7 +349,7 @@ export function SettingsPage() {
           }
           className="w-full"
         >
-          <TabsList variant="default" className="w-full grid grid-cols-5 mt-4">
+          <TabsList className="w-full grid grid-cols-5 mt-4">
             {SETTING_CATEGORIES.sort((a, b) => a.id - b.id).map((cat) => (
               <TabsTrigger key={cat.id} value={String(cat.id)}>
                 <div className="flex items-center gap-1.5">
@@ -442,7 +441,7 @@ export function SettingsPage() {
           <DialogFooter>
             <Button onClick={() => setShowResetDialog(false)}>Cancel</Button>
             <div className="flex-1" />
-            <Button onClick={resetChanges} variant="default">
+            <Button onClick={resetChanges}>
               Discard Changes
             </Button>
           </DialogFooter>

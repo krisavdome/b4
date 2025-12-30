@@ -415,7 +415,7 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
                     className="w-full pl-10"
                   />
                 </div>
-                <Button onClick={handleAddSet} variant="default">
+                <Button onClick={handleAddSet}>
                   <AddIcon className="h-4 w-4 mr-2" />
                   Create Set
                 </Button>
@@ -558,7 +558,6 @@ export const SetsManager = ({ config, onRefresh }: SetsManagerProps) => {
             <div className="flex-1" />
             <Button
               onClick={handleDeleteSet}
-              variant="default"
               className="bg-destructive hover:bg-destructive/90"
             >
               Delete Set

@@ -765,7 +765,6 @@ export const TargetSettings = ({
           <Separator />
           <DialogFooter>
             <Button
-              variant="default"
               onClick={() =>
                 setPreviewDialog({ open: false, category: "", loading: false })
               }
